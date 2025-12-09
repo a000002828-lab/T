@@ -1,410 +1,311 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nordic Trip</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
-    
-    <style>
-        /* 北歐/下雪風格的客製化樣式 */
-        :root {
-            --nordic-blue: #A9D6E5;
-            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 */
-            --nordic-dark: #014F86; /* 深海藍 (高對比色) */
-            --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
-            --nordic-link-blue: #1A73E8; /* 標準 Google 藍 */
-        }
-        body {
-            background-color: var(--nordic-light);
-            /* 維持雪花背景，增加簡約感 */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>');
-            /* 修正字體為 Noto Sans TC */
-            font-family: 'Noto Sans TC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: var(--nordic-dark);
-        }
-        .app-container {
-            max-width: 420px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background-color: var(--nordic-light);
-            box-shadow: 0 0 30px rgba(0,0,0,0.1);
-        }
-        .header-bg {
-            background-color: var(--nordic-blue);
-            background-image: linear-gradient(135deg, var(--nordic-blue) 0%, #61A5C2 100%);
-            color: white;
-            /* 增加底部 padding 以容納極光資訊 */
-            padding: 1.5rem 1rem 4rem; 
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nordic Trip</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
+    
+    <style>
+        /* 北歐/下雪風格的客製化樣式 */
+        :root {
+            --nordic-blue: #A9D6E5;
+            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 */
+            --nordic-dark: #014F86; /* 深海藍 */
+            --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
+        }
+        body {
+            background-color: var(--nordic-light);
+            /* 維持雪花背景，增加簡約感 */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>');
+            /* **修正字體為 Noto Sans TC** */
+            font-family: 'Noto Sans TC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: var(--nordic-dark);
+        }
+        .app-container {
+            max-width: 420px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--nordic-light);
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+        }
+        .header-bg {
+            background-color: var(--nordic-blue);
+            background-image: linear-gradient(135deg, var(--nordic-blue) 0%, #61A5C2 100%);
+            color: white;
+            padding: 1.5rem 1rem 3rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .date-scroll-container {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .date-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        /* Tab 日期按鈕風格調整 */
+        .tab-date-button {
+            transition: all 0.3s;
+            border-radius: 0.75rem; /* 較圓潤的圓角 */
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: 1px solid var(--nordic-light);
+        }
+        .tab-date-active {
+            background-color: var(--nordic-dark); 
+            color: var(--nordic-light);
+            border-color: var(--nordic-dark);
+            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
+        }
 
-        /* ------------------------------------------- */
-        /* ✨ 新增：極光資訊顯示區塊樣式 */
-        /* ------------------------------------------- */
-        .aurora-info {
-            position: absolute;
-            bottom: 0.5rem; /* 距離底部 0.5rem */
-            left: 1rem;
-            right: 1rem;
-            background-color: rgba(255, 255, 255, 0.2); /* 半透明背景 */
-            backdrop-filter: blur(5px);
-            border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            display: flex;
-            align-items: center;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-        }
-        .aurora-info .kp-value {
-            font-size: 1.5rem; /* text-2xl */
-            line-height: 1.5rem;
-            font-weight: 700; /* font-bold */
-            margin-right: 0.5rem;
-        }
-        .kp-good {
-            color: #34D399; /* Green-400 */
-        }
-        .kp-fair {
-            color: #FBBF24; /* Yellow-400 */
-        }
-        .kp-low {
-            color: #9CA3AF; /* Gray-400 */
-        }
-        /* ------------------------------------------- */
+        /* 地圖相關樣式 */
+        .map-container {
+            height: 320px; 
+            width: 100%;
+        }
+        .map-hidden {
+            visibility: hidden;
+            height: 0;
+            margin-bottom: 0 !important;
+            padding: 0 !important;
+        }
 
-        .card {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .date-scroll-container {
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        .date-scroll-container::-webkit-scrollbar {
-            display: none;
-        }
-        /* Tab 日期按鈕風格調整 */
-        .tab-date-button {
-            transition: all 0.3s;
-            border-radius: 0.75rem; /* 較圓潤的圓角 */
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border: 1px solid var(--nordic-light);
-        }
-        .tab-date-active {
-            background-color: var(--nordic-dark); 
-            color: var(--nordic-light);
-            border-color: var(--nordic-dark);
-            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
-        }
-
-        /* ------------------------------------------- */
-        /* ✨ 更改一：Google 連結按鈕改為藍色網址文字 */
-        /* ------------------------------------------- */
-        .google-link-as-text {
-            /* 移除 Tailwind 預設的按鈕樣式 */
-            background-color: transparent !important;
-            color: var(--nordic-link-blue) !important; /* 標準藍色網址 */
-            text-decoration: underline !important; /* 加上底線 */
-            padding: 0 !important;
-            margin-right: 0 !important;
-            font-size: 0.875rem !important; /* text-sm */
-            line-height: 1.25rem !important;
-            font-weight: 500 !important; /* font-medium */
-        }
-        .google-link-as-text:hover {
-            color: #0d4ac2 !important; /* 懸停時顏色稍深 */
-        }
-
-        /* ------------------------------------------- */
-        /* ✨ 更改二：新增按鈕顏色調深，與背景高對比 */
-        /* ------------------------------------------- */
-        /* 應用於所有模態框 (Modal) 內的 '儲存' 按鈕 */
-        .modal-save-button,
-        /* 應用於 '旅費管理' 頁面和 '購物/裝備清單' 頁面的 '+ 新增' 按鈕 */
-        .add-item-button {
-            background-color: var(--nordic-dark) !important; /* 深海藍 */
-            color: white !important; /* 白色文字 */
-            transition: background-color 0.3s;
-            /* 確保字體清晰可見 */
-            font-weight: 600; 
-        }
-        .modal-save-button:hover,
-        .add-item-button:hover {
-            background-color: var(--nordic-accent) !important; /* 懸停時使用點綴藍 */
-        }
-        /* 應用於地圖頁面的 '開啟 Google 地圖導航' 按鈕 (原本就是深色，加強 hover) */
-        .map-navigation-button:hover {
-             background-color: var(--nordic-blue) !important; /* 懸停時使用中等藍 */
-             color: var(--nordic-dark) !important;
-        }
-        /* ------------------------------------------- */
-
-
-        /* 地圖相關樣式 */
-        .map-container {
-            height: 320px; 
-            width: 100%;
-        }
-        .map-hidden {
-            visibility: hidden;
-            height: 0;
-            margin-bottom: 0 !important;
-            padding: 0 !important;
-        }
-
-        /* 修正: 讓 SVG 圖標可以被 Tailwind text-color 影響 (適用於底部的 Tab 按鈕) */
-        .tab-icon svg {
-            stroke-width: 2.5; /* 讓圖標線條更粗一些，更簡潔 */
-            width: 28px;
-            height: 28px;
-            color: inherit; /* 讓 SVG 顏色繼承自父層文字顏色 */
-        }
-        /* 修正: 讓 SVG 圖標刪除按鈕更統一 */
-        .delete-icon svg {
-            width: 20px;
-            height: 20px;
-        }
-    </style>
+        /* **修正: 讓 SVG 圖標可以被 Tailwind text-color 影響 (適用於底部的 Tab 按鈕)** */
+        .tab-icon svg {
+            stroke-width: 2.5; /* 讓圖標線條更粗一些，更簡潔 */
+            width: 28px;
+            height: 28px;
+            color: inherit; /* 讓 SVG 顏色繼承自父層文字顏色 */
+        }
+        /* **修正: 讓 SVG 圖標刪除按鈕更統一** */
+        .delete-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
 </head>
 <body>
 
-<div id="app" class="app-container hidden"> 
-    
-    <div class="header-bg relative mb-[-2rem]">
-        <h1 class="text-2xl font-bold mb-1">Nordic Trip</h1> <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/03/2026**</p>
-        <div class="absolute top-4 right-4 text-sm opacity-90">
-            1 EUR ≈ 36.3 NT$
-        </div>
-        
-                                <div v-if="isAuroraDate" class="aurora-info">
-            <span class="text-3xl mr-3">🌌</span>
-            <div class="flex-grow">
-                <p class="text-xs font-medium opacity-80 mb-0.5">極光預測 (KP 值)</p>
-                <p class="text-base font-semibold">
-                    KP <span class="kp-value" :class="getKpColor(currentAuroraForecast.kp)">{{ currentAuroraForecast.kp.toFixed(1) }}</span> 
-                    <span class="text-sm font-normal ml-1">
-                        - 預測時段: {{ currentAuroraForecast.time }}
-                    </span>
-                </p>
-            </div>
-        </div>
-            </div>
-    
-    <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
-        <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
-            <template v-for="(date, index) in travelDates" :key="index">
-                <button 
-                    @click="setActiveDate(date)" 
-                    :class="{'tab-date-active': activeDate === date, 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeDate !== date}"
-                    class="tab-date-button flex-shrink-0 text-xs font-semibold px-3 py-1.5 transition-all"
-                >
-                    <span class="block text-sm font-bold">Day {{ index + 1 }}</span> <span class="block text-xs font-normal opacity-90 mt-0.5">{{ formatDate(date) }}</span>
-                </button>
-            </template>
-        </div>
-    </div>
+<div id="app" class="app-container hidden"> 
+    
+    <div class="header-bg relative mb-[-2rem]">
+        <h1 class="text-2xl font-bold mb-1">Nordic Trip</h1> <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/03/2026**</p>
+        <div class="absolute top-4 right-4 text-sm opacity-90">
+            1 EUR ≈ 36.3 NT$
+        </div>
+    </div>
+    
+    <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
+        <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
+            <template v-for="(date, index) in travelDates" :key="index">
+                <button 
+                    @click="setActiveDate(date)" 
+                    :class="{'tab-date-active': activeDate === date, 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeDate !== date}"
+                    class="tab-date-button flex-shrink-0 text-xs font-semibold px-3 py-1.5 transition-all"
+                >
+                    <span class="block text-sm font-bold">Day {{ index + 1 }}</span> <span class="block text-xs font-normal opacity-90 mt-0.5">{{ formatDate(date) }}</span>
+                </button>
+            </template>
+        </div>
+    </div>
 
-    <div class="p-4 pt-6" v-if="travelDates.length">
-        
-        <div v-show="activeTab === 'itinerary'">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">行程安排</h2>
-            
-            <div class="card p-4 mb-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-l-4 border-nordic-accent">
-                <div class="flex items-center">
-                    <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
-                    <div>
-                        <p class="font-semibold text-gray-800">{{ currentCity }} - {{ formatDate(activeDate) }}</p>
-                        <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
-                    </div>
-                </div>
-                <p class="text-3xl font-extrabold text-nordic-dark">{{ getCurrentWeather().temp }}</p>
-            </div>
+    <div class="p-4 pt-6" v-if="travelDates.length">
+        
+        <div v-show="activeTab === 'itinerary'">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">行程安排</h2>
+            
+            <div class="card p-4 mb-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-l-4 border-nordic-accent">
+                <div class="flex items-center">
+                    <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ currentCity }} - {{ formatDate(activeDate) }}</p>
+                        <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
+                    </div>
+                </div>
+                <p class="text-3xl font-extrabold text-nordic-dark">{{ getCurrentWeather().temp }}</p>
+            </div>
 
-            <div class="space-y-4">
-                <div v-for="element in currentItinerary" :key="element.id" 
-                    class="card p-4 relative border-l-4" 
-                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通', 'border-pink-400': element.category === '住宿', 'border-purple-400': element.category === '購物'}"
-                >
-                    <div class="flex justify-between items-start">
-                        <div class="flex-grow">
-                            <p class="text-sm font-medium text-gray-500 mb-1">
-                                {{ element.time }} 
-                                <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-nordic-light text-nordic-dark': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span>
-                            </p>
-                            <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
-                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 border-gray-200 pl-2 mt-2 italic">{{ element.notes }}</p>
-                            
-                            <div v-if="element.lat && element.lng" class="mt-3">
-                                <a :href="getGoogleMapLink(element)" target="_blank" class="google-link-as-text text-sm font-medium inline-flex items-center">
-                                     查看地圖 🗺️
-                                </a>
-                            </div>
-                            </div>
-                        <div class="flex space-x-1 ml-4">
-                            <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1 delete-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="space-y-4">
+                <div v-for="element in currentItinerary" :key="element.id" 
+                    class="card p-4 relative border-l-4" 
+                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通', 'border-pink-400': element.category === '住宿', 'border-purple-400': element.category === '購物'}"
+                >
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">
+                                {{ element.time }} 
+                                <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-nordic-light text-nordic-dark': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span>
+                            </p>
+                            <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
+                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 border-gray-200 pl-2 mt-2 italic">{{ element.notes }}</p>
+                        </div>
+                        <div class="flex space-x-1 ml-4">
+                            <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1 delete-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <p v-if="currentItinerary.length === 0" class="text-center text-gray-500 p-6">本日無行程安排。</p>
-        </div>
+            <p v-if="currentItinerary.length === 0" class="text-center text-gray-500 p-6">本日無行程安排。</p>
+        </div>
 
-        <div v-show="activeTab === 'map'">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">當日行程地圖與導航</h2>
-            
-            <div id="googleMapWrapper" class="card mb-4 map-container" :class="{'map-hidden': activeTab !== 'map'}">
-                <div id="googleMap" class="map-container">
-                    <div v-if="!isGoogleMapsLoaded" class="flex items-center justify-center h-full text-gray-500">
-                        地圖服務載入中... (請確認 API Key 是否有效)
-                    </div>
-                </div>
-            </div>
-            
-            <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
-            <a :href="currentMapLink" target="_blank" class="map-navigation-button block mt-4 text-center py-3 bg-nordic-dark text-white rounded-xl font-semibold hover:bg-nordic-blue transition-colors hover:text-nordic-dark">
-                開啟 Google 地圖導航
-            </a>
-        </div>
+        <div v-show="activeTab === 'map'">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">當日行程地圖與導航</h2>
+            
+            <div id="googleMapWrapper" class="card mb-4 map-container" :class="{'map-hidden': activeTab !== 'map'}">
+                <div id="googleMap" class="map-container">
+                    <div v-if="!isGoogleMapsLoaded" class="flex items-center justify-center h-full text-gray-500">
+                        地圖服務載入中... (請確認 API Key 是否有效)
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
+            <a :href="currentMapLink" target="_blank" class="block mt-4 text-center py-3 bg-nordic-dark text-white rounded-xl font-semibold hover:bg-nordic-blue transition-colors hover:text-nordic-dark">
+                開啟 Google 地圖導航
+            </a>
+        </div>
 
-        <div v-show="activeTab === 'accounting'">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-700">旅費管理</h2>
-                <button @click="showModal('accounting')" class="add-item-button flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
-                    <span class="text-lg">+</span> 新增花費
-                </button>
-            </div>
-            
-            <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
-                <p class="text-sm text-gray-600">總支出 (NT$)</p>
-                <p class="text-4xl font-extrabold text-red-600">NT$ {{ totalExpense.toFixed(0) }}</p>
-                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ totalExpenseEUR }} (以 1 EUR ≈ 36.3 NT$ 估算)</p>
-            </div>
+        <div v-show="activeTab === 'accounting'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">旅費管理</h2>
+                <button @click="showModal('accounting')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增花費
+                </button>
+            </div>
+            
+            <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
+                <p class="text-sm text-gray-600">總支出 (NT$)</p>
+                <p class="text-4xl font-extrabold text-red-600">NT$ {{ totalExpense.toFixed(0) }}</p>
+                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ totalExpenseEUR }} (以 1 EUR ≈ 36.3 NT$ 估算)</p>
+            </div>
 
-            <div class="space-y-3">
-                <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
-                    <div>
-                        <p class="font-semibold text-gray-800">{{ expense.item }}</p>
-                        <p class="text-xs text-gray-500">{{ expense.date }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold text-red-600">- NT$ {{ expense.amount.toFixed(0) }}</p>
-                        <button @click="deleteItem('accounting', expense.id)" class="text-xs text-gray-400 hover:text-red-500 delete-icon">
-                            刪除
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <p v-if="expenses.length === 0" class="text-center text-gray-500 p-6">尚未新增任何花費。</p>
-        </div>
+            <div class="space-y-3">
+                <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ expense.item }}</p>
+                        <p class="text-xs text-gray-500">{{ expense.date }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-bold text-red-600">- NT$ {{ expense.amount.toFixed(0) }}</p>
+                        <button @click="deleteItem('accounting', expense.id)" class="text-xs text-gray-400 hover:text-red-500 delete-icon">
+                            刪除
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <p v-if="expenses.length === 0" class="text-center text-gray-500 p-6">尚未新增任何花費。</p>
+        </div>
 
-        <div v-show="activeTab === 'shopping'">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-700">待辦/購物清單</h2>
-                <button @click="showModal('shopping')" class="add-item-button flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
-                    <span class="text-lg">+</span> 新增
-                </button>
-            </div>
-            
-            <div class="space-y-3">
-                <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.done}">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
-                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
-                    </label>
-                    <button @click="deleteItem('shopping', item.id)" class="text-gray-400 hover:text-red-500 p-2 delete-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <p v-if="shoppingList.length === 0" class="text-center text-gray-500 p-6">購物清單已清空！</p>
-        </div>
+        <div v-show="activeTab === 'shopping'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">待辦/購物清單</h2>
+                <button @click="showModal('shopping')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.done}">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
+                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
+                    </label>
+                    <button @click="deleteItem('shopping', item.id)" class="text-gray-400 hover:text-red-500 p-2 delete-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p v-if="shoppingList.length === 0" class="text-center text-gray-500 p-6">購物清單已清空！</p>
+        </div>
 
-        <div v-show="activeTab === 'checklist'">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-700">旅行裝備清單</h2>
-                <button @click="showModal('checklist')" class="add-item-button flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
-                    <span class="text-lg">+</span> 新增
-                </button>
-            </div>
-            
-            <p class="text-sm text-gray-600 mb-4 p-2 border-l-4 border-nordic-accent bg-nordic-light/50">記得勾選已放入行李箱的物品！</p>
-            
-            <div class="space-y-3">
-                <div v-for="item in travelChecklist" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-dark" :class="{'opacity-50 line-through bg-gray-50/50 border-green-400': item.done}">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
-                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
-                    </label>
-                    <div class="flex items-center space-x-2">
-                        <span v-if="item.notes" class="text-xs text-gray-400 hidden sm:block">{{ item.notes }}</span>
-                        <button @click="deleteItem('checklist', item.id)" class="text-gray-400 hover:text-red-500 p-2 delete-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <p v-if="travelChecklist.length === 0" class="text-center text-gray-500 p-6">裝備清單已清空！</p>
-        </div>
-        </div>
+        <div v-show="activeTab === 'checklist'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">旅行裝備清單</h2>
+                 <button @click="showModal('checklist')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-600 mb-4 p-2 border-l-4 border-nordic-accent bg-nordic-light/50">記得勾選已放入行李箱的物品！</p>
+            
+            <div class="space-y-3">
+                <div v-for="item in travelChecklist" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-dark" :class="{'opacity-50 line-through bg-gray-50/50 border-green-400': item.done}">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
+                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
+                    </label>
+                    <div class="flex items-center space-x-2">
+                        <span v-if="item.notes" class="text-xs text-gray-400 hidden sm:block">{{ item.notes }}</span>
+                        <button @click="deleteItem('checklist', item.id)" class="text-gray-400 hover:text-red-500 p-2 delete-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .527a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.14-2.003-2.245a48.156 48.156 0 0 0-4.008 0c-1.093.106-2.003 1.144-2.003 2.245v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <p v-if="travelChecklist.length === 0" class="text-center text-gray-500 p-6">裝備清單已清空！</p>
+        </div>
+        </div>
 
-    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8 z-30" v-if="travelDates.length">
-        <div class="flex justify-around text-gray-500">
-            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-                :class="{'text-nordic-dark font-bold': activeTab === tab.id, 'hover:text-nordic-blue': activeTab !== tab.id}"
-                class="flex flex-col items-center text-xs transition-colors p-1"
-            >
-                <span class="tab-icon" v-html="tab.icon"></span>
-                <span>{{ tab.name }}</span>
-            </button>
-        </div>
-    </div>
+    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8 z-30" v-if="travelDates.length">
+        <div class="flex justify-around text-gray-500">
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                :class="{'text-nordic-dark font-bold': activeTab === tab.id, 'hover:text-nordic-blue': activeTab !== tab.id}"
+                class="flex flex-col items-center text-xs transition-colors p-1"
+            >
+                <span class="tab-icon" v-html="tab.icon"></span>
+                <span>{{ tab.name }}</span>
+            </button>
+        </div>
+    </div>
 
-    <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-nordic-dark">
-                {{ modalTitle }}
-            </h3>
-            
-            <div v-if="modalType === 'accounting'">
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">項目</label>
-                    <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 晚餐費用">
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">金額 (NT$)</label>
-                    <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
-                </div>
-            </div>
+    <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-nordic-dark">
+                {{ modalTitle }}
+            </h3>
+            
+            <div v-if="modalType === 'accounting'">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">項目</label>
+                    <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 晚餐費用">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">金額 (NT$)</label>
+                    <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
+                </div>
+            </div>
 
-            <div v-else-if="modalType === 'shopping' || modalType === 'checklist'">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">{{ modalType === 'shopping' ? '待買項目' : '裝備名稱' }}</label>
-                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 芬蘭刀/厚毛襪">
-                </div>
-            </div>
+            <div v-else-if="modalType === 'shopping' || modalType === 'checklist'">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">{{ modalType === 'shopping' ? '待買項目' : '裝備名稱' }}</label>
+                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 芬蘭刀/厚毛襪">
+                </div>
+            </div>
 
-            <div class="flex justify-end space-x-3 mt-6">
-                <button @click="isModalOpen = false" class="px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">取消</button>
-                <button @click="saveItem" class="modal-save-button px-4 py-2 bg-nordic-dark text-white rounded-lg hover:bg-nordic-blue hover:text-nordic-dark transition-colors font-semibold">儲存</button>
-            </div>
-        </div>
-    </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button @click="isModalOpen = false" class="px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">取消</button>
+                <button @click="saveItem" class="px-4 py-2 bg-nordic-dark text-white rounded-lg hover:bg-nordic-blue hover:text-nordic-dark transition-colors font-semibold">儲存</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -414,571 +315,561 @@ const { createApp, ref, computed, nextTick, watch } = Vue
 const EXCHANGE_RATE = 36.3; // 1 EUR ≈ 36.3 TWD
 const TWD_SYMBOL = 'NT$';
 const CITY_MAP = {
-    '2025-12-19': '台北/飛機上',
-    '2025-12-20': '赫爾辛基',
-    '2025-12-21': '赫爾辛基/夜火車',
-    '2025-12-22': '羅瓦涅米',
-    '2025-12-23': '羅瓦涅米',
-    '2025-12-24': '特羅姆瑟',
-    '2025-12-25': '特羅姆瑟',
-    '2025-12-26': '特羅姆瑟',
-    '2025-12-27': '哥本哈根',
-    '2025-12-28': '哥本哈根',
-    '2025-12-29': '哥本哈根/斯德哥爾摩',
-    '2025-12-30': '斯德哥爾摩',
-    '2026-01-01': '斯德哥爾摩',
-    '2026-01-02': '斯德哥爾摩/飛機上',
-    '2026-01-03': '杜拜/飛機上',
+    '2025-12-19': '台北/飛機上',
+    '2025-12-20': '赫爾辛基',
+    '2025-12-21': '赫爾辛基/夜火車',
+    '2025-12-22': '羅瓦涅米',
+    '2025-12-23': '羅瓦涅米',
+    '2025-12-24': '特羅姆瑟',
+    '2025-12-25': '特羅姆瑟',
+    '2025-12-26': '特羅姆瑟',
+    '2025-12-27': '哥本哈根',
+    '2025-12-28': '哥本哈根',
+    '2025-12-29': '哥本哈根/斯德哥爾摩',
+    '2025-12-30': '斯德哥爾摩',
+    '2025-12-31': '斯德哥爾摩',
+    '2026-01-01': '斯德哥爾摩',
+    '2026-01-02': '斯德哥爾摩/飛機上',
+    '2026-01-03': '杜拜/飛機上',
 };
 
 
 let appInstance = null;
-let googleMapsLoaded = ref(false); 
-let mapInitialized = false; 
-let appReadyToDisplay = false; 
+let googleMapsLoaded = ref(false); 
+let mapInitialized = false; 
+let appReadyToDisplay = false; 
 
 window.initApp = function() {
-    googleMapsLoaded.value = true;
-    if (appInstance) {
-        if (appInstance.activeTab === 'map' && !mapInitialized) {
-             nextTick(() => appInstance.initMap());
-        }
-    } else {
-        mountVueApp();
-    }
+    googleMapsLoaded.value = true;
+    if (appInstance) {
+        if (appInstance.activeTab === 'map' && !mapInitialized) {
+             nextTick(() => appInstance.initMap());
+        }
+    } else {
+        mountVueApp();
+    }
 }
 
 function initMap() {
-    if (!googleMapsLoaded.value) {
-        return;
-    }
-    
-    const mapElement = document.getElementById('googleMap');
-    if (typeof google === 'undefined' || !mapElement) return;
+    if (!googleMapsLoaded.value) {
+        return;
+    }
+    
+    const mapElement = document.getElementById('googleMap');
+    if (typeof google === 'undefined' || !mapElement) return;
 
-    const locations = appInstance.currentItinerary.filter(item => item.lat && item.lng);
-    // 北歐中心點 (挪威/瑞典之間)
-    let center = { lat: 60.12816, lng: 18.6435 }; 
-    let zoom = 5;
+    const locations = appInstance.currentItinerary.filter(item => item.lat && item.lng);
+    // 北歐中心點 (挪威/瑞典之間)
+    let center = { lat: 60.12816, lng: 18.6435 }; 
+    let zoom = 5;
 
-    if (locations.length > 0) {
-        center = { lat: locations[0].lat, lng: locations[0].lng };
-        zoom = 12;
-    }
-    
-    const markerColor = '#014F86'; // 使用 Nordic Dark 作為標記顏色
+    if (locations.length > 0) {
+        center = { lat: locations[0].lat, lng: locations[0].lng };
+        zoom = 12;
+    }
+    
+    const markerColor = '#014F86'; // 使用 Nordic Dark 作為標記顏色
 
-    if (!mapInitialized) {
-        appInstance.map = new google.maps.Map(mapElement, {
-            zoom: zoom,
-            center: center,
-            mapId: "DEMO_MAP_ID" 
-        });
-        mapInitialized = true;
-    } else {
-        appInstance.map.setCenter(center);
-        appInstance.map.setZoom(zoom);
-    }
-    
-    if (appInstance.markers) {
-        appInstance.markers.forEach(marker => marker.setMap(null));
-    }
-    appInstance.markers = [];
+    if (!mapInitialized) {
+        appInstance.map = new google.maps.Map(mapElement, {
+            zoom: zoom,
+            center: center,
+            mapId: "DEMO_MAP_ID" 
+        });
+        mapInitialized = true;
+    } else {
+        appInstance.map.setCenter(center);
+        appInstance.map.setZoom(zoom);
+    }
+    
+    if (appInstance.markers) {
+        appInstance.markers.forEach(marker => marker.setMap(null));
+    }
+    appInstance.markers = [];
 
-    locations.forEach((item, index) => {
-        const marker = new google.maps.Marker({
-            position: { lat: item.lat, lng: item.lng },
-            map: appInstance.map,
-            title: `${index + 1}. ${item.location}`,
-            label: (index + 1).toString(),
-            icon: {
-                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg width="24" height="24" viewBox="0 0 24 24" fill="${markerColor}" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="${markerColor}"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></svg>`),
-                scaledSize: new google.maps.Size(24, 24)
-            }
-        });
-        appInstance.markers.push(marker);
-    });
+    locations.forEach((item, index) => {
+        const marker = new google.maps.Marker({
+            position: { lat: item.lat, lng: item.lng },
+            map: appInstance.map,
+            title: `${index + 1}. ${item.location}`,
+            label: (index + 1).toString(),
+            icon: {
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg width="24" height="24" viewBox="0 0 24 24" fill="${markerColor}" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="${markerColor}"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></svg>`),
+                scaledSize: new google.maps.Size(24, 24)
+            }
+        });
+        appInstance.markers.push(marker);
+    });
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-                
-                new google.maps.Marker({
-                    position: pos,
-                    map: appInstance.map,
-                    title: 'Your Location',
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: '#EA4335',
-                        fillOpacity: 1,
-                        strokeColor: '#fff',
-                        strokeWeight: 2
-                    }
-                });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                
+                new google.maps.Marker({
+                    position: pos,
+                    map: appInstance.map,
+                    title: 'Your Location',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#EA4335',
+                        fillOpacity: 1,
+                        strokeColor: '#fff',
+                        strokeWeight: 2
+                    }
+                });
 
-                if (locations.length === 0) {
-                    appInstance.map.setCenter(pos);
-                    appInstance.map.setZoom(14);
-                }
-            },
-            (error) => {
-                console.error("Geolocation failed:", error);
-            }
-        );
-    }
-    
-    google.maps.event.trigger(mapElement, 'resize');
+                if (locations.length === 0) {
+                    appInstance.map.setCenter(pos);
+                    appInstance.map.setZoom(14);
+                }
+            },
+            (error) => {
+                console.error("Geolocation failed:", error);
+            }
+        );
+    }
+    
+    google.maps.event.trigger(mapElement, 'resize');
 }
 
 // 1. 修正日期為 12/19 - 1/3 (共 16 天)
 function getTravelDates() {
-    const start = new Date('2025-12-19T00:00:00');
-    const end = new Date('2026-01-03T00:00:00');
-    const dates = [];
-    let currentDate = new Date(start);
-    while (currentDate <= end) {
-        // 確保日期是正確格式
-        dates.push(currentDate.toISOString().split('T')[0]);
-        // 增加一天
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return dates;
+    const start = new Date('2025-12-19T00:00:00');
+    const end = new Date('2026-01-03T00:00:00');
+    const dates = [];
+    let currentDate = new Date(start);
+    while (currentDate <= end) {
+        // 確保日期是正確格式
+        dates.push(currentDate.toISOString().split('T')[0]);
+        // 增加一天
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
 }
 
 function showApp() {
-    if (appReadyToDisplay) return;
+    if (appReadyToDisplay) return;
 
-    const appElement = document.getElementById('app');
-    if (appElement) {
-        // 移除隱藏 class，讓應用程式顯示
-        appElement.classList.remove('hidden');
-    }
-    appReadyToDisplay = true;
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        // 移除隱藏 class，讓應用程式顯示
+        appElement.classList.remove('hidden');
+    }
+    appReadyToDisplay = true;
 }
 
 // **定義 SVG 圖標 (Heroicons 2.5, line style)**
 const ICONS = {
-    // 地圖/行程: Globe Alt Icon
-    itinerary: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21v-4.5m0 0V5.25M12 16.5h3.375M12 16.5L10.5 21M12 16.5H8.625M9.75 8.25m1.125 0a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5ZM12 4.5v1.5m-3 0h6m-1.5-1.5a1.5 1.5 0 0 1 1.5 1.5v1.5m-6 0v-1.5a1.5 1.5 0 0 1 1.5-1.5h3m-6 0H9m-3 0a1.5 1.5 0 0 0 1.5 1.5h3.75"/></svg>`,
-    // 地圖: Map Pin Icon
-    map: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>`,
-    // 記帳: Currency Dollar Icon (代表貨幣)
-    accounting: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.01 60.01 0 0 0 10.5.5H12m10.5-11.25H12V12c0 1.295.127 2.583.374 3.824M19.5 16.5l-6-6M4.5 9h9m-9 0a7.5 7.5 0 0 1 7.5-7.5v1.5m-7.5 6v1.5m7.5-7.5a7.5 7.5 0 0 1 7.5 7.5v1.5m-15 3h1.5a7.5 7.5 0 0 0 7.5-7.5v-1.5m-15 3a7.5 7.5 0 0 0 7.5 7.5h1.5M4.5 18.75h15m-15 0a7.5 7.5 0 0 0 7.5 7.5V22.5"/></svg>`,
-    // 購物: Shopping Cart Icon
-    shopping: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.056.832L6.772 17.5c.101.489.546.832 1.056.832H20.25a1.125 1.125 0 0 0 1.12-1.248L19.46 8.423a.975.975 0 0 0-.95-1.075H5.87l-.44-2.126C5.228 4.253 4.8 3 3.636 3H2.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM6.75 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>`,
-    // 裝備清單: Clipboard Document Check Icon (3. 新增圖標)
-    checklist: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-2.25A1.125 1.125 0 0 1 12 7.125v-3.375c0-1.036 1.125-1.5 1.5-1.5h.375c1.036 0 1.5 1.125 1.5 1.5v2.625a3.375 3.375 0 0 0 3.375 3.375h2.25A1.125 1.125 0 0 1 21 12v3.375m-1.5-3.375h-2.25M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm.75-10.5h1.5M12 10.5v1.5M12 10.5h-1.5"/></svg>`,
+    // 地圖/行程: Globe Alt Icon
+    itinerary: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21v-4.5m0 0V5.25M12 16.5h3.375M12 16.5L10.5 21M12 16.5H8.625M9.75 8.25m1.125 0a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5ZM12 4.5v1.5m-3 0h6m-1.5-1.5a1.5 1.5 0 0 1 1.5 1.5v1.5m-6 0v-1.5a1.5 1.5 0 0 1 1.5-1.5h3m-6 0H9m-3 0a1.5 1.5 0 0 0 1.5 1.5h3.75"/></svg>`,
+    // 地圖: Map Pin Icon
+    map: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>`,
+    // 記帳: Currency Dollar Icon (代表貨幣)
+    accounting: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.01 60.01 0 0 0 10.5.5H12m10.5-11.25H12V12c0 1.295.127 2.583.374 3.824M19.5 16.5l-6-6M4.5 9h9m-9 0a7.5 7.5 0 0 1 7.5-7.5v1.5m-7.5 6v1.5m7.5-7.5a7.5 7.5 0 0 1 7.5 7.5v1.5m-15 3h1.5a7.5 7.5 0 0 0 7.5-7.5v-1.5m-15 3a7.5 7.5 0 0 0 7.5 7.5h1.5M4.5 18.75h15m-15 0a7.5 7.5 0 0 0 7.5 7.5V22.5"/></svg>`,
+    // 購物: Shopping Cart Icon
+    shopping: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.056.832L6.772 17.5c.101.489.546.832 1.056.832H20.25a1.125 1.125 0 0 0 1.12-1.248L19.46 8.423a.975.975 0 0 0-.95-1.075H5.87l-.44-2.126C5.228 4.253 4.8 3 3.636 3H2.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM6.75 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>`,
+    // 裝備清單: Clipboard Document Check Icon (3. 新增圖標)
+    checklist: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-2.25A1.125 1.125 0 0 1 12 7.125v-3.375c0-1.036 1.125-1.5 1.5-1.5h.375c1.036 0 1.5 1.125 1.5 1.5v2.625a3.375 3.375 0 0 0 3.375 3.375h2.25A1.125 1.125 0 0 1 21 12v3.375m-1.5-3.375h-2.25M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm.75-10.5h1.5M12 10.5v1.5M12 10.5h-1.5"/></svg>`,
 };
 
 
 function mountVueApp() {
-    const app = createApp({
-        setup() {
-            const tabs = [
-                { id: 'itinerary', name: '行程', icon: ICONS.itinerary },
-                { id: 'map', name: '地圖', icon: ICONS.map },
-                { id: 'accounting', name: '記帳', icon: ICONS.accounting },
-                { id: 'shopping', name: '購物', icon: ICONS.shopping },
-                { id: 'checklist', name: '裝備清單', icon: ICONS.checklist }, // 3. 新增裝備清單 Tab
-            ];
-            const activeTab = ref('itinerary');
-            
-            const travelDates = getTravelDates();
-            const activeDate = ref(travelDates[0]); // 12/19
-            
-            // --- 行程資料 (已更新為您的 16 天北歐行程) ---
-            const itinerary = ref({
-                // Day 1: 12/19 (五) - 台北 ✈ 飛機上
-                '2025-12-19': [
-                    { id: 101, time: '19:00', location: '板橋車站集合', category: '交通', notes: '約20:30前到桃機一航', lat: 25.0135, lng: 121.4654 },
-                    { id: 102, time: '23:05', location: 'TPE台北 ✈ AMS阿姆斯特丹', category: '航班', notes: '華航CI073', lat: 25.0777, lng: 121.2298 },
-                ],
+    const app = createApp({
+        setup() {
+            const tabs = [
+                { id: 'itinerary', name: '行程', icon: ICONS.itinerary },
+                { id: 'map', name: '地圖', icon: ICONS.map },
+                { id: 'accounting', name: '記帳', icon: ICONS.accounting },
+                { id: 'shopping', name: '購物', icon: ICONS.shopping },
+                { id: 'checklist', name: '裝備清單', icon: ICONS.checklist }, // 3. 新增裝備清單 Tab
+            ];
+            const activeTab = ref('itinerary');
+            
+            const travelDates = getTravelDates();
+            const activeDate = ref(travelDates[0]); // 12/19
+            
+            // --- 行程資料 (已更新為您的 16 天北歐行程) ---
+            const itinerary = ref({
+                // Day 1: 12/19 (五) - 台北 ✈ 飛機上
+                '2025-12-19': [
+                    { id: 101, time: '19:00', location: '板橋車站集合', category: '交通', notes: '約20:30前到桃機一航', lat: 25.0135, lng: 121.4654 },
+                    { id: 102, time: '23:05', location: 'TPE台北 ✈ AMS阿姆斯特丹', category: '航班', notes: '華航CI073', lat: 25.0777, lng: 121.2298 },
+                ],
 
-                // Day 2: 12/20 (六) - 赫爾辛基 (Helsinki, Finland)
-                '2025-12-20': [
-                    { id: 201, time: '07:50', location: '抵達AMS阿姆斯特丹', category: '航班', notes: '轉機 (11:20AMS-14:45HEL)', lat: 52.3086, lng: 4.7643 },
-                    { id: 202, time: '14:45', location: '抵達HEL赫爾辛基機場', category: '航班', notes: '前往住宿 (老人家)', lat: 60.3172, lng: 24.9633 },
-                    { id: 203, time: '16:00', location: '前往住宿 & Check-in', category: '住宿', notes: '老人家住宿、放行李', lat: 60.1741, lng: 24.9442 },
-                    { id: 204, time: '18:30', location: '赫爾辛基聖誕市集', category: '景點', notes: '晚餐與逛街', lat: 60.1685, lng: 24.9525 },
-                    { id: 205, time: '20:30', location: 'Löyly Helsinki 桑拿', category: '景點', notes: '芬蘭浴體驗', lat: 60.1581, lng: 24.9392 },
-                ],
+                // Day 2: 12/20 (六) - 赫爾辛基 (Helsinki, Finland)
+                '2025-12-20': [
+                    { id: 201, time: '07:50', location: '抵達AMS阿姆斯特丹', category: '航班', notes: '轉機 (11:20AMS-14:45HEL)', lat: 52.3086, lng: 4.7643 },
+                    { id: 202, time: '14:45', location: '抵達HEL赫爾辛基機場', category: '航班', notes: '前往住宿 (老人家)', lat: 60.3172, lng: 24.9633 },
+                    { id: 203, time: '16:00', location: '前往住宿 & Check-in', category: '住宿', notes: '老人家住宿、放行李', lat: 60.1741, lng: 24.9442 },
+                    { id: 204, time: '18:30', location: '赫爾辛基聖誕市集', category: '景點', notes: '晚餐與逛街', lat: 60.1685, lng: 24.9525 },
+                    { id: 205, time: '20:30', location: 'Löyly Helsinki 桑拿', category: '景點', notes: '芬蘭浴體驗', lat: 60.1581, lng: 24.9392 },
+                ],
 
-                // Day 3: 12/21 (日) - 赫爾辛基 🚄 夜舖火車
-                '2025-12-21': [
-                    { id: 301, time: '10:00', location: 'Temppeliaukio Church (岩石教堂)', category: '景點', notes: '早午餐後參觀', lat: 60.1729, lng: 24.9329 },
-                    { id: 302, time: '13:00', location: 'Oodi Central Library', category: '景點', notes: '現代圖書館設計', lat: 60.1741, lng: 24.9382 },
-                    { id: 303, time: '15:00', location: 'Marimekko Outlet Herttoniemi', category: '購物', notes: '芬蘭設計品牌', lat: 60.2001, lng: 25.0210 },
-                    { id: 304, time: '22:00', location: 'Helsinki Central Station', category: '交通', notes: '準備搭乘夜舖火車', lat: 60.1717, lng: 24.9415 },
-                    { id: 305, time: '23:13', location: '夜舖火車前往羅瓦涅米', category: '交通', notes: '在火車上過夜', lat: 60.1717, lng: 24.9415 },
-                ],
+                // Day 3: 12/21 (日) - 赫爾辛基 🚄 夜舖火車
+                '2025-12-21': [
+                    { id: 301, time: '10:00', location: 'Temppeliaukio Church (岩石教堂)', category: '景點', notes: '早午餐後參觀', lat: 60.1729, lng: 24.9329 },
+                    { id: 302, time: '13:00', location: 'Oodi Central Library', category: '景點', notes: '現代圖書館設計', lat: 60.1741, lng: 24.9382 },
+                    { id: 303, time: '15:00', location: 'Marimekko Outlet Herttoniemi', category: '購物', notes: '芬蘭設計品牌', lat: 60.2001, lng: 25.0210 },
+                    { id: 304, time: '22:00', location: 'Helsinki Central Station', category: '交通', notes: '準備搭乘夜舖火車', lat: 60.1717, lng: 24.9415 },
+                    { id: 305, time: '23:13', location: '夜舖火車前往羅瓦涅米', category: '交通', notes: '在火車上過夜', lat: 60.1717, lng: 24.9415 },
+                ],
 
-                // Day 4: 12/22 (一) - 羅瓦涅米 (Rovaniemi, Finland) - 極光區 1/5
-                '2025-12-22': [
-                    { id: 401, time: '10:59', location: '抵達羅瓦涅米火車站', category: '交通', notes: '火車抵達', lat: 66.5055, lng: 25.7335 },
-                    { id: 402, time: '12:00', location: 'Villa Muru Check-in/寄放行李', category: '住宿', notes: 'KW 訂的住宿', lat: 66.5020, lng: 25.7250 },
-                    { id: 403, time: '14:00', location: '聖誕老人村 (Santa Claus Village)', category: '景點', notes: '跨越北極圈線、找聖誕老人', lat: 66.5434, lng: 25.8491 },
-                    { id: 404, time: '17:00', location: '馴鹿雪橇體驗', category: '景點', notes: '要搭的人搭', lat: 66.5434, lng: 25.8491 },
-                    { id: 405, time: '20:00', location: '極光團 (Get your guide)', category: '景點', notes: '已預訂', lat: 66.5000, lng: 25.7500 },
-                ],
+                // Day 4: 12/22 (一) - 羅瓦涅米 (Rovaniemi, Finland)
+                '2025-12-22': [
+                    { id: 401, time: '10:59', location: '抵達羅瓦涅米火車站', category: '交通', notes: '火車抵達', lat: 66.5055, lng: 25.7335 },
+                    { id: 402, time: '12:00', location: 'Villa Muru Check-in/寄放行李', category: '住宿', notes: 'KW 訂的住宿', lat: 66.5020, lng: 25.7250 },
+                    { id: 403, time: '14:00', location: '聖誕老人村 (Santa Claus Village)', category: '景點', notes: '跨越北極圈線、找聖誕老人', lat: 66.5434, lng: 25.8491 },
+                    { id: 404, time: '17:00', location: '馴鹿雪橇體驗', category: '景點', notes: '要搭的人搭', lat: 66.5434, lng: 25.8491 },
+                    { id: 405, time: '20:00', location: '極光團 (Get your guide)', category: '景點', notes: '已預訂', lat: 66.5000, lng: 25.7500 },
+                ],
 
-                // Day 5: 12/23 (二) - 羅瓦涅米 - 極光區 2/5
-                '2025-12-23': [
-                    { id: 501, time: '09:00', location: 'Villa Muru 住宿', category: '住宿', notes: '早餐自己煮、玩雪、港口走走', lat: 66.5020, lng: 25.7250 },
-                    { id: 502, time: '13:00', location: '最北麥當勞', category: '美食', notes: '打卡紀念', lat: 66.4950, lng: 25.7340 },
-                    { id: 503, time: '21:00', location: '極光團 (Get Your Guide by KW)', category: '景點', notes: '會派車來民宿接人', lat: 66.5020, lng: 25.7250 },
-                ],
-                
-                // Day 6: 12/24 (三) - 特羅姆瑟 (Tromsø, Norway) - 極光區 3/5
-                '2025-12-24': [
-                    { id: 601, time: '07:00', location: '羅瓦涅米機場 (RVN)', category: '交通', notes: '準備搭機', lat: 66.5615, lng: 25.8304 },
-                    { id: 602, time: '10:00', location: 'RVN ✈ TOS (經 HEL)', category: '航班', notes: '挪威航空', lat: 66.5615, lng: 25.8304 },
-                    { id: 603, time: '14:00', location: '抵達特羅姆瑟機場', category: '航班', notes: '搭乘 Flybussen 前往市區', lat: 69.6833, lng: 18.9167 },
-                    { id: 604, time: '16:00', location: '特羅姆瑟市區住宿 Check-in', category: '住宿', notes: 'Airbnb', lat: 69.6502, lng: 18.9504 },
-                    { id: 605, time: '19:00', location: '特羅姆瑟纜車 (Fjellheisen)', category: '景點', notes: '山頂看夜景/極光', lat: 69.6533, lng: 19.0069 },
-                ],
+                // Day 5: 12/23 (二) - 羅瓦涅米
+                '2025-12-23': [
+                    { id: 501, time: '09:00', location: 'Villa Muru 住宿', category: '住宿', notes: '早餐自己煮、玩雪、港口走走', lat: 66.5020, lng: 25.7250 },
+                    { id: 502, time: '13:00', location: '最北麥當勞', category: '美食', notes: '打卡紀念', lat: 66.4950, lng: 25.7340 },
+                    { id: 503, time: '21:00', location: '極光團 (Get Your Guide by KW)', category: '景點', notes: '會派車來民宿接人', lat: 66.5020, lng: 25.7250 },
+                ],
 
-                // Day 7: 12/25 (四) - 特羅姆瑟 - 極光區 4/5
-                '2025-12-25': [
-                    { id: 701, time: '11:00', location: '北極教堂 (Arctic Cathedral)', category: '景點', notes: '聖誕節活動', lat: 69.6547, lng: 18.9818 },
-                    { id: 702, time: '13:00', location: 'Polaria 北極體驗館', category: '景點', notes: '看海豹', lat: 69.6481, lng: 18.9546 },
-                    { id: 703, time: '18:00', location: '聖誕大餐 (預訂)', category: '美食', notes: '聖誕節餐廳選擇少，需提前預訂', lat: 69.6502, lng: 18.9504 },
-                    { id: 704, time: '22:00', location: '極光郵輪 (Aurora Cruise)', category: '景點', notes: '出海追光', lat: 69.6502, lng: 18.9504 },
-                ],
+                // Day 6: 12/24 (三) - 特羅姆瑟 (Tromsø, Norway)
+                '2025-12-24': [
+                    { id: 601, time: '07:00', location: '羅瓦涅米機場 (RVN)', category: '交通', notes: '準備搭機', lat: 66.5615, lng: 25.8304 },
+                    { id: 602, time: '09:30', location: '抵達TOS特羅姆瑟機場', category: '航班', notes: '09:10 RVN-09:30 TOS (AY541)', lat: 69.6917, lng: 18.9189 },
+                    { id: 603, time: '11:00', location: 'Airbnb (Tromsø) Check-in', category: '住宿', notes: 'Kyle 訂的住宿', lat: 69.6500, lng: 18.9500 },
+                    { id: 604, time: '13:00', location: 'Kaffebønna 買麵包', category: '美食', notes: '午餐', lat: 69.6510, lng: 18.9510 },
+                    { id: 605, time: '14:30', location: 'Fjellheisen 纜車', category: '景點', notes: '可俯瞰市區', lat: 69.6738, lng: 18.9953 },
+                    { id: 606, time: '17:00', location: 'Prestvannet Lake / Strøget', category: '景點', notes: '市區自由逛街', lat: 69.6558, lng: 18.9546 },
+                ],
 
-                // Day 8: 12/26 (五) - 特羅姆瑟 - 極光區 5/5
-                '2025-12-26': [
-                    { id: 801, time: '10:00', location: '特羅姆瑟大學博物館 (UiT)', category: '景點', notes: '瞭解薩米文化', lat: 69.6559, lng: 18.9482 },
-                    { id: 802, time: '14:00', location: '參觀特羅姆瑟圖書館', category: '景點', notes: '建築設計很美', lat: 69.6515, lng: 18.9555 },
-                    { id: 803, time: '18:00', location: '晚餐: Sjel Mat & Vin', category: '美食', notes: '當地特色料理', lat: 69.6508, lng: 18.9580 },
-                    { id: 804, time: '22:00', location: '特羅姆瑟戶外極光觀察點', category: '景點', notes: '若前幾天沒看到，這是最後機會', lat: 69.6502, lng: 18.9504 },
-                ],
+                // Day 7: 12/25 (四) - 特羅姆瑟
+                '2025-12-25': [
+                    { id: 701, time: '10:00', location: '狗拉雪橇體驗', category: '景點', notes: '已訂-Get your guide', lat: 69.6500, lng: 18.9500 },
+                    { id: 702, time: '16:00', location: 'Tøllefsenhjørnet 咖啡廳休息', category: '美食', notes: '聖誕節氣氛', lat: 69.6517, lng: 18.9555 },
+                    { id: 703, time: '21:00', location: '極光團', category: '景點', notes: '已訂-Get your guide', lat: 69.6500, lng: 18.9500 },
+                ],
 
-                // Day 9: 12/27 (六) - 哥本哈根 (Copenhagen, Denmark)
-                '2025-12-27': [
-                    { id: 901, time: '08:00', location: '特羅姆瑟機場 (TOS)', category: '交通', notes: '準備搭機', lat: 69.6833, lng: 18.9167 },
-                    { id: 902, time: '12:00', location: 'TOS ✈ CPH (轉機)', category: '航班', notes: '挪威航空', lat: 55.6179, lng: 12.6559 },
-                    { id: 903, time: '15:00', location: '抵達哥本哈根機場 (CPH)', category: '航班', notes: '搭火車/地鐵前往市區', lat: 55.6179, lng: 12.6559 },
-                    { id: 904, time: '17:00', location: '住宿 Check-in (近中央車站)', category: '住宿', notes: '放行李休息', lat: 55.6759, lng: 12.5655 },
-                    { id: 905, time: '19:00', location: '晚餐: Torvehallerne 市集', category: '美食', notes: '丹麥美食市集', lat: 55.6839, lng: 12.5695 },
-                ],
+                // Day 8: 12/26 (五) - 特羅姆瑟
+                '2025-12-26': [
+                    { id: 801, time: '11:00', location: 'Koseverden&KoseligCafe 早午餐', category: '美食', notes: '怕前一天極光搞太晚', lat: 69.6505, lng: 18.9520 },
+                    { id: 802, time: '13:00', location: '特羅姆瑟圖書館', category: '景點', notes: '市區走走', lat: 69.6486, lng: 18.9575 },
+                    { id: 803, time: '16:00', location: '熱狗堡店 / 羊毛氈禮品店', category: '購物', notes: '購買紀念品', lat: 69.6500, lng: 18.9530 },
+                ],
 
-                // Day 10: 12/28 (日) - 哥本哈根
-                '2025-12-28': [
-                    { id: 1001, time: '10:00', location: '新港 (Nyhavn)', category: '景點', notes: '彩色房子、搭運河船', lat: 55.6787, lng: 12.5912 },
-                    { id: 1002, time: '13:00', location: '小美人魚像 (The Little Mermaid)', category: '景點', notes: '拍照打卡', lat: 55.6931, lng: 12.5992 },
-                    { id: 1003, time: '15:00', location: 'Tivoli Gardens (蒂沃利花園)', category: '景點', notes: '聖誕節活動', lat: 55.6757, lng: 12.5663 },
-                    { id: 1004, time: '19:00', location: '晚餐: Noma (若有訂到)', category: '美食', notes: '世界頂級餐廳，高價位', lat: 55.6888, lng: 12.5959 },
-                ],
+                // Day 9: 12/27 (六) - 哥本哈根 (Copenhagen, Denmark)
+                '2025-12-27': [
+                    { id: 901, time: '10:00', location: '特羅姆瑟機場 (TOS)', category: '交通', notes: '前往機場', lat: 69.6917, lng: 18.9189 },
+                    { id: 902, time: '14:40', location: '抵達CPH哥本哈根機場', category: '航班', notes: '12:05 TOS-14:40 CPH (SK4451)', lat: 55.6268, lng: 12.6558 },
+                    { id: 903, time: '16:00', location: 'Nørreport Station 寄放行李', category: '交通', notes: '在 TorvehallerneKBH 市場買午餐', lat: 55.6830, lng: 12.5684 },
+                    { id: 904, time: '17:00', location: 'Tivoli Gardens (聖誕樂園)', category: '景點', notes: '已訂門票', lat: 55.6736, lng: 12.5675 },
+                    { id: 905, time: '23:00', location: 'Tivoli 聖誕煙火', category: '景點', notes: '23:00~00:00', lat: 55.6736, lng: 12.5675 },
+                ],
 
-                // Day 11: 12/29 (一) - 哥本哈根 🚢 斯德哥爾摩
-                '2025-12-29': [
-                    { id: 1101, time: '10:00', location: '圓塔 (Rundetaarn)', category: '景點', notes: '登高望遠', lat: 55.6834, lng: 12.5786 },
-                    { id: 1102, time: '12:00', location: 'Strøget 購物街', category: '購物', notes: '購買丹麥設計紀念品', lat: 55.6782, lng: 12.5700 },
-                    { id: 1103, time: '16:00', location: '中央車站/碼頭', category: '交通', notes: '準備搭乘郵輪', lat: 55.6759, lng: 12.5655 },
-                    { id: 1104, time: '17:00', location: '郵輪前往斯德哥爾摩 (過夜)', category: '交通', notes: 'DFDS Seaways', lat: 55.6888, lng: 12.6074 },
-                ],
+                // Day 10: 12/28 (日) - 哥本哈根
+                '2025-12-28': [
+                    { id: 1001, time: '10:00', location: 'Nyhavn 新港', category: '景點', notes: 'La cabra 外帶咖啡', lat: 55.6816, lng: 12.5878 },
+                    { id: 1002, time: '11:45', location: 'Amalienborg Palace 衛兵交接', category: '景點', notes: '卡前排觀看', lat: 55.6837, lng: 12.5973 },
+                    { id: 1003, time: '13:00', location: 'Den Lille Havfrue (小美人魚)', category: '景點', notes: '丹麥標誌', lat: 55.6942, lng: 12.5992 },
+                    { id: 1004, time: '14:30', location: 'The Royal Library (黑鑽石)', category: '景點', notes: '5F空中走廊拍照', lat: 55.6729, lng: 12.5843 },
+                    { id: 1005, time: '16:00', location: 'Goboat 租船體驗', category: '景點', notes: '預計訂 12:30-13:30 (確認時間)', lat: 55.6728, lng: 12.5866 },
+                    { id: 1006, time: '18:30', location: 'Gasoline Grill 漢堡', category: '美食', notes: '晚餐', lat: 55.6811, lng: 12.5828 },
+                ],
 
-                // Day 12: 12/30 (二) - 斯德哥爾摩 (Stockholm, Sweden)
-                '2025-12-30': [
-                    { id: 1201, time: '10:00', location: '抵達斯德哥爾摩/碼頭', category: '交通', notes: '郵輪抵達', lat: 59.3374, lng: 18.0877 },
-                    { id: 1202, time: '12:00', location: '斯德哥爾摩住宿 Check-in', category: '住宿', notes: '放行李', lat: 59.3325, lng: 18.0673 },
-                    { id: 1203, time: '14:00', location: '舊城區 (Gamla Stan)', category: '景點', notes: '王宮、諾貝爾博物館', lat: 59.3293, lng: 18.0686 },
-                    { id: 1204, time: '18:00', location: '晚餐: Pelikan 瑞典菜', category: '美食', notes: '傳統瑞典肉丸', lat: 59.3175, lng: 18.0772 },
-                ],
+                // Day 11: 12/29 (一) - 哥本哈根 ✈ 斯德哥爾摩
+                '2025-12-29': [
+                    { id: 1101, time: '09:00', location: 'hart / Andersen Bakery', category: '美食', notes: '早餐', lat: 55.6816, lng: 12.5846 },
+                    { id: 1102, time: '11:00', location: 'ILLUM / ILLUMS Bolighus 購物', category: '購物', notes: '逛街', lat: 55.6784, lng: 12.5786 },
+                    { id: 1103, time: '16:00', location: 'Københavns Lufthavn (CPH)', category: '交通', notes: '前往機場', lat: 55.6268, lng: 12.6558 },
+                    { id: 1104, time: '20:15', location: '抵達ARN斯德哥爾摩機場', category: '航班', notes: '19:00 CPH-20:15 ARN (SK1430)', lat: 59.6519, lng: 17.9186 },
+                    { id: 1105, time: '21:30', location: 'Stockholm C & Hobo Hotel Check-in', category: '住宿', notes: '搭機場快線', lat: 59.3302, lng: 18.0622 },
+                ],
 
-                // Day 13: 12/31 (三) - 斯德哥爾摩
-                '2025-12-31': [
-                    { id: 1301, time: '10:00', location: '瓦薩沉船博物館 (Vasamuseet)', category: '景點', notes: '參觀17世紀古戰船', lat: 59.3281, lng: 18.0901 },
-                    { id: 1302, time: '13:00', location: '斯堪森露天博物館 (Skansen)', category: '景點', notes: '動物園+歷史建築', lat: 59.3248, lng: 18.1065 },
-                    { id: 1303, time: '20:00', location: '新年前夜晚餐/活動', category: '景點', notes: '斯堪森露天博物館的跨年活動', lat: 59.3248, lng: 18.1065 },
-                ],
+                // Day 12: 12/30 (二) - 斯德哥爾摩 (Stockholm, Sweden)
+                '2025-12-30': [
+                    { id: 1201, time: '09:00', location: 'Skeppsbro Bakery 早餐', category: '美食', notes: '渡輪碼頭附近', lat: 59.3248, lng: 18.0772 },
+                    { id: 1202, time: '10:30', location: 'Slussen 搭 82號渡輪', category: '交通', notes: '前往動物園島 (Djurgården)', lat: 59.3197, lng: 18.0718 },
+                    { id: 1203, time: '11:30', location: 'Skansen 戶外博物館', category: '景點', notes: '已訂門票', lat: 59.3274, lng: 18.1065 },
+                    { id: 1204, time: '14:30', location: '瓦薩沈船博物館 (Vasa Museum)', category: '景點', notes: '必看景點', lat: 59.3281, lng: 18.0903 },
+                    { id: 1205, time: '18:00', location: 'Nobis-NOI 晚餐', category: '美食', notes: '已排候補 18:00-19:00', lat: 59.3338, lng: 18.0683 },
+                ],
 
-                // Day 14: 01/01 (四) - 斯德哥爾摩
-                '2026-01-01': [
-                    { id: 1401, time: '11:00', location: '市區閒逛/休息', category: '景點', notes: '新年許多店鋪休息', lat: 59.3325, lng: 18.0673 },
-                    { id: 1402, time: '14:00', location: '斯德哥爾摩地鐵站藝術', category: '景點', notes: 'T-Centralen, Kungsträdgården', lat: 59.3314, lng: 18.0583 },
-                    { id: 1403, time: '18:00', location: '晚餐: Kajsas Fisk', category: '美食', notes: '海鮮湯', lat: 59.3333, lng: 18.0645 },
-                ],
+                // 1. 行程數據補齊 - Day 13: 12/31 (三) - 斯德哥爾摩 (跨年)
+                '2025-12-31': [
+                    { id: 1301, time: '10:00', location: '老城區 (Gamla Stan)', category: '景點', notes: '大廣場、諾貝爾博物館', lat: 59.3293, lng: 18.0686 },
+                    { id: 1302, time: '13:00', location: '午餐: Aifur Krog & Bar', category: '美食', notes: '維京主題餐廳', lat: 59.3259, lng: 18.0736 },
+                    { id: 1303, time: '16:00', location: 'Åhléns City 購物中心', category: '購物', notes: '採買跨年用品', lat: 59.3330, lng: 18.0642 },
+                    { id: 1304, time: '21:00', location: 'Skansen 跨年慶祝活動', category: '景點', notes: '戶外觀賞煙火', lat: 59.3274, lng: 18.1065 },
+                ],
+                
+                // 1. 行程數據補齊 - Day 14: 01/01 (四) - 斯德哥爾摩 (新年)
+                '2026-01-01': [
+                    { id: 1401, time: '11:00', location: 'Hobo Hotel 早餐/休息', category: '住宿', notes: '跨年後睡晚一點', lat: 59.3302, lng: 18.0622 },
+                    { id: 1402, time: '14:00', location: 'Stortorget (大廣場)', category: '景點', notes: '新年氣氛', lat: 59.3292, lng: 18.0713 },
+                    { id: 1403, time: '16:00', location: 'Fotografiska 攝影博物館', category: '景點', notes: '室內避寒', lat: 59.3175, lng: 18.0847 },
+                    { id: 1404, time: '19:00', location: 'Supper Club Södermalm', category: '美食', notes: '新年晚餐', lat: 59.3168, lng: 18.0720 },
+                ],
 
-                // Day 15: 01/02 (五) - 斯德哥爾摩 ✈ 飛機上
-                '2026-01-02': [
-                    { id: 1501, time: '10:00', location: '北歐設計/紀念品購物', category: '購物', notes: '把握最後機會', lat: 59.3325, lng: 18.0673 },
-                    { id: 1502, time: '14:00', location: '前往 ARN 斯德哥爾摩機場', category: '交通', notes: '搭乘 Arlanda Express', lat: 59.6496, lng: 17.9255 },
-                    { id: 1503, time: '18:35', location: 'ARN 斯德哥爾摩 ✈ DXB 杜拜', category: '航班', notes: '阿聯酋航空', lat: 59.6496, lng: 17.9255 },
-                ],
+                // 1. 行程數據補齊 - Day 15: 01/02 (五) - 斯德哥爾摩 ✈ 飛機上
+                '2026-01-02': [
+                    { id: 1501, time: '09:00', location: 'Hobo Hotel Check-out', category: '住宿', notes: '整理行李', lat: 59.3302, lng: 18.0622 },
+                    { id: 1502, time: '11:00', location: '斯德哥爾摩中央車站', category: '交通', notes: '搭乘 Arlanda Express 前往機場', lat: 59.3302, lng: 18.0622 },
+                    { id: 1503, time: '12:30', location: 'ARN機場報到/退稅', category: '交通', notes: '逛免稅店', lat: 59.6519, lng: 17.9186 },
+                    { id: 1504, time: '15:15', location: 'ARN ✈ DXB 杜拜', category: '航班', notes: '阿聯酋 EK158', lat: 59.6519, lng: 17.9186 },
+                ],
 
-                // Day 16: 01/03 (六) - 杜拜 ✈ 台北
-                '2026-01-03': [
-                    { id: 1601, time: '03:15', location: '抵達 DXB 杜拜機場', category: '航班', notes: '轉機 (04:45DXB-16:20TPE)', lat: 25.2532, lng: 55.3656 },
-                    { id: 1602, time: '16:20', location: '抵達 TPE 桃園機場', category: '航班', notes: '結束旅行', lat: 25.0777, lng: 121.2298 },
-                ],
-            });
+                // 1. 行程數據補齊 - Day 16: 01/03 (六) - 杜拜 ✈ 台北 (返家)
+                '2026-01-03': [
+                    { id: 1601, time: '00:05', location: '抵達 DXB 杜拜', category: '航班', notes: '轉機 (03:45 DXB-16:20 TPE)', lat: 25.2532, lng: 55.2793 },
+                    { id: 1602, time: '03:45', location: 'DXB ✈ TPE 台北', category: '航班', notes: '阿聯酋 EK366', lat: 25.2532, lng: 55.2793 },
+                    { id: 1603, time: '16:20', location: '抵達 TPE 台北', category: '航班', notes: '行程結束', lat: 25.0777, lng: 121.2298 },
+                ],
 
-            // --- 4. 新增極光預測資料 (羅瓦涅米/特羅姆瑟) ---
-            const auroraForecast = {
-                '2025-12-22': { kp: 3.3, time: '21:00 - 01:00' }, // 羅瓦涅米 (Rovaniemi, 芬蘭)
-                '2025-12-23': { kp: 4.7, time: '22:30 - 02:30' }, // 羅瓦涅米 (Rovaniemi, 芬蘭)
-                '2025-12-24': { kp: 2.0, time: '20:00 - 00:00' }, // 特羅姆瑟 (Tromsø, 挪威)
-                '2025-12-25': { kp: 5.0, time: '00:00 - 04:00' }, // 特羅姆瑟 (Tromsø, 挪威)
-                '2025-12-26': { kp: 2.8, time: '23:00 - 03:00' }, // 特羅姆瑟 (Tromsø, 挪威)
-            };
+            });
+            // --- 行程資料結束 ---
 
+            // --- 其他資料維持不變 ---
+            const weatherData = ref({ 
+                '2025-12-19': { temp: '18°C', icon: '☁️', desc: '台北陰天' },
+                '2025-12-20': { temp: '-5°C', icon: '❄️', desc: '赫爾辛基降雪' },
+                '2025-12-21': { temp: '-2°C', icon: '🌨️', desc: '赫爾辛基多雲' },
+                '2025-12-22': { temp: '-15°C', icon: '🥶', desc: '羅瓦涅米極冷晴朗' },
+                '2025-12-23': { temp: '-12°C', icon: '🌌', desc: '羅瓦涅米有極光' },
+                '2025-12-24': { temp: '-3°C', icon: '❄️', desc: '特羅姆瑟降雪' },
+                '2025-12-25': { temp: '-6°C', icon: '🌬️', desc: '特羅姆瑟強風' },
+                '2025-12-26': { temp: '-1°C', icon: '☁️', desc: '特羅姆瑟多雲' },
+                '2025-12-27': { temp: '3°C', icon: '☔', desc: '哥本哈根小雨' },
+                '2025-12-28': { temp: '5°C', icon: '🌥️', desc: '哥本哈根多雲' },
+                '2025-12-29': { temp: '2°C', icon: '☁️', desc: '哥本哈根轉機' },
+                '2025-12-30': { temp: '-1°C', icon: '🌫️', desc: '斯德哥爾摩有霧' },
+                '2025-12-31': { temp: '0°C', icon: '🎆', desc: '斯德哥爾摩跨年' },
+                '2026-01-01': { temp: '1°C', icon: '🌤️', desc: '斯德哥爾摩晴朗' },
+                '2026-01-02': { temp: '4°C', icon: '✈️', desc: '飛機上' },
+                '2026-01-03': { temp: '25°C', icon: '☀️', desc: '杜拜轉機/抵台' },
+            });
 
-            // --- 記帳/購物/裝備清單 資料維持不變 ---
-            const expenses = ref([
-                { id: 1, item: '機票 (TPE-HEL-TOS-CPH-ARN-TPE)', amount: 45000, date: '2025-09-01' },
-                { id: 2, item: '芬蘭住宿 (羅瓦涅米)', amount: 15000, date: '2025-10-15' },
-                { id: 3, item: '極光團費用', amount: 8000, date: '2025-12-22' },
-                { id: 4, item: '赫爾辛基晚餐', amount: 1200, date: '2025-12-20' },
-            ]);
-            const shoppingList = ref([
-                { id: 1, name: '極光專用相機腳架', done: true },
-                { id: 2, name: '行動電源 (大容量)', done: false },
-                { id: 3, name: 'Marimekko 托特包', done: false },
-            ]);
-            const travelChecklist = ref([
-                { id: 1, name: '羽絨外套', done: true, notes: '極地專用' },
-                { id: 2, name: '護照/簽證影本', done: true, notes: '' },
-                { id: 3, name: '羊毛衛生衣褲', done: false, notes: '至少兩套' },
-            ]);
-            let nextId = 10;
-            
-            // --- Modal 相關 ---
-            const isModalOpen = ref(false);
-            const modalType = ref(''); // 'accounting', 'shopping', 'checklist'
-            const tempItem = ref({});
+            const expenses = ref([
+                { id: 1, item: '機票 (TPE-HEL-TOS-CPH-ARN-TPE)', amount: 48000, date: '2025-09-01' },
+                { id: 2, item: '赫爾辛基住宿 2晚', amount: 8700, date: '2025-12-20' },
+                { id: 3, item: '羅瓦涅米極光團 (2次)', amount: 12500, date: '2025-12-22' },
+                { id: 4, item: '挪威狗拉雪橇', amount: 8900, date: '2025-12-25' },
+                { id: 5, item: '哥本哈根Tivoli門票', amount: 1076, date: '2025-12-27' },
+            ]);
+            
+            const shoppingList = ref([
+                { id: 100, name: '芬蘭刀', done: false },
+                { id: 101, name: 'Marimekko 馬克杯', done: false },
+                { id: 102, name: '挪威羊毛製品', done: false },
+                { id: 103, name: '丹麥樂高玩具', done: false },
+                { id: 104, name: '瑞典Dalahäst木馬', done: true },
+            ]);
 
-
-            // --- 計算屬性 ---
-            const currentItinerary = computed(() => {
-                return itinerary.value[activeDate.value] || [];
-            });
-
-            const currentCity = computed(() => {
-                return CITY_MAP[activeDate.value] || '未知城市';
-            });
-
-            const totalExpense = computed(() => {
-                return expenses.value.reduce((sum, item) => sum + item.amount, 0);
-            });
-
-            const totalExpenseEUR = computed(() => {
-                return (totalExpense.value / EXCHANGE_RATE).toFixed(2);
-            });
-
-            const modalTitle = computed(() => {
-                if (modalType.value === 'accounting') return '新增旅遊支出';
-                if (modalType.value === 'shopping') return '新增購物清單項目';
-                if (modalType.value === 'checklist') return '新增裝備/打包項目';
-                return '新增項目';
-            });
-            
-            // --- 4.1 新增 isAuroraDate 計算屬性 ---
-            // 判斷當前日期是否在 12/22 到 12/26 之間
-            const isAuroraDate = computed(() => {
-                return activeDate.value >= '2025-12-22' && activeDate.value <= '2025-12-26';
-            });
-
-            // --- 4.2 新增 currentAuroraForecast 計算屬性 ---
-            const currentAuroraForecast = computed(() => {
-                return auroraForecast[activeDate.value] || { kp: 0.0, time: '無預測' };
-            });
-
-
-            // --- 方法 ---
-            function formatDate(dateString) {
-                const parts = dateString.split('-');
-                return `${parts[1]}/${parts[2]}`;
-            }
-            
-            function getKpColor(kpValue) {
-                if (kpValue >= 5) return 'kp-good';
-                if (kpValue >= 3) return 'kp-fair';
-                return 'kp-low';
-            }
-
-            function setActiveDate(date) {
-                activeDate.value = date;
-                // 讓日期選單滑動到可見範圍
-                nextTick(() => {
-                    const container = document.querySelector('.date-scroll-container');
-                    const activeBtn = container.querySelector('.tab-date-active');
-                    if (activeBtn) {
-                        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-                    }
-                });
-            }
-
-            function getCurrentWeather() {
-                // 模擬天氣資料，因為這段程式碼無法連線外部 API
-                const city = currentCity.value.split('/')[0].trim();
-                if (city.includes('赫爾辛基') || city.includes('羅瓦涅米') || city.includes('特羅姆瑟')) {
-                    return { icon: '❄️', temp: '-5°C', desc: '下雪/極寒' };
-                } else if (city.includes('哥本哈根') || city.includes('斯德哥爾摩')) {
-                    return { icon: '☁️', temp: '2°C', desc: '陰天/濕冷' };
-                } else if (city.includes('台北')) {
-                    return { icon: '☔', temp: '18°C', desc: '下雨/舒適' };
-                } else {
-                    return { icon: '☀️', temp: '??°C', desc: '天氣未知' };
-                }
-            }
-
-            function getGoogleMapLink(item) {
-                return `https://www.google.com/maps/search/?api=1&query=${item.location},${item.lat},${item.lng}`;
-            }
-
-            function getMapDirectionsLink() {
-                const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return '#';
-                
-                // 使用第一個地點作為終點的簡單連結
-                const destination = `${locations[0].lat},${locations[0].lng}`;
-                
-                return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
-            }
-
-            function showModal(type) {
-                modalType.value = type;
-                // 重設暫存資料
-                if (type === 'accounting') {
-                    tempItem.value = { item: '', amount: null, date: activeDate.value };
-                } else {
-                    tempItem.value = { name: '', done: false, notes: '' };
-                }
-                isModalOpen.value = true;
-            }
-
-            function saveItem() {
-                if (modalType.value === 'accounting') {
-                    if (!tempItem.value.item || !tempItem.value.amount) {
-                        alert('請輸入項目名稱及金額！');
-                        return;
-                    }
-                    expenses.value.push({
-                        id: nextId++,
-                        item: tempItem.value.item,
-                        amount: Number(tempItem.value.amount),
-                        date: activeDate.value // 記錄當天日期
-                    });
-                } else if (modalType.value === 'shopping') {
-                    if (!tempItem.value.name) {
-                        alert('請輸入待買項目名稱！');
-                        return;
-                    }
-                    shoppingList.value.push({
-                        id: nextId++,
-                        name: tempItem.value.name,
-                        done: false
-                    });
-                } else if (modalType.value === 'checklist') {
-                    if (!tempItem.value.name) {
-                        alert('請輸入裝備名稱！');
-                        return;
-                    }
-                    travelChecklist.value.push({
-                        id: nextId++,
-                        name: tempItem.value.name,
-                        done: false,
-                        notes: ''
-                    });
-                }
-                isModalOpen.value = false;
-            }
-
-            function deleteItem(listType, id) {
-                if (!confirm('確定要刪除此項目嗎？')) return;
-                
-                if (listType === 'itinerary') {
-                    itinerary.value[activeDate.value] = currentItinerary.value.filter(item => item.id !== id);
-                } else if (listType === 'accounting') {
-                    expenses.value = expenses.value.filter(item => item.id !== id);
-                } else if (listType === 'shopping') {
-                    shoppingList.value = shoppingList.value.filter(item => item.id !== id);
-                } else if (listType === 'checklist') {
-                    travelChecklist.value = travelChecklist.value.filter(item => item.id !== id);
-                }
-            }
+            // 3. 新增裝備清單資料結構
+            const travelChecklist = ref([
+                // 衣物 (Clothes)
+                { id: 2001, name: '內衣褲', done: false, notes: '多帶幾件' },
+                { id: 2002, name: '保暖衣物 (發熱衣、褲)', done: false, notes: '極光必備' },
+                { id: 2003, name: '上衣 (長袖/毛衣)', done: false, notes: '' },
+                { id: 2004, name: '下身衣物 (厚褲子/雪褲)', done: false, notes: '' },
+                { id: 2005, name: '睡衣', done: false, notes: '' },
+                { id: 2006, name: '外套 (厚/防水)', done: false, notes: '' },
+                { id: 2007, name: '襪子 (羊毛襪)', done: false, notes: '' },
+                { id: 2008, name: '防水/保暖鞋子', done: false, notes: '' },
+                { id: 2009, name: '泳衣 (桑拿用)', done: false, notes: '' },
+                // 配件 (Accessories)
+                { id: 2010, name: '太陽眼鏡 (雪地用)', done: false, notes: '' },
+                { id: 2011, name: '帽子、圍巾、手套、耳罩', done: false, notes: '保暖三件組' },
+                { id: 2012, name: '包包 (後背包)', done: false, notes: '' },
+                // 個人用品 (Personal Items)
+                { id: 2013, name: '牙刷/牙膏', done: false, notes: '' },
+                { id: 2014, name: '盥洗用品 (小罐裝)', done: false, notes: '' },
+                { id: 2015, name: '保養品/護唇膏/護手霜', done: false, notes: '乾燥氣候必備' },
+                { id: 2016, name: '個人藥品/感冒藥', done: false, notes: '' },
+                // 證件 (Documents)
+                { id: 2017, name: '護照', done: false, notes: '效期半年以上' },
+                { id: 2018, name: '信用卡/現金', done: false, notes: '北歐多用卡' },
+                // 電子產品 (Electronics)
+                { id: 2019, name: '充電器/轉接頭', done: false, notes: '' },
+                { id: 2020, name: '行動電源', done: false, notes: '需放手提行李' },
+                { id: 2021, name: '網卡/eSIM', done: false, notes: '' },
+            ]);
+            // --- 裝備清單資料結束 ---
 
 
-            // --- 監聽器 ---
-            // 切換日期或 tab 時，重新初始化地圖 (以更新標記)
-            watch([activeDate, activeTab], ([newDate, newTab]) => {
-                if (newTab === 'map' && googleMapsLoaded.value) {
-                    nextTick(() => initMap());
-                }
-            }, { immediate: true });
-            
-            // 首次載入完成後顯示 APP
-            nextTick(() => {
-                showApp();
-                // 載入完成後檢查是否需要初始化地圖 (防止 Google Maps 未載入)
-                if (googleMapsLoaded.value && activeTab.value === 'map') {
-                    initMap();
-                }
-            });
+            const isModalOpen = ref(false);
+            const modalType = ref('');
+            const tempItem = ref({});
+            
+            // 地圖相關
+            const map = ref(null);
+            const markers = ref([]);
 
 
-            return {
-                // 資料
-                tabs,
-                activeTab,
-                travelDates,
-                activeDate,
-                expenses,
-                shoppingList,
-                travelChecklist,
-                isModalOpen,
-                modalType,
-                tempItem,
-                isGoogleMapsLoaded: googleMapsLoaded, // 傳遞 ref
-                map: null, // 地圖實例
-                markers: [], // 地圖標記
+            // --- Computed Properties ---
+            const currentItinerary = computed(() => {
+                return itinerary.value[activeDate.value] || [];
+            });
 
-                // 計算屬性
-                currentItinerary,
-                currentCity,
-                totalExpense,
-                totalExpenseEUR,
-                modalTitle,
-                currentMapLink: computed(getMapDirectionsLink), // 動態地圖連結
-                isAuroraDate, // 新增
-                currentAuroraForecast, // 新增
+            const currentCity = computed(() => {
+                return CITY_MAP[activeDate.value] || '未知地點';
+            });
 
-                // 方法
-                formatDate,
-                setActiveDate,
-                getCurrentWeather,
-                getGoogleMapLink,
-                showModal,
-                saveItem,
-                deleteItem,
-                initMap, // 讓外部 window.initApp 可以呼叫
-                getKpColor // 新增
-            };
-        }
-    });
-    
-    appInstance = app.mount('#app');
+            const totalExpense = computed(() => {
+                return expenses.value.reduce((sum, expense) => sum + expense.amount, 0);
+            });
+
+            const totalExpenseEUR = computed(() => {
+                return (totalExpense.value / EXCHANGE_RATE).toFixed(0);
+            });
+
+            const modalTitle = computed(() => {
+                if (modalType.value === 'accounting') return '新增旅費支出';
+                if (modalType.value === 'shopping') return '新增購物清單項目';
+                if (modalType.value === 'checklist') return '新增裝備清單項目';
+                return '新增項目';
+            });
+            
+            const currentMapLink = computed(() => {
+                const locations = currentItinerary.value.filter(item => item.lat && item.lng);
+                if (locations.length === 0) {
+                    // 如果沒有地點，導航到當前城市
+                    const city = CITY_MAP[activeDate.value] || 'Nordic Trip';
+                    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(city)}`;
+                }
+                
+                // 建立多點導航連結 (使用第一個地點作為起點/目的地)
+                const start = locations[0];
+                let destination = `${start.lat},${start.lng}`;
+                
+                // 使用 Google Maps 查詢 API，標記所有地點
+                const markersQuery = locations.map((loc, index) => `${loc.lat},${loc.lng}`).join('|');
+                
+                return `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${markersQuery}`;
+            });
+
+
+            // --- Methods ---
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const dayOfWeek = '日一二三四五六'.charAt(date.getDay());
+                return `${month}/${day} (${dayOfWeek})`;
+            }
+
+            function setActiveDate(date) {
+                activeDate.value = date;
+                // 當切換日期到地圖頁時，需要重新初始化地圖
+                if (activeTab.value === 'map' && googleMapsLoaded.value) {
+                    nextTick(() => initMap());
+                }
+            }
+
+            function getCurrentWeather() {
+                return weatherData.value[activeDate.value] || { temp: '?', icon: '🤷', desc: '無法取得天氣' };
+            }
+            
+            function showModal(type) {
+                modalType.value = type;
+                if (type === 'accounting') {
+                    tempItem.value = { id: Date.now(), item: '', amount: null, date: formatDate(new Date().toISOString().split('T')[0]) };
+                } else if (type === 'shopping' || type === 'checklist') {
+                    tempItem.value = { id: Date.now(), name: '', done: false };
+                }
+                isModalOpen.value = true;
+            }
+
+            function saveItem() {
+                if (modalType.value === 'accounting' && tempItem.value.item && tempItem.value.amount) {
+                    expenses.value.push(tempItem.value);
+                } else if (modalType.value === 'shopping' && tempItem.value.name) {
+                    shoppingList.value.push(tempItem.value);
+                } else if (modalType.value === 'checklist' && tempItem.value.name) { // 3. 新增裝備清單儲存邏輯
+                    travelChecklist.value.push({
+                        id: tempItem.value.id,
+                        name: tempItem.value.name.trim(),
+                        done: false,
+                        notes: '自訂項目' // 預設為自訂項目
+                    });
+                }
+                isModalOpen.value = false;
+            }
+
+            function deleteItem(type, id) {
+                if (type === 'itinerary') {
+                    // 實際應用中，行程項目不建議在客戶端刪除，此處僅為範例
+                    const date = activeDate.value;
+                    const dayItinerary = itinerary.value[date];
+                    if (dayItinerary) {
+                        itinerary.value[date] = dayItinerary.filter(item => item.id !== id);
+                    }
+                } else if (type === 'accounting') {
+                    expenses.value = expenses.value.filter(expense => expense.id !== id);
+                } else if (type === 'shopping') {
+                    shoppingList.value = shoppingList.value.filter(item => item.id !== id);
+                } else if (type === 'checklist') { // 3. 新增裝備清單刪除邏輯
+                    travelChecklist.value = travelChecklist.value.filter(item => item.id !== id);
+                }
+            }
+            
+            // --- Watchers ---
+            watch(activeTab, (newTab) => {
+                if (newTab === 'map' && googleMapsLoaded.value) {
+                    nextTick(() => initMap());
+                }
+            });
+
+            // 初始化時檢查地圖是否已載入
+            if (googleMapsLoaded.value && activeTab.value === 'map') {
+                nextTick(() => initMap());
+            }
+
+            // 初始顯示 App
+            nextTick(() => showApp());
+
+            return {
+                // Data
+                tabs,
+                activeTab,
+                travelDates,
+                activeDate,
+                itinerary,
+                expenses,
+                shoppingList,
+                travelChecklist, // 3. 匯出裝備清單數據
+                isModalOpen,
+                modalType,
+                tempItem,
+                googleMapsLoaded,
+                map,
+                markers,
+                // Computed
+                currentItinerary,
+                currentCity,
+                totalExpense,
+                totalExpenseEUR,
+                modalTitle,
+                currentMapLink,
+                // Methods
+                formatDate,
+                setActiveDate,
+                getCurrentWeather,
+                showModal,
+                saveItem,
+                deleteItem,
+                initMap,
+            }
+        }
+    });
+
+    appInstance = app.mount('#app');
 }
 
-// 確保在 Google Maps API 載入前，APP 也可以先掛載
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-        // Google Maps API 未載入，等待 initApp 呼叫
-        if (!appInstance) mountVueApp();
-    }
-} else {
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-            // Google Maps API 未載入，等待 initApp 呼叫
-            if (!appInstance) mountVueApp();
-        }
-    });
+// 如果 Google Maps API 尚未載入，先掛載 Vue App
+if (typeof google === 'undefined' || !google.maps) {
+    mountVueApp();
 }
 </script>
 </body>
