@@ -1,208 +1,502 @@
-<template>
-  <div class="flex flex-col h-full bg-gray-50">
-    <div class="px-2 py-3 bg-white shadow-md overflow-x-auto whitespace-nowrap sticky top-0 z-5">
-      <button 
-        v-for="date in tripDates" 
-        :key="date.full" 
-        @click="selectDate(date)"
-        :class="['inline-flex flex-col items-center mx-1 p-2 rounded-xl transition-all duration-200 w-16', 
-          selectedDate.full === date.full ? 'bg-blue-100 text-blue-700 shadow-md transform scale-105' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"
-      >
-        <span class="text-xs font-bold">{{ date.dayOfWeek }}</span>
-        <span class="text-lg font-extrabold">{{ date.day }}</span>
-        <span class="text-xs">{{ date.month }}</span>
-      </button>
-    </div>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北歐極簡旅遊規劃 App - 持久化版本</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* 確保地圖容器填滿高度 */
+        #map { height: 16rem; } 
+    </style>
+    
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places,geometry">
+    </script>
+</head>
+<body>
 
-    <div id="map" class="h-64 w-full bg-gray-200 border-b border-gray-300">
-      <div class="h-full flex items-center justify-center text-gray-500">
-        [Google 地圖：請使用 API 載入]
-        <p class="absolute top-2 right-2 p-1 bg-white/70 rounded-full text-sm font-medium">📍 顯示當前位置</p>
-      </div>
-    </div>
+    <div id="app"></div>
 
-    <div class="flex-1 p-4 overflow-y-auto">
-      <h2 class="text-xl font-light text-gray-800 mb-3">
-        📅 {{ selectedDate.month }}{{ selectedDate.day }} ({{ selectedDate.dayOfWeek }}) 行程
-      </h2>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, computed, watch, nextTick } = Vue;
 
-      <div v-if="currentItinerary.length === 0" class="text-center py-12 text-gray-400">
-        <p>今日行程為空，點擊下方按鈕新增。</p>
-      </div>
+        // --- A. 數據持久化與通用函式 ---
 
-      <div v-else>
-        <div v-for="(item, index) in currentItinerary" :key="item.id" 
-             class="bg-white rounded-xl shadow-md p-4 mb-3 border-l-4 transition-all duration-300 hover:shadow-lg"
-             :class="{'border-l-blue-400': item.category === '景點', 'border-l-green-400': item.category === '交通', 'border-l-red-400': item.category === '美食'}"
-             draggable="true" @dragstart="dragStart(index)" @dragover.prevent @drop="drop(index)">
-             
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <span class="text-sm font-bold text-gray-700 mr-2">{{ item.time }}</span>
-              <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', categoryClasses[item.category] || 'bg-gray-200 text-gray-600']">
-                {{ item.category }}
-              </span>
-            </div>
-            <button class="text-gray-400 hover:text-gray-600 focus:outline-none">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-          </div>
+        const STORAGE_KEY_TRIP = 'nordicTripData';
+        const STORAGE_KEY_ACCOUNTING = 'nordicAccountingData';
+        const STORAGE_KEY_SHOPPING = 'nordicShoppingList';
 
-          <h3 class="text-lg font-semibold text-gray-800">{{ item.location }}</h3>
-          
-          <div class="mt-2 text-sm text-gray-600">
-            <p class="flex items-center text-blue-600 font-medium">
-                <span class="text-xl mr-1">{{ item.weatherIcon }}</span> 
-                {{ item.temperature }} | {{ item.weather }}
-            </p>
-            <p v-if="item.notes" class="mt-1 border-t border-gray-100 pt-1 text-gray-500 italic">備註: {{ item.notes }}</p>
-          </div>
+        // 從 localStorage 讀取數據
+        const loadData = (key, defaultData) => {
+            try {
+                const stored = localStorage.getItem(key);
+                return stored ? JSON.parse(stored) : defaultData;
+            } catch (e) {
+                console.error("Error loading data from localStorage:", e);
+                return defaultData;
+            }
+        };
 
-          <div class="mt-3 flex justify-end space-x-2 border-t pt-2">
-            <button class="text-xs text-blue-500 hover:text-blue-700">編輯</button>
-            <button class="text-xs text-red-500 hover:text-red-700">刪除</button>
-          </div>
-        </div>
-      </div>
-    </div>
+        // 寫入數據到 localStorage
+        const saveData = (key, data) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error("Error saving data to localStorage:", e);
+            }
+        };
 
-    <button class="fixed right-6 bottom-20 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-2xl font-bold z-10">
-      +
-    </button>
-  </div>
+        // 日期處理函式
+        const getTripDates = (start, end) => {
+            const dates = [];
+            let current = new Date(start);
+            const endDate = new Date(end);
+            while (current <= endDate) {
+                dates.push(formatDate(current));
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        };
+        const formatDate = (date) => {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const dayOfWeek = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'][date.getDay()];
+            return {
+                full: `${yyyy}-${mm}-${dd}`,
+                day: dd,
+                month: `${mm}/`,
+                dayOfWeek: dayOfWeek
+            };
+        };
 
-  <div v-if="false" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-30">
-    <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
-      <h3 class="text-xl font-bold mb-4">新增行程</h3>
-      <input type="text" placeholder="地點名稱" class="w-full p-2 mb-3 border rounded-lg">
-      <input type="time" placeholder="時間" class="w-full p-2 mb-3 border rounded-lg">
-      
-      <select class="w-full p-2 mb-3 border rounded-lg">
-        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-      </select>
-      
-      <textarea placeholder="備註" rows="3" class="w-full p-2 mb-4 border rounded-lg"></textarea>
-      
-      <div class="flex justify-end space-x-3">
-        <button class="text-gray-600 hover:text-gray-800 p-2">取消</button>
-        <button class="bg-blue-600 text-white rounded-lg p-2 px-4 hover:bg-blue-700">儲存</button>
-      </div>
-    </div>
-  </div>
-</template>
+        // 虛擬行程數據 (僅用於首次載入時的預設值)
+        const defaultTripData = {
+            '2025-12-19': [
+                { id: 1, time: '10:00', location: '抵達奧斯陸國際機場', category: '航班', notes: '準備轉乘火車', weather: '晴時多雲', temperature: '-5°C', weatherIcon: '☀️', lat: 60.197, lng: 11.100 },
+                { id: 2, time: '14:00', location: '挪威國家美術館', category: '景點', notes: '欣賞孟克《吶喊》', weather: '小雪', temperature: '-8°C', weatherIcon: '🌨️', lat: 59.913, lng: 10.738 },
+            ],
+            '2025-12-20': [
+                { id: 3, time: '09:00', location: '奧斯陸大教堂', category: '景點', notes: '位於市中心', weather: '大雪', temperature: '-10°C', weatherIcon: '❄️', lat: 59.912, lng: 10.750 },
+                { id: 4, time: '12:30', location: 'Aker Brygge 海港區午餐', category: '美食', notes: '找一家海鮮餐廳', weather: '陰天', temperature: '-6°C', weatherIcon: '☁️', lat: 59.907, lng: 10.722 },
+            ],
+            '2026-01-03': [
+                { id: 5, time: '18:00', location: '返回台灣航班', category: '航班', notes: '記得退稅', weather: '多雲', temperature: '0°C', weatherIcon: '☁️', lat: 60.197, lng: 11.100 },
+            ],
+        };
 
-<script setup>
-import { ref, computed } from 'vue';
-import { format, eachDayOfInterval } from 'date-fns';
-import { zhTW } from 'date-fns/locale';
-
-// --- 靜態數據定義 ---
-
-// 行程分類選項
-const categories = ['景點', '交通', '航班', '美食', '購物', '其他'];
-
-// 行程卡片分類樣式 (Tailwind CSS)
-const categoryClasses = {
-  '景點': 'bg-blue-50 text-blue-600',
-  '交通': 'bg-green-50 text-green-600',
-  '航班': 'bg-purple-50 text-purple-600',
-  '美食': 'bg-red-50 text-red-600',
-  '購物': 'bg-yellow-50 text-yellow-600',
-  '其他': 'bg-gray-200 text-gray-700',
-};
+        // 行程分類樣式
+        const categoryClasses = {
+            '景點': 'border-l-blue-400 bg-blue-50/50 text-blue-700',
+            '交通': 'border-l-green-400 bg-green-50/50 text-green-700',
+            '航班': 'border-l-purple-400 bg-purple-50/50 text-purple-700',
+            '美食': 'border-l-red-400 bg-red-50/50 text-red-700',
+            '購物': 'border-l-yellow-400 bg-yellow-50/50 text-yellow-700',
+            '其他': 'border-l-gray-300 bg-gray-100/50 text-gray-600',
+        };
+        const categories = ['景點', '交通', '航班', '美食', '購物', '其他'];
 
 
-// 虛擬行程數據 (用於示範)
-const tripData = ref({
-  '2025-12-19': [
-    { id: 1, time: '10:00', location: '抵達奧斯陸國際機場', category: '航班', notes: '準備轉乘火車', weather: '晴時多雲', temperature: '-5°C', weatherIcon: '☀️', lat: 60.197, lng: 11.100 },
-    { id: 2, time: '14:00', location: '挪威國家美術館 (National Gallery)', category: '景點', notes: '欣賞孟克《吶喊》', weather: '小雪', temperature: '-8°C', weatherIcon: '🌨️', lat: 59.913, lng: 10.738 },
-  ],
-  '2025-12-20': [
-    { id: 3, time: '09:00', location: '奧斯陸大教堂', category: '景點', notes: '位於市中心，可先拍照', weather: '大雪', temperature: '-10°C', weatherIcon: '❄️', lat: 59.912, lng: 10.750 },
-    { id: 4, time: '12:30', location: 'Aker Brygge 海港區午餐', category: '美食', notes: '找一家海鮮餐廳', weather: '陰天', temperature: '-6°C', weatherIcon: '☁️', lat: 59.907, lng: 10.722 },
-    { id: 5, time: '15:00', location: '前往卑爾根的火車', category: '交通', notes: '奧斯陸-卑爾根鐵路，全球最美鐵路之一', weather: '小雪', temperature: '-7°C', weatherIcon: '🌨️', lat: 59.914, lng: 10.748 },
-  ],
-  // 更多日期...
-});
+        // --- B. Google 地圖邏輯 ---
 
-// --- 日期處理與選單 ---
+        let map = null;
+        let markers = [];
 
-const startDate = new Date('2025-12-19');
-const endDate = new Date('2026-01-03'); // 注意年份
+        // 初始化地圖
+        const initMap = (itinerary) => {
+            // 檢查 Google Maps API 是否已載入
+            if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                console.error("Google Maps API 尚未載入。請檢查 API Key。");
+                return;
+            }
 
-// 生成所有旅行日期的列表
-const tripDates = eachDayOfInterval({ start: startDate, end: endDate }).map(date => ({
-  full: format(date, 'yyyy-MM-dd'),
-  day: format(date, 'd'),
-  month: format(date, 'MM/'),
-  dayOfWeek: format(date, 'EEE', { locale: zhTW }), // 星期幾
-}));
+            const mapElement = document.getElementById('map');
+            if (!mapElement) return;
 
-const selectedDate = ref(tripDates[0]);
+            // 預設地圖中心點 (奧斯陸)
+            const defaultCenter = { lat: 59.9139, lng: 10.7522 }; 
+            
+            // 獲取當天所有地點的經緯度
+            const locations = itinerary.filter(item => item.lat && item.lng);
 
-const selectDate = (date) => {
-  selectedDate.value = date;
-  // TODO: 當日期改變時，更新地圖標記點
-};
+            if (!map) {
+                map = new google.maps.Map(mapElement, {
+                    zoom: 12,
+                    center: defaultCenter,
+                    mapTypeControl: false, // 簡化 App 介面
+                    streetViewControl: false,
+                    fullscreenControl: false,
+                });
+            }
 
-// 計算當前日期的行程
-const currentItinerary = computed(() => {
-  return tripData.value[selectedDate.value.full] || [];
-});
+            // 1. 清除舊標記
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
 
-// --- 地圖邏輯 (概念性，需自行初始化 Google Maps JS) ---
+            // 2. 創建新標記
+            if (locations.length > 0) {
+                const bounds = new google.maps.LatLngBounds();
+                locations.forEach((item, index) => {
+                    const marker = new google.maps.Marker({
+                        position: { lat: item.lat, lng: item.lng },
+                        map: map,
+                        label: `${index + 1}`, // 標記順序
+                        title: item.location,
+                    });
+                    markers.push(marker);
+                    bounds.extend(marker.getPosition());
+                });
 
-const initializeMap = (itinerary) => {
-    /* 實際運行時需要做以下操作：
-    1. 確保 HTML head 中已載入 Google Maps JS API (包含 KEY)。
-    2. 使用 `new google.maps.Map(document.getElementById('map'), options)` 初始化地圖。
-    3. 遍歷 itinerary，使用 `new google.maps.Marker` 將所有地點釘選在地圖上。
-    4. 獲取使用者當前位置（Geolocation API），並新增一個標記。
-    5. 實現導航功能 (Directions Service)。
-    */
-    console.log(`[MAP INIT] 正在初始化 ${selectedDate.value.full} 的地圖，標記地點數：${itinerary.length}`);
-    const locations = itinerary.map(item => ({ lat: item.lat, lng: item.lng, title: item.location }));
-    // 概念上，地圖會根據 locations 進行標記和居中。
-};
+                // 調整地圖以包含所有標記點
+                map.fitBounds(bounds);
+            } else {
+                 map.setCenter(defaultCenter);
+                 map.setZoom(12);
+            }
+            
+            // 3. 顯示當前位置 (Geolocation API)
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    };
 
-// 每次 currentItinerary 變化時，重新初始化/更新地圖
-// import { watch } from 'vue'
-// watch(currentItinerary, initializeMap, { immediate: true });
-initializeMap(currentItinerary.value); // 首次載入
+                    new google.maps.Marker({
+                        position: pos,
+                        map: map,
+                        icon: {
+                            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" // 藍色圓點代表當前位置
+                        },
+                        title: "您的當前位置",
+                    });
+                }, () => {
+                    console.warn("無法取得當前位置。");
+                });
+            }
 
-// --- 拖曳排序邏輯 (簡化版) ---
-let draggedIndex = ref(null);
+            // 4. 概念性導航 (DirectionsService) - 僅作提示
+            if (locations.length >= 2) {
+                const directionsService = new google.maps.DirectionsService();
+                const directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true }); // 不顯示預設標記
 
-const dragStart = (index) => {
-    draggedIndex.value = index;
-};
+                const waypoints = locations.slice(1, -1).map(loc => ({
+                    location: { lat: loc.lat, lng: loc.lng },
+                    stopover: true
+                }));
 
-const drop = (dropIndex) => {
-    if (draggedIndex.value !== null && draggedIndex.value !== dropIndex) {
-        // 確保行程數據是可變的
-        const items = tripData.value[selectedDate.value.full];
-        
-        // 1. 取得被拖曳的項目
-        const [draggedItem] = items.splice(draggedIndex.value, 1);
-        
-        // 2. 插入到新的位置
-        items.splice(dropIndex, 0, draggedItem);
-        
-        // 重設拖曳索引
-        draggedIndex.value = null;
-    }
-};
+                directionsService.route({
+                    origin: { lat: locations[0].lat, lng: locations[0].lng },
+                    destination: { lat: locations[locations.length - 1].lat, lng: locations[locations.length - 1].lng },
+                    waypoints: waypoints,
+                    travelMode: google.maps.TravelMode.TRANSIT // 假設是搭乘大眾運輸
+                }, (response, status) => {
+                    if (status === 'OK') {
+                        directionsRenderer.setDirections(response);
+                    } else {
+                        console.error('Directions request failed due to ' + status);
+                    }
+                });
+            }
+        };
 
-</script>
 
-<style scoped>
-/* 隱藏橫向滾動條，保持 App 介面的簡潔感 */
-.overflow-x-auto::-webkit-scrollbar {
-  display: none;
-}
-.overflow-x-auto {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-</style>
+        // --- C. 組件定義：記帳系統 (實作 localStorage) ---
+        const AccountingSystem = {
+            setup() {
+                const expenses = ref(loadData(STORAGE_KEY_ACCOUNTING, []));
+                const newExpense = ref({ description: '', amount: 0, category: '餐飲' });
+                const expenseCategories = ['餐飲', '交通', '住宿', '購物', '門票', '其他'];
+
+                // 監聽並保存
+                watch(expenses, (newVal) => saveData(STORAGE_KEY_ACCOUNTING, newVal), { deep: true });
+
+                const addExpense = () => {
+                    if (newExpense.value.description && newExpense.value.amount > 0) {
+                        expenses.value.unshift({ 
+                            id: Date.now(), 
+                            ...newExpense.value, 
+                            date: new Date().toLocaleDateString('zh-TW') 
+                        });
+                        newExpense.value = { description: '', amount: 0, category: '餐飲' };
+                    }
+                };
+
+                const totalSpent = computed(() => {
+                    return expenses.value.reduce((sum, item) => sum + Number(item.amount), 0);
+                });
+
+                return { expenses, newExpense, expenseCategories, addExpense, totalSpent };
+            },
+            template: `
+                <div class="p-4">
+                    <h2 class="text-2xl font-light text-gray-800 mb-4 border-b pb-2">💰 記帳系統</h2>
+                    
+                    <div class="bg-blue-600 text-white p-4 rounded-xl shadow-lg mb-4 text-center">
+                        <p class="text-sm font-light">總花費 (NTD)</p>
+                        <p class="text-3xl font-extrabold">{{ totalSpent.toLocaleString() }}</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow-md mb-6">
+                        <h3 class="font-bold text-gray-700 mb-3">新增花費</h3>
+                        <input v-model="newExpense.description" placeholder="花費描述 (e.g., 咖啡)" class="w-full p-2 mb-2 border rounded-lg text-sm focus:ring-blue-500">
+                        <div class="flex space-x-2 mb-3">
+                            <input v-model.number="newExpense.amount" type="number" placeholder="金額 (NTD)" class="w-1/2 p-2 border rounded-lg text-sm">
+                            <select v-model="newExpense.category" class="w-1/2 p-2 border rounded-lg text-sm">
+                                <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
+                            </select>
+                        </div>
+                        <button @click="addExpense" class="w-full bg-green-500 text-white p-2 rounded-lg font-semibold hover:bg-green-600 transition-colors">
+                            記錄花費
+                        </button>
+                    </div>
+
+                    <h3 class="font-bold text-gray-700 mb-3">花費紀錄</h3>
+                    <div v-for="exp in expenses" :key="exp.id" class="bg-white p-3 rounded-lg shadow-sm mb-2 flex justify-between items-center border-l-4 border-gray-200">
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ exp.description }}</p>
+                            <p class="text-xs text-gray-500">{{ exp.date }} - {{ exp.category }}</p>
+                        </div>
+                        <p class="text-lg font-bold text-red-600">NT$ {{ exp.amount.toLocaleString() }}</p>
+                    </div>
+                    <p v-if="expenses.length === 0" class="text-center text-gray-400 py-4">目前沒有任何花費紀錄。</p>
+                </div>
+            `
+        };
+
+
+        // --- D. 組件定義：購物清單 (實作 localStorage) ---
+        const ShoppingList = {
+            setup() {
+                const items = ref(loadData(STORAGE_KEY_SHOPPING, []));
+                const newItem = ref({ name: '', isBought: false });
+                
+                watch(items, (newVal) => saveData(STORAGE_KEY_SHOPPING, newVal), { deep: true });
+
+                const addItem = () => {
+                    if (newItem.value.name.trim()) {
+                        items.value.unshift({ id: Date.now(), name: newItem.value.name.trim(), isBought: false });
+                        newItem.value.name = '';
+                    }
+                };
+
+                const deleteItem = (id) => {
+                    items.value = items.value.filter(item => item.id !== id);
+                };
+                
+                const toggleBought = (item) => {
+                    item.isBought = !item.isBought;
+                }
+
+                return { items, newItem, addItem, deleteItem, toggleBought };
+            },
+            template: `
+                <div class="p-4">
+                    <h2 class="text-2xl font-light text-gray-800 mb-4 border-b pb-2">🛒 購物清單</h2>
+                    
+                    <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex space-x-2">
+                        <input v-model="newItem.name" @keyup.enter="addItem" placeholder="待買物品名稱 (e.g., 麋鹿毛衣)" class="flex-grow p-2 border rounded-lg text-sm focus:ring-blue-500">
+                        <button @click="addItem" class="bg-blue-500 text-white p-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+                            新增
+                        </button>
+                    </div>
+
+                    <h3 class="font-bold text-gray-700 mb-3">待買清單</h3>
+                    <div v-for="item in items" :key="item.id" class="bg-white p-3 rounded-lg shadow-sm mb-2 flex justify-between items-center border-l-4"
+                         :class="item.isBought ? 'opacity-60 border-l-green-400' : 'border-l-blue-400'">
+                        <div class="flex items-center space-x-3 cursor-pointer" @click="toggleBought(item)">
+                            <input type="checkbox" :checked="item.isBought" class="form-checkbox text-green-500 rounded focus:ring-green-500">
+                            <p class="font-semibold text-gray-800" :class="{'line-through': item.isBought}">{{ item.name }}</p>
+                        </div>
+                        <button @click="deleteItem(item.id)" class="text-red-400 hover:text-red-600 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    <p v-if="items.length === 0" class="text-center text-gray-400 py-4">清單是空的，開始新增購物項目吧！</p>
+                </div>
+            `
+        };
+
+        // --- E. 組件定義：行程規劃與地圖 (核心) ---
+        const TripPlanner = {
+            setup() {
+                const tripDates = getTripDates('2025-12-19', '2026-01-03');
+                const selectedDate = ref(tripDates[0]);
+                // 從 localStorage 讀取行程數據
+                const tripData = ref(loadData(STORAGE_KEY_TRIP, defaultTripData));
+                let draggedIndex = ref(null);
+
+                // 監聽並保存行程數據
+                watch(tripData, (newVal) => saveData(STORAGE_KEY_TRIP, newVal), { deep: true });
+
+                const currentItinerary = computed(() => {
+                    return tripData.value[selectedDate.value.full] || [];
+                });
+                
+                const selectDate = (date) => {
+                    selectedDate.value = date;
+                    nextTick(() => {
+                        // 當日期改變，地圖需要立即更新
+                        initMap(currentItinerary.value);
+                    });
+                };
+                
+                // 拖曳排序邏輯 (同前)
+                const dragStart = (index) => { draggedIndex.value = index; };
+                const drop = (dropIndex) => {
+                    if (draggedIndex.value !== null && draggedIndex.value !== dropIndex) {
+                        const items = tripData.value[selectedDate.value.full];
+                        const [draggedItem] = items.splice(draggedIndex.value, 1);
+                        items.splice(dropIndex, 0, draggedItem);
+                        draggedIndex.value = null;
+                        // 拖曳後順序改變，地圖也需要更新路徑
+                        nextTick(() => initMap(currentItinerary.value)); 
+                    }
+                };
+
+                // 在組件首次掛載或內容更新後立即初始化地圖
+                Vue.onMounted(() => {
+                    // 確保 Google 地圖腳本已載入
+                    if (window.google) {
+                        initMap(currentItinerary.value);
+                    } else {
+                        // 如果腳本是異步載入，等待 window.google 準備好
+                        window.onload = () => initMap(currentItinerary.value);
+                    }
+                });
+
+                // 當行程數據變化時，地圖也應更新
+                watch(currentItinerary, (newItinerary) => {
+                    nextTick(() => initMap(newItinerary));
+                }, { deep: true });
+
+
+                return { 
+                    tripDates, selectedDate, currentItinerary, categoryClasses, categories, 
+                    selectDate, dragStart, drop 
+                };
+            },
+            template: `
+                <div class="flex flex-col h-full bg-gray-50">
+                    <div class="px-2 py-3 bg-white shadow-md overflow-x-auto whitespace-nowrap sticky top-0 z-10 no-scrollbar">
+                        <button 
+                            v-for="date in tripDates" 
+                            :key="date.full" 
+                            @click="selectDate(date)"
+                            :class="['inline-flex flex-col items-center mx-1 p-2 rounded-xl transition-all duration-200 w-16', 
+                                selectedDate.full === date.full ? 'bg-blue-100 text-blue-700 shadow-md transform scale-105' : 'bg-gray-100 text-gray-500 hover:bg-gray-200']"
+                        >
+                            <span class="text-xs font-bold">{{ date.dayOfWeek }}</span>
+                            <span class="text-lg font-extrabold">{{ date.day }}</span>
+                            <span class="text-xs">{{ date.month }}</span>
+                        </button>
+                    </div>
+
+                    <div id="map" class="w-full relative border-b border-gray-300">
+                        <div v-if="!window.google" class="absolute inset-0 h-full flex items-center justify-center text-gray-500 p-4 bg-gray-200">
+                           <p class="text-center">地圖載入中... (請確認 API Key)</p>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 p-4 overflow-y-auto">
+                        <h2 class="text-xl font-light text-gray-800 mb-3">
+                            行程列表
+                        </h2>
+                        <div v-if="currentItinerary.length === 0" class="text-center py-12 text-gray-400 bg-white rounded-xl shadow-md">
+                            <p>今日行程為空，開始規劃吧！</p>
+                        </div>
+
+                        <div v-else>
+                            <div v-for="(item, index) in currentItinerary" :key="item.id" 
+                                class="bg-white rounded-xl shadow-md p-4 mb-3 transition-all duration-300 hover:shadow-lg cursor-grab"
+                                :class="[categoryClasses[item.category] || 'border-l-gray-300', draggedIndex === index ? 'opacity-50 border-dashed scale-[0.98]' : '']"
+                                draggable="true" @dragstart="dragStart(index)" @dragover.prevent @drop="drop(index)">
+                                
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center">
+                                        <span class="text-sm font-bold text-gray-800 mr-2">{{ item.time }}</span>
+                                        <span :class="['text-xs font-medium px-2 py-0.5 rounded-full']"
+                                              :style="{ backgroundColor: (item.category === '景點' ? '#DBEAFE' : item.category === '美食' ? '#FEE2E2' : '#F3F4F6') }">
+                                            {{ item.category }}
+                                        </span>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                    </button>
+                                </div>
+
+                                <h3 class="text-lg font-semibold text-gray-800">{{ item.location }}</h3>
+                                
+                                <div class="mt-2 text-sm">
+                                    <p class="flex items-center text-blue-600 font-medium">
+                                        <span class="text-xl mr-1">{{ item.weatherIcon }}</span> 
+                                        {{ item.temperature }} | {{ item.weather }}
+                                    </p>
+                                    <p v-if="item.notes" class="mt-1 border-t border-gray-100 pt-1 text-gray-500 italic">備註: {{ item.notes }}</p>
+                                    <p class="text-xs text-gray-400">Lat: {{ item.lat }}, Lng: {{ item.lng }}</p>
+                                </div>
+
+                                <div class="mt-3 flex justify-end space-x-2 border-t pt-2">
+                                    <button class="text-xs text-blue-500 hover:text-blue-700">編輯</button>
+                                    <button class="text-xs text-red-500 hover:text-red-700">刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="fixed right-6 bottom-20 w-12 h-12 bg-blue-600 text-white rounded-full shadow-xl hover:bg-blue-700 transition-colors flex items-center justify-center text-2xl font-bold z-20">
+                        +
+                    </button>
+                </div>
+            `
+        };
+
+
+        // --- F. 主要 App 結構 ---
+        const App = {
+            components: { TripPlanner, AccountingSystem, ShoppingList },
+            setup() {
+                const tabs = [
+                    { name: '行程地圖', icon: '🗺️', component: 'TripPlanner' },
+                    { name: '記帳', icon: '💰', component: 'AccountingSystem' },
+                    { name: '購物清單', icon: '🛒', component: 'ShoppingList' },
+                ];
+                const currentView = ref('TripPlanner');
+
+                return { tabs, currentView };
+            },
+            template: `
+                <div class="max-w-md mx-auto min-h-screen bg-gray-50 shadow-2xl overflow-hidden relative border-x-4 border-gray-900">
+                    <header class="p-4 bg-white/95 backdrop-blur-sm sticky top-0 z-20 shadow-sm border-b border-gray-200">
+                        <h1 class="text-xl font-light text-gray-800 tracking-wider">❄️ 北歐極光之旅</h1>
+                    </header>
+
+                    <main class="h-[calc(100vh-120px)] overflow-y-auto pb-4">
+                        <component :is="currentView" />
+                    </main>
+
+                    <nav class="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg flex justify-around py-3 z-30">
+                        <button 
+                            v-for="tab in tabs" 
+                            :key="tab.name" 
+                            @click="currentView = tab.component"
+                            :class="['flex flex-col items-center p-2 rounded-lg transition-colors', currentView === tab.component ? 'text-blue-600 bg-blue-50/70' : 'text-gray-500 hover:text-gray-700']"
+                        >
+                            <span class="text-xl">{{ tab.icon }}</span>
+                            <span class="text-xs mt-1 font-medium">{{ tab.name }}</span>
+                        </button>
+                    </nav>
+                </div>
+            `
+        };
+
+        // 啟動 Vue App
+        createApp(App).mount('#app');
+    </script>
+</body>
+</html>
