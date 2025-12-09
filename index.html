@@ -6,8 +6,6 @@
     <title>北歐極簡旅遊計畫</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vuedraggable/4.1.0/vuedraggable.umd.min.js"></script>
     
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
     
@@ -62,6 +60,7 @@
         .date-scroll-container::-webkit-scrollbar {
             display: none;
         }
+        /* 移除拖曳手勢的樣式，因為已移除 vuedraggable */
     </style>
 </head>
 <body>
@@ -90,7 +89,6 @@
             </template>
         </div>
     </div>
-    <div v-else class="text-center p-8 text-gray-500">應用程式載入中...</div>
 
     <div class="p-4 pt-6" v-if="travelDates.length">
         
@@ -108,11 +106,8 @@
 
         <div v-show="activeTab === 'itinerary'">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-700">🗓️ {{ formatDate(activeDate) }} 行程安排</h2>
-                <button @click="showModal('itinerary')" class="flex items-center text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors">
-                    <span class="text-lg">+</span> 新增
-                </button>
-            </div>
+                <h2 class="text-xl font-bold text-gray-700">🗓️ {{ formatDate(activeDate) }} 行程安排 (靜態)</h2>
+                </div>
             
             <div class="card p-3 mb-4 flex items-center bg-white/80 backdrop-blur-sm border-l-4 border-blue-400">
                 <div class="text-4xl mr-3">🌨️</div>
@@ -123,29 +118,25 @@
                 </div>
             </div>
 
-            <draggable 
-                :list="currentItinerary" 
-                item-key="id" 
-                class="space-y-3"
-            >
-                <template #item="{ element, index }">
-                    <div class="card p-4 hover:shadow-xl relative border-l-4" :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-blue-400': element.category === '景點', 'border-yellow-400': element.category === '交通'}">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow">
-                                <p class="text-sm font-medium text-gray-500 mb-1">{{ element.time }} <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-blue-100 text-blue-700': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span></p>
-                                <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
-                                <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 pl-2 mt-1 italic">{{ element.notes }}</p>
-                            </div>
-                            <div class="flex space-x-1 ml-4">
-                                <button @click="editItem('itinerary', element)" class="text-gray-400 hover:text-blue-500 p-1">✏️</button>
-                                <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1">🗑️</button>
-                            </div>
+            <div class="space-y-3">
+                <div v-for="element in currentItinerary" :key="element.id" 
+                    class="card p-4 relative border-l-4" 
+                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-blue-400': element.category === '景點', 'border-yellow-400': element.category === '交通'}"
+                >
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">{{ element.time }} <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-blue-100 text-blue-700': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span></p>
+                            <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
+                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 pl-2 mt-1 italic">{{ element.notes }}</p>
+                        </div>
+                        <div class="flex space-x-1 ml-4">
+                            <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1">🗑️</button>
                         </div>
                     </div>
-                </template>
-            </draggable>
+                </div>
+            </div>
 
-            <p v-if="currentItinerary.length === 0" class="text-center text-gray-500 p-6">本日無行程安排，點擊「新增」規劃旅程。</p>
+            <p v-if="currentItinerary.length === 0" class="text-center text-gray-500 p-6">本日無行程安排。</p>
         </div>
 
         <div v-show="activeTab === 'map'">
@@ -230,28 +221,7 @@
                 {{ modalTitle }}
             </h3>
             
-            <div v-if="modalType === 'itinerary'">
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">時間</label>
-                    <input type="time" v-model="tempItem.time" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">地點/活動</label>
-                    <input type="text" v-model="tempItem.location" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 奧斯陸歌劇院">
-                </div>
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">分類</label>
-                    <select v-model="tempItem.category" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
-                        <option v-for="cat in itineraryCategories" :key="cat">{{ cat }}</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">備註</label>
-                    <textarea v-model="tempItem.notes" rows="2" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 記得帶暖和的衣服"></textarea>
-                </div>
-            </div>
-
-            <div v-else-if="modalType === 'accounting'">
+            <div v-if="modalType === 'accounting'">
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700">項目</label>
                     <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 晚餐費用">
@@ -287,37 +257,31 @@
 
 <script>
 const { createApp, ref, computed, nextTick, watch } = Vue
-const { Draggable } = vuedraggable
+// 已移除 vuedraggable 的引用
 
-// 修正 4：將 Vue 應用程式的邏輯包裝在一個函式中，並將地圖載入狀態獨立出來
+// --- Google Maps 載入與 Vue 掛載邏輯 (與上次相同，確保穩定性) ---
 let appInstance = null;
-let googleMapsLoaded = ref(false); // 新增地圖載入狀態
+let googleMapsLoaded = ref(false); 
 
-// 全域 callback 函式，當 Google Maps 載入完成後會自動呼叫
 window.initApp = function() {
     googleMapsLoaded.value = true;
     if (appInstance) {
-        // 如果 Vue 應用程式已經掛載，通知它地圖已載入
         nextTick(() => {
             if (appInstance.activeTab === 'map') {
                  appInstance.initMap();
             }
         });
     } else {
-        // 如果還沒掛載，現在可以安全地掛載
         mountVueApp();
     }
 }
 
-// 修正 5：處理地圖未載入時的錯誤，並使用 googleMapsLoaded 狀態
 function initMap() {
     if (!googleMapsLoaded.value) {
-        // 地圖庫尚未載入，稍後再試或顯示錯誤訊息
         console.warn("Google Maps 尚未載入。請檢查 API Key 或網路連線。");
         return;
     }
     
-    // 檢查地圖容器是否存在
     const mapElement = document.getElementById('googleMap');
     if (typeof google === 'undefined' || !mapElement) return;
 
@@ -398,7 +362,7 @@ function getTravelDates() {
 
 function mountVueApp() {
     const app = createApp({
-        components: { Draggable },
+        components: { }, // 移除 Draggable
         setup() {
             const tabs = [
                 { id: 'itinerary', name: '行程', icon: '🗺️' },
@@ -411,8 +375,7 @@ function mountVueApp() {
             const travelDates = getTravelDates();
             const activeDate = ref(travelDates[0]);
 
-            const itineraryCategories = ['景點', '交通', '航班', '美食', '購物', '其他'];
-
+            // 靜態行程資料
             const itinerary = ref({
                 '2025-12-19': [
                     { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
@@ -466,8 +429,9 @@ function mountVueApp() {
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
                 if (locations.length === 0) {
-                    return `https://www.google.com/maps/search/Norway+landmarks`;
+                    return `https://www.google.com/maps/search/?api=1&query=Nordic+Countries`;
                 }
+                // 連結到當天第一個地點的導航
                 const firstLoc = locations[0];
                 return `https://www.google.com/maps/dir/?api=1&destination=${firstLoc.lat},${firstLoc.lng}`;
             });
@@ -476,66 +440,42 @@ function mountVueApp() {
             const modalType = ref('');
             const modalTitle = computed(() => {
                 switch(modalType.value) {
-                    case 'itinerary': return '新增/編輯行程';
                     case 'accounting': return '新增花費紀錄';
                     case 'shopping': return '新增購物項目';
                     default: return '';
                 }
             });
             const tempItem = ref({});
-            let isEditing = false;
-            let editingId = null;
-
+            
             function showModal(type, item = null) {
+                // 僅允許 'accounting' 和 'shopping'
+                if (type === 'itinerary') return;
+
                 modalType.value = type;
-                isEditing = !!item;
-                editingId = item ? item.id : null;
                 
-                if (type === 'itinerary') {
-                    tempItem.value = item ? { ...item } : { time: '10:00', location: '', category: '景點', notes: '', lat: null, lng: null };
-                } else if (type === 'accounting') {
-                    tempItem.value = item ? { ...item } : { item: '', amount: null, method: '信用卡', date: activeDate.value };
+                if (type === 'accounting') {
+                    tempItem.value = { item: '', amount: null, method: '信用卡', date: activeDate.value };
                 } else if (type === 'shopping') {
-                    tempItem.value = item ? { ...item } : { name: '', done: false };
+                    tempItem.value = { name: '', done: false };
                 }
                 
                 isModalOpen.value = true;
             }
             
-            function editItem(type, item) {
-                showModal(type, item);
-            }
-
             function saveItem() {
-                if (modalType.value === 'itinerary') {
-                    if (!tempItem.value.location || !tempItem.value.time) return alert('請填寫地點和時間');
-
-                    if (isEditing) {
-                        const index = currentItinerary.value.findIndex(i => i.id === editingId);
-                        if (index !== -1) {
-                            currentItinerary.value[index] = { ...tempItem.value, id: editingId };
-                        }
-                    } else {
-                        const newId = Date.now();
-                        const currentList = itinerary.value[activeDate.value] || [];
-                        currentList.push({ ...tempItem.value, id: newId, lat: null, lng: null });
-                        itinerary.value[activeDate.value] = currentList;
-                    }
-                    
-                } else if (modalType.value === 'accounting') {
+                // 移除所有 itinerary 儲存邏輯
+                
+                if (modalType.value === 'accounting') {
                     if (!tempItem.value.item || !tempItem.value.amount) return alert('請填寫項目和金額');
                     
-                    if (!isEditing) {
-                        const newId = Date.now();
-                        expenses.value.push({ ...tempItem.value, id: newId, date: new Date().toISOString().split('T')[0] });
-                    }
+                    const newId = Date.now();
+                    expenses.value.push({ ...tempItem.value, id: newId, date: new Date().toISOString().split('T')[0] });
+                    
                 } else if (modalType.value === 'shopping') {
                     if (!tempItem.value.name) return alert('請填寫購物項目');
                     
-                    if (!isEditing) {
-                        const newId = Date.now();
-                        shoppingList.value.push({ ...tempItem.value, id: newId });
-                    }
+                    const newId = Date.now();
+                    shoppingList.value.push({ ...tempItem.value, id: newId });
                 }
                 
                 isModalOpen.value = false;
@@ -545,8 +485,10 @@ function mountVueApp() {
                 if (!confirm('確定要刪除嗎?')) return;
                 
                 if (type === 'itinerary') {
-                    itinerary.value[activeDate.value] = currentItinerary.value.filter(item => item.id !== id);
-                    // 修正：刪除後重新初始化地圖 (如果在地圖 Tab)
+                    // 刪除靜態行程項目
+                    const currentList = itinerary.value[activeDate.value] || [];
+                    itinerary.value[activeDate.value] = currentList.filter(item => item.id !== id);
+                    
                     if (activeTab.value === 'map') {
                         nextTick(() => initMap());
                     }
@@ -562,17 +504,14 @@ function mountVueApp() {
                 return `${date.getMonth() + 1}/${date.getDate()}`;
             }
             
-            // 修正 6：監聽 activeTab 變化，確保只有在地圖庫載入完成後才呼叫 initMap
             watch(activeTab, (newTab) => {
                 if (newTab === 'map' && googleMapsLoaded.value) {
                     nextTick(() => initMap());
                 }
             });
             
-            // 修正 7：暴露給全域環境，以便 initApp 可以在地圖載入完成時使用
             appInstance = { activeTab, initMap, currentItinerary };
 
-            // 處理 Vue 應用程式比 Google Maps 載入得更快的情況
             if (activeTab.value === 'map' && googleMapsLoaded.value) {
                  nextTick(() => initMap());
             }
@@ -583,11 +522,9 @@ function mountVueApp() {
                 travelDates,
                 activeDate,
                 currentItinerary,
-                itineraryCategories,
                 setActiveDate,
                 getCurrentWeather,
                 formatDate,
-                initMap, // 仍然暴露出來，但現在是內部調用
                 currentMapLink,
                 expenses,
                 totalExpense,
@@ -597,27 +534,27 @@ function mountVueApp() {
                 modalTitle,
                 tempItem,
                 showModal,
-                editItem,
                 saveItem,
                 deleteItem,
-                isGoogleMapsLoaded: googleMapsLoaded // 暴露地圖載入狀態
+                isGoogleMapsLoaded: googleMapsLoaded
             };
         }
     });
 
-    // 修正 8：將掛載操作放在 `mountVueApp` 內
     app.mount('#app');
 }
 
-// 修正 9：如果 Google Maps 載入失敗或不使用，確保 Vue 應用程式仍能掛載
+// 確保 Vue 應用程式在所有外部資源（包括 Google Maps）載入完成後安全掛載
 if (typeof google === 'undefined') {
-    // 延遲掛載，確保所有 CDN 都已載入
+    // 如果地圖載入失敗，Vue 仍然會在 500ms 後掛載
     setTimeout(() => {
-        googleMapsLoaded.value = false; // 假設地圖載入失敗
-        mountVueApp();
+        if (!window.initApp.isCalled) { // 檢查是否已被地圖 API 呼叫
+             googleMapsLoaded.value = false;
+             mountVueApp();
+        }
     }, 500); 
 }
-// 如果地圖先載入，則由 initApp 呼叫 mountVueApp
+// 否則，由 initApp 呼叫 mountVueApp
 </script>
 
 </body>
