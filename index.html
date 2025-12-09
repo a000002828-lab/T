@@ -7,9 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    
+    
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
-    
+    
     <style>
         /* 北歐/下雪風格的客製化樣式 */
         :root {
@@ -38,8 +38,44 @@
             background-color: var(--nordic-blue);
             background-image: linear-gradient(135deg, var(--nordic-blue) 0%, #61A5C2 100%);
             color: white;
-            padding: 1.5rem 1rem 3rem;
+            /* 增加底部 padding 以容納極光資訊 */
+            padding: 1.5rem 1rem 4rem; 
         }
+
+        /* ------------------------------------------- */
+        /* ✨ 新增：極光資訊顯示區塊樣式 */
+        /* ------------------------------------------- */
+        .aurora-info {
+            position: absolute;
+            bottom: 0.5rem; /* 距離底部 0.5rem */
+            left: 1rem;
+            right: 1rem;
+            background-color: rgba(255, 255, 255, 0.2); /* 半透明背景 */
+            backdrop-filter: blur(5px);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            align-items: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .aurora-info .kp-value {
+            font-size: 1.5rem; /* text-2xl */
+            line-height: 1.5rem;
+            font-weight: 700; /* font-bold */
+            margin-right: 0.5rem;
+        }
+        .kp-good {
+            color: #34D399; /* Green-400 */
+        }
+        .kp-fair {
+            color: #FBBF24; /* Yellow-400 */
+        }
+        .kp-low {
+            color: #9CA3AF; /* Gray-400 */
+        }
+        /* ------------------------------------------- */
+
         .card {
             background: white;
             border-radius: 1rem;
@@ -140,14 +176,27 @@
 <body>
 
 <div id="app" class="app-container hidden"> 
-    
+    
     <div class="header-bg relative mb-[-2rem]">
         <h1 class="text-2xl font-bold mb-1">Nordic Trip</h1> <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/03/2026**</p>
         <div class="absolute top-4 right-4 text-sm opacity-90">
             1 EUR ≈ 36.3 NT$
         </div>
-    </div>
-    
+        
+                                <div v-if="isAuroraDate" class="aurora-info">
+            <span class="text-3xl mr-3">🌌</span>
+            <div class="flex-grow">
+                <p class="text-xs font-medium opacity-80 mb-0.5">極光預測 (KP 值)</p>
+                <p class="text-base font-semibold">
+                    KP <span class="kp-value" :class="getKpColor(currentAuroraForecast.kp)">{{ currentAuroraForecast.kp.toFixed(1) }}</span> 
+                    <span class="text-sm font-normal ml-1">
+                        - 預測時段: {{ currentAuroraForecast.time }}
+                    </span>
+                </p>
+            </div>
+        </div>
+            </div>
+    
     <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
         <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
             <template v-for="(date, index) in travelDates" :key="index">
@@ -163,10 +212,10 @@
     </div>
 
     <div class="p-4 pt-6" v-if="travelDates.length">
-        
+        
         <div v-show="activeTab === 'itinerary'">
             <h2 class="text-xl font-bold text-gray-700 mb-4">行程安排</h2>
-            
+            
             <div class="card p-4 mb-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-l-4 border-nordic-accent">
                 <div class="flex items-center">
                     <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
@@ -191,7 +240,7 @@
                             </p>
                             <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
                             <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 border-gray-200 pl-2 mt-2 italic">{{ element.notes }}</p>
-                            
+                            
                             <div v-if="element.lat && element.lng" class="mt-3">
                                 <a :href="getGoogleMapLink(element)" target="_blank" class="google-link-as-text text-sm font-medium inline-flex items-center">
                                      查看地圖 🗺️
@@ -214,7 +263,7 @@
 
         <div v-show="activeTab === 'map'">
             <h2 class="text-xl font-bold text-gray-700 mb-4">當日行程地圖與導航</h2>
-            
+            
             <div id="googleMapWrapper" class="card mb-4 map-container" :class="{'map-hidden': activeTab !== 'map'}">
                 <div id="googleMap" class="map-container">
                     <div v-if="!isGoogleMapsLoaded" class="flex items-center justify-center h-full text-gray-500">
@@ -222,7 +271,7 @@
                     </div>
                 </div>
             </div>
-            
+            
             <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
             <a :href="currentMapLink" target="_blank" class="map-navigation-button block mt-4 text-center py-3 bg-nordic-dark text-white rounded-xl font-semibold hover:bg-nordic-blue transition-colors hover:text-nordic-dark">
                 開啟 Google 地圖導航
@@ -236,7 +285,7 @@
                     <span class="text-lg">+</span> 新增花費
                 </button>
             </div>
-            
+            
             <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
                 <p class="text-sm text-gray-600">總支出 (NT$)</p>
                 <p class="text-4xl font-extrabold text-red-600">NT$ {{ totalExpense.toFixed(0) }}</p>
@@ -267,7 +316,7 @@
                     <span class="text-lg">+</span> 新增
                 </button>
             </div>
-            
+            
             <div class="space-y-3">
                 <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.done}">
                     <label class="flex items-center cursor-pointer">
@@ -291,9 +340,9 @@
                     <span class="text-lg">+</span> 新增
                 </button>
             </div>
-            
+            
             <p class="text-sm text-gray-600 mb-4 p-2 border-l-4 border-nordic-accent bg-nordic-light/50">記得勾選已放入行李箱的物品！</p>
-            
+            
             <div class="space-y-3">
                 <div v-for="item in travelChecklist" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-dark" :class="{'opacity-50 line-through bg-gray-50/50 border-green-400': item.done}">
                     <label class="flex items-center cursor-pointer">
@@ -331,7 +380,7 @@
             <h3 class="text-xl font-bold mb-4 border-b pb-2 text-nordic-dark">
                 {{ modalTitle }}
             </h3>
-            
+            
             <div v-if="modalType === 'accounting'">
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700">項目</label>
@@ -377,7 +426,6 @@ const CITY_MAP = {
     '2025-12-28': '哥本哈根',
     '2025-12-29': '哥本哈根/斯德哥爾摩',
     '2025-12-30': '斯德哥爾摩',
-    '2025-12-31': '斯德哥爾摩',
     '2026-01-01': '斯德哥爾摩',
     '2026-01-02': '斯德哥爾摩/飛機上',
     '2026-01-03': '杜拜/飛機上',
@@ -404,7 +452,7 @@ function initMap() {
     if (!googleMapsLoaded.value) {
         return;
     }
-    
+    
     const mapElement = document.getElementById('googleMap');
     if (typeof google === 'undefined' || !mapElement) return;
 
@@ -417,7 +465,7 @@ function initMap() {
         center = { lat: locations[0].lat, lng: locations[0].lng };
         zoom = 12;
     }
-    
+    
     const markerColor = '#014F86'; // 使用 Nordic Dark 作為標記顏色
 
     if (!mapInitialized) {
@@ -431,7 +479,7 @@ function initMap() {
         appInstance.map.setCenter(center);
         appInstance.map.setZoom(zoom);
     }
-    
+    
     if (appInstance.markers) {
         appInstance.markers.forEach(marker => marker.setMap(null));
     }
@@ -458,7 +506,7 @@ function initMap() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude,
                 };
-                
+                
                 new google.maps.Marker({
                     position: pos,
                     map: appInstance.map,
@@ -483,7 +531,7 @@ function initMap() {
             }
         );
     }
-    
+    
     google.maps.event.trigger(mapElement, 'resize');
 }
 
@@ -539,10 +587,10 @@ function mountVueApp() {
                 { id: 'checklist', name: '裝備清單', icon: ICONS.checklist }, // 3. 新增裝備清單 Tab
             ];
             const activeTab = ref('itinerary');
-            
+            
             const travelDates = getTravelDates();
             const activeDate = ref(travelDates[0]); // 12/19
-            
+            
             // --- 行程資料 (已更新為您的 16 天北歐行程) ---
             const itinerary = ref({
                 // Day 1: 12/19 (五) - 台北 ✈ 飛機上
@@ -569,7 +617,7 @@ function mountVueApp() {
                     { id: 305, time: '23:13', location: '夜舖火車前往羅瓦涅米', category: '交通', notes: '在火車上過夜', lat: 60.1717, lng: 24.9415 },
                 ],
 
-                // Day 4: 12/22 (一) - 羅瓦涅米 (Rovaniemi, Finland)
+                // Day 4: 12/22 (一) - 羅瓦涅米 (Rovaniemi, Finland) - 極光區 1/5
                 '2025-12-22': [
                     { id: 401, time: '10:59', location: '抵達羅瓦涅米火車站', category: '交通', notes: '火車抵達', lat: 66.5055, lng: 25.7335 },
                     { id: 402, time: '12:00', location: 'Villa Muru Check-in/寄放行李', category: '住宿', notes: 'KW 訂的住宿', lat: 66.5020, lng: 25.7250 },
@@ -578,13 +626,360 @@ function mountVueApp() {
                     { id: 405, time: '20:00', location: '極光團 (Get your guide)', category: '景點', notes: '已預訂', lat: 66.5000, lng: 25.7500 },
                 ],
 
-                // Day 5: 12/23 (二) - 羅瓦涅米
+                // Day 5: 12/23 (二) - 羅瓦涅米 - 極光區 2/5
                 '2025-12-23': [
                     { id: 501, time: '09:00', location: 'Villa Muru 住宿', category: '住宿', notes: '早餐自己煮、玩雪、港口走走', lat: 66.5020, lng: 25.7250 },
                     { id: 502, time: '13:00', location: '最北麥當勞', category: '美食', notes: '打卡紀念', lat: 66.4950, lng: 25.7340 },
                     { id: 503, time: '21:00', location: '極光團 (Get Your Guide by KW)', category: '景點', notes: '會派車來民宿接人', lat: 66.5020, lng: 25.7250 },
                 ],
-
-                // Day 6: 12/24 (三) - 特羅姆瑟 (Tromsø, Norway)
+                
+                // Day 6: 12/24 (三) - 特羅姆瑟 (Tromsø, Norway) - 極光區 3/5
                 '2025-12-24': [
                     { id: 601, time: '07:00', location: '羅瓦涅米機場 (RVN)', category: '交通', notes: '準備搭機', lat: 66.5615, lng: 25.8304 },
+                    { id: 602, time: '10:00', location: 'RVN ✈ TOS (經 HEL)', category: '航班', notes: '挪威航空', lat: 66.5615, lng: 25.8304 },
+                    { id: 603, time: '14:00', location: '抵達特羅姆瑟機場', category: '航班', notes: '搭乘 Flybussen 前往市區', lat: 69.6833, lng: 18.9167 },
+                    { id: 604, time: '16:00', location: '特羅姆瑟市區住宿 Check-in', category: '住宿', notes: 'Airbnb', lat: 69.6502, lng: 18.9504 },
+                    { id: 605, time: '19:00', location: '特羅姆瑟纜車 (Fjellheisen)', category: '景點', notes: '山頂看夜景/極光', lat: 69.6533, lng: 19.0069 },
+                ],
+
+                // Day 7: 12/25 (四) - 特羅姆瑟 - 極光區 4/5
+                '2025-12-25': [
+                    { id: 701, time: '11:00', location: '北極教堂 (Arctic Cathedral)', category: '景點', notes: '聖誕節活動', lat: 69.6547, lng: 18.9818 },
+                    { id: 702, time: '13:00', location: 'Polaria 北極體驗館', category: '景點', notes: '看海豹', lat: 69.6481, lng: 18.9546 },
+                    { id: 703, time: '18:00', location: '聖誕大餐 (預訂)', category: '美食', notes: '聖誕節餐廳選擇少，需提前預訂', lat: 69.6502, lng: 18.9504 },
+                    { id: 704, time: '22:00', location: '極光郵輪 (Aurora Cruise)', category: '景點', notes: '出海追光', lat: 69.6502, lng: 18.9504 },
+                ],
+
+                // Day 8: 12/26 (五) - 特羅姆瑟 - 極光區 5/5
+                '2025-12-26': [
+                    { id: 801, time: '10:00', location: '特羅姆瑟大學博物館 (UiT)', category: '景點', notes: '瞭解薩米文化', lat: 69.6559, lng: 18.9482 },
+                    { id: 802, time: '14:00', location: '參觀特羅姆瑟圖書館', category: '景點', notes: '建築設計很美', lat: 69.6515, lng: 18.9555 },
+                    { id: 803, time: '18:00', location: '晚餐: Sjel Mat & Vin', category: '美食', notes: '當地特色料理', lat: 69.6508, lng: 18.9580 },
+                    { id: 804, time: '22:00', location: '特羅姆瑟戶外極光觀察點', category: '景點', notes: '若前幾天沒看到，這是最後機會', lat: 69.6502, lng: 18.9504 },
+                ],
+
+                // Day 9: 12/27 (六) - 哥本哈根 (Copenhagen, Denmark)
+                '2025-12-27': [
+                    { id: 901, time: '08:00', location: '特羅姆瑟機場 (TOS)', category: '交通', notes: '準備搭機', lat: 69.6833, lng: 18.9167 },
+                    { id: 902, time: '12:00', location: 'TOS ✈ CPH (轉機)', category: '航班', notes: '挪威航空', lat: 55.6179, lng: 12.6559 },
+                    { id: 903, time: '15:00', location: '抵達哥本哈根機場 (CPH)', category: '航班', notes: '搭火車/地鐵前往市區', lat: 55.6179, lng: 12.6559 },
+                    { id: 904, time: '17:00', location: '住宿 Check-in (近中央車站)', category: '住宿', notes: '放行李休息', lat: 55.6759, lng: 12.5655 },
+                    { id: 905, time: '19:00', location: '晚餐: Torvehallerne 市集', category: '美食', notes: '丹麥美食市集', lat: 55.6839, lng: 12.5695 },
+                ],
+
+                // Day 10: 12/28 (日) - 哥本哈根
+                '2025-12-28': [
+                    { id: 1001, time: '10:00', location: '新港 (Nyhavn)', category: '景點', notes: '彩色房子、搭運河船', lat: 55.6787, lng: 12.5912 },
+                    { id: 1002, time: '13:00', location: '小美人魚像 (The Little Mermaid)', category: '景點', notes: '拍照打卡', lat: 55.6931, lng: 12.5992 },
+                    { id: 1003, time: '15:00', location: 'Tivoli Gardens (蒂沃利花園)', category: '景點', notes: '聖誕節活動', lat: 55.6757, lng: 12.5663 },
+                    { id: 1004, time: '19:00', location: '晚餐: Noma (若有訂到)', category: '美食', notes: '世界頂級餐廳，高價位', lat: 55.6888, lng: 12.5959 },
+                ],
+
+                // Day 11: 12/29 (一) - 哥本哈根 🚢 斯德哥爾摩
+                '2025-12-29': [
+                    { id: 1101, time: '10:00', location: '圓塔 (Rundetaarn)', category: '景點', notes: '登高望遠', lat: 55.6834, lng: 12.5786 },
+                    { id: 1102, time: '12:00', location: 'Strøget 購物街', category: '購物', notes: '購買丹麥設計紀念品', lat: 55.6782, lng: 12.5700 },
+                    { id: 1103, time: '16:00', location: '中央車站/碼頭', category: '交通', notes: '準備搭乘郵輪', lat: 55.6759, lng: 12.5655 },
+                    { id: 1104, time: '17:00', location: '郵輪前往斯德哥爾摩 (過夜)', category: '交通', notes: 'DFDS Seaways', lat: 55.6888, lng: 12.6074 },
+                ],
+
+                // Day 12: 12/30 (二) - 斯德哥爾摩 (Stockholm, Sweden)
+                '2025-12-30': [
+                    { id: 1201, time: '10:00', location: '抵達斯德哥爾摩/碼頭', category: '交通', notes: '郵輪抵達', lat: 59.3374, lng: 18.0877 },
+                    { id: 1202, time: '12:00', location: '斯德哥爾摩住宿 Check-in', category: '住宿', notes: '放行李', lat: 59.3325, lng: 18.0673 },
+                    { id: 1203, time: '14:00', location: '舊城區 (Gamla Stan)', category: '景點', notes: '王宮、諾貝爾博物館', lat: 59.3293, lng: 18.0686 },
+                    { id: 1204, time: '18:00', location: '晚餐: Pelikan 瑞典菜', category: '美食', notes: '傳統瑞典肉丸', lat: 59.3175, lng: 18.0772 },
+                ],
+
+                // Day 13: 12/31 (三) - 斯德哥爾摩
+                '2025-12-31': [
+                    { id: 1301, time: '10:00', location: '瓦薩沉船博物館 (Vasamuseet)', category: '景點', notes: '參觀17世紀古戰船', lat: 59.3281, lng: 18.0901 },
+                    { id: 1302, time: '13:00', location: '斯堪森露天博物館 (Skansen)', category: '景點', notes: '動物園+歷史建築', lat: 59.3248, lng: 18.1065 },
+                    { id: 1303, time: '20:00', location: '新年前夜晚餐/活動', category: '景點', notes: '斯堪森露天博物館的跨年活動', lat: 59.3248, lng: 18.1065 },
+                ],
+
+                // Day 14: 01/01 (四) - 斯德哥爾摩
+                '2026-01-01': [
+                    { id: 1401, time: '11:00', location: '市區閒逛/休息', category: '景點', notes: '新年許多店鋪休息', lat: 59.3325, lng: 18.0673 },
+                    { id: 1402, time: '14:00', location: '斯德哥爾摩地鐵站藝術', category: '景點', notes: 'T-Centralen, Kungsträdgården', lat: 59.3314, lng: 18.0583 },
+                    { id: 1403, time: '18:00', location: '晚餐: Kajsas Fisk', category: '美食', notes: '海鮮湯', lat: 59.3333, lng: 18.0645 },
+                ],
+
+                // Day 15: 01/02 (五) - 斯德哥爾摩 ✈ 飛機上
+                '2026-01-02': [
+                    { id: 1501, time: '10:00', location: '北歐設計/紀念品購物', category: '購物', notes: '把握最後機會', lat: 59.3325, lng: 18.0673 },
+                    { id: 1502, time: '14:00', location: '前往 ARN 斯德哥爾摩機場', category: '交通', notes: '搭乘 Arlanda Express', lat: 59.6496, lng: 17.9255 },
+                    { id: 1503, time: '18:35', location: 'ARN 斯德哥爾摩 ✈ DXB 杜拜', category: '航班', notes: '阿聯酋航空', lat: 59.6496, lng: 17.9255 },
+                ],
+
+                // Day 16: 01/03 (六) - 杜拜 ✈ 台北
+                '2026-01-03': [
+                    { id: 1601, time: '03:15', location: '抵達 DXB 杜拜機場', category: '航班', notes: '轉機 (04:45DXB-16:20TPE)', lat: 25.2532, lng: 55.3656 },
+                    { id: 1602, time: '16:20', location: '抵達 TPE 桃園機場', category: '航班', notes: '結束旅行', lat: 25.0777, lng: 121.2298 },
+                ],
+            });
+
+            // --- 4. 新增極光預測資料 (羅瓦涅米/特羅姆瑟) ---
+            const auroraForecast = {
+                '2025-12-22': { kp: 3.3, time: '21:00 - 01:00' }, // 羅瓦涅米 (Rovaniemi, 芬蘭)
+                '2025-12-23': { kp: 4.7, time: '22:30 - 02:30' }, // 羅瓦涅米 (Rovaniemi, 芬蘭)
+                '2025-12-24': { kp: 2.0, time: '20:00 - 00:00' }, // 特羅姆瑟 (Tromsø, 挪威)
+                '2025-12-25': { kp: 5.0, time: '00:00 - 04:00' }, // 特羅姆瑟 (Tromsø, 挪威)
+                '2025-12-26': { kp: 2.8, time: '23:00 - 03:00' }, // 特羅姆瑟 (Tromsø, 挪威)
+            };
+
+
+            // --- 記帳/購物/裝備清單 資料維持不變 ---
+            const expenses = ref([
+                { id: 1, item: '機票 (TPE-HEL-TOS-CPH-ARN-TPE)', amount: 45000, date: '2025-09-01' },
+                { id: 2, item: '芬蘭住宿 (羅瓦涅米)', amount: 15000, date: '2025-10-15' },
+                { id: 3, item: '極光團費用', amount: 8000, date: '2025-12-22' },
+                { id: 4, item: '赫爾辛基晚餐', amount: 1200, date: '2025-12-20' },
+            ]);
+            const shoppingList = ref([
+                { id: 1, name: '極光專用相機腳架', done: true },
+                { id: 2, name: '行動電源 (大容量)', done: false },
+                { id: 3, name: 'Marimekko 托特包', done: false },
+            ]);
+            const travelChecklist = ref([
+                { id: 1, name: '羽絨外套', done: true, notes: '極地專用' },
+                { id: 2, name: '護照/簽證影本', done: true, notes: '' },
+                { id: 3, name: '羊毛衛生衣褲', done: false, notes: '至少兩套' },
+            ]);
+            let nextId = 10;
+            
+            // --- Modal 相關 ---
+            const isModalOpen = ref(false);
+            const modalType = ref(''); // 'accounting', 'shopping', 'checklist'
+            const tempItem = ref({});
+
+
+            // --- 計算屬性 ---
+            const currentItinerary = computed(() => {
+                return itinerary.value[activeDate.value] || [];
+            });
+
+            const currentCity = computed(() => {
+                return CITY_MAP[activeDate.value] || '未知城市';
+            });
+
+            const totalExpense = computed(() => {
+                return expenses.value.reduce((sum, item) => sum + item.amount, 0);
+            });
+
+            const totalExpenseEUR = computed(() => {
+                return (totalExpense.value / EXCHANGE_RATE).toFixed(2);
+            });
+
+            const modalTitle = computed(() => {
+                if (modalType.value === 'accounting') return '新增旅遊支出';
+                if (modalType.value === 'shopping') return '新增購物清單項目';
+                if (modalType.value === 'checklist') return '新增裝備/打包項目';
+                return '新增項目';
+            });
+            
+            // --- 4.1 新增 isAuroraDate 計算屬性 ---
+            // 判斷當前日期是否在 12/22 到 12/26 之間
+            const isAuroraDate = computed(() => {
+                return activeDate.value >= '2025-12-22' && activeDate.value <= '2025-12-26';
+            });
+
+            // --- 4.2 新增 currentAuroraForecast 計算屬性 ---
+            const currentAuroraForecast = computed(() => {
+                return auroraForecast[activeDate.value] || { kp: 0.0, time: '無預測' };
+            });
+
+
+            // --- 方法 ---
+            function formatDate(dateString) {
+                const parts = dateString.split('-');
+                return `${parts[1]}/${parts[2]}`;
+            }
+            
+            function getKpColor(kpValue) {
+                if (kpValue >= 5) return 'kp-good';
+                if (kpValue >= 3) return 'kp-fair';
+                return 'kp-low';
+            }
+
+            function setActiveDate(date) {
+                activeDate.value = date;
+                // 讓日期選單滑動到可見範圍
+                nextTick(() => {
+                    const container = document.querySelector('.date-scroll-container');
+                    const activeBtn = container.querySelector('.tab-date-active');
+                    if (activeBtn) {
+                        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+                    }
+                });
+            }
+
+            function getCurrentWeather() {
+                // 模擬天氣資料，因為這段程式碼無法連線外部 API
+                const city = currentCity.value.split('/')[0].trim();
+                if (city.includes('赫爾辛基') || city.includes('羅瓦涅米') || city.includes('特羅姆瑟')) {
+                    return { icon: '❄️', temp: '-5°C', desc: '下雪/極寒' };
+                } else if (city.includes('哥本哈根') || city.includes('斯德哥爾摩')) {
+                    return { icon: '☁️', temp: '2°C', desc: '陰天/濕冷' };
+                } else if (city.includes('台北')) {
+                    return { icon: '☔', temp: '18°C', desc: '下雨/舒適' };
+                } else {
+                    return { icon: '☀️', temp: '??°C', desc: '天氣未知' };
+                }
+            }
+
+            function getGoogleMapLink(item) {
+                return `https://www.google.com/maps/search/?api=1&query=${item.location},${item.lat},${item.lng}`;
+            }
+
+            function getMapDirectionsLink() {
+                const locations = currentItinerary.value.filter(item => item.lat && item.lng);
+                if (locations.length === 0) return '#';
+                
+                // 使用第一個地點作為終點的簡單連結
+                const destination = `${locations[0].lat},${locations[0].lng}`;
+                
+                return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
+            }
+
+            function showModal(type) {
+                modalType.value = type;
+                // 重設暫存資料
+                if (type === 'accounting') {
+                    tempItem.value = { item: '', amount: null, date: activeDate.value };
+                } else {
+                    tempItem.value = { name: '', done: false, notes: '' };
+                }
+                isModalOpen.value = true;
+            }
+
+            function saveItem() {
+                if (modalType.value === 'accounting') {
+                    if (!tempItem.value.item || !tempItem.value.amount) {
+                        alert('請輸入項目名稱及金額！');
+                        return;
+                    }
+                    expenses.value.push({
+                        id: nextId++,
+                        item: tempItem.value.item,
+                        amount: Number(tempItem.value.amount),
+                        date: activeDate.value // 記錄當天日期
+                    });
+                } else if (modalType.value === 'shopping') {
+                    if (!tempItem.value.name) {
+                        alert('請輸入待買項目名稱！');
+                        return;
+                    }
+                    shoppingList.value.push({
+                        id: nextId++,
+                        name: tempItem.value.name,
+                        done: false
+                    });
+                } else if (modalType.value === 'checklist') {
+                    if (!tempItem.value.name) {
+                        alert('請輸入裝備名稱！');
+                        return;
+                    }
+                    travelChecklist.value.push({
+                        id: nextId++,
+                        name: tempItem.value.name,
+                        done: false,
+                        notes: ''
+                    });
+                }
+                isModalOpen.value = false;
+            }
+
+            function deleteItem(listType, id) {
+                if (!confirm('確定要刪除此項目嗎？')) return;
+                
+                if (listType === 'itinerary') {
+                    itinerary.value[activeDate.value] = currentItinerary.value.filter(item => item.id !== id);
+                } else if (listType === 'accounting') {
+                    expenses.value = expenses.value.filter(item => item.id !== id);
+                } else if (listType === 'shopping') {
+                    shoppingList.value = shoppingList.value.filter(item => item.id !== id);
+                } else if (listType === 'checklist') {
+                    travelChecklist.value = travelChecklist.value.filter(item => item.id !== id);
+                }
+            }
+
+
+            // --- 監聽器 ---
+            // 切換日期或 tab 時，重新初始化地圖 (以更新標記)
+            watch([activeDate, activeTab], ([newDate, newTab]) => {
+                if (newTab === 'map' && googleMapsLoaded.value) {
+                    nextTick(() => initMap());
+                }
+            }, { immediate: true });
+            
+            // 首次載入完成後顯示 APP
+            nextTick(() => {
+                showApp();
+                // 載入完成後檢查是否需要初始化地圖 (防止 Google Maps 未載入)
+                if (googleMapsLoaded.value && activeTab.value === 'map') {
+                    initMap();
+                }
+            });
+
+
+            return {
+                // 資料
+                tabs,
+                activeTab,
+                travelDates,
+                activeDate,
+                expenses,
+                shoppingList,
+                travelChecklist,
+                isModalOpen,
+                modalType,
+                tempItem,
+                isGoogleMapsLoaded: googleMapsLoaded, // 傳遞 ref
+                map: null, // 地圖實例
+                markers: [], // 地圖標記
+
+                // 計算屬性
+                currentItinerary,
+                currentCity,
+                totalExpense,
+                totalExpenseEUR,
+                modalTitle,
+                currentMapLink: computed(getMapDirectionsLink), // 動態地圖連結
+                isAuroraDate, // 新增
+                currentAuroraForecast, // 新增
+
+                // 方法
+                formatDate,
+                setActiveDate,
+                getCurrentWeather,
+                getGoogleMapLink,
+                showModal,
+                saveItem,
+                deleteItem,
+                initMap, // 讓外部 window.initApp 可以呼叫
+                getKpColor // 新增
+            };
+        }
+    });
+    
+    appInstance = app.mount('#app');
+}
+
+// 確保在 Google Maps API 載入前，APP 也可以先掛載
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+        // Google Maps API 未載入，等待 initApp 呼叫
+        if (!appInstance) mountVueApp();
+    }
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+            // Google Maps API 未載入，等待 initApp 呼叫
+            if (!appInstance) mountVueApp();
+        }
+    });
+}
+</script>
+</body>
+</html>
