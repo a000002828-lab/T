@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐旅行計畫 - Nordic Bliss App V5</title>
+    <title>北歐極光之旅計畫 - Aurora Planner V6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        /* Nordics Color Palette */
-        .bg-nordic-blue { background-color: #3b82f6; } 
-        .text-nordic-blue { color: #3b82f6; }
-        .bg-page { background-color: #f1f5f9; }
+        /* Aurora Nordics Color Palette (深色模式基調) */
+        .bg-aurora-dark { background-color: #0b1a2d; /* Midnight Blue */ } 
+        .text-aurora-light { color: #e9ecef; /* Off-White */ }
+        .bg-highlight { background-color: #0d2f4d; /* Dark Blue Gray */ }
+        .text-accent { color: #50c878; /* Emerald Green/Aurora Green */ }
+        .border-accent { border-color: #50c878; }
         
         /* Mobile App Container */
         #app {
@@ -19,11 +21,11 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: #f1f5f9;
+            background-color: #0b1a2d; /* Midnight Blue */
             position: relative;
         }
 
-        /* Vue Transition Styles (Simple Fade for tab changes) */
+        /* Vue Transition Styles */
         .fade-enter-active, .fade-leave-active {
             transition: opacity 0.3s ease;
         }
@@ -36,98 +38,104 @@
             height: 4px;
         }
         .date-slider::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #495057; /* Dark Gray */
             border-radius: 2px;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-900">
 
 <div id="app">
-    <header class="sticky top-0 bg-white shadow-md p-4 flex items-center justify-center z-20">
-        <h1 class="text-xl font-extrabold text-nordic-blue">
+    <header class="sticky top-0 bg-highlight shadow-xl p-4 flex items-center justify-center z-20 border-b border-gray-700">
+        <h1 class="text-xl font-extrabold text-accent">
             {{ headerTitle }}
         </h1>
     </header>
 
-    <main class="flex-grow overflow-y-auto bg-page relative">
+    <main class="flex-grow overflow-y-auto bg-aurora-dark relative">
         <transition name="fade" mode="out-in">
             
             <div v-if="currentTab === 'itinerary'" key="itinerary" class="pb-4">
                 
-                <div class="sticky top-0 bg-white shadow-inner p-2 mb-4 z-10">
+                <div class="sticky top-0 bg-highlight shadow-inner p-2 mb-4 z-10 border-b border-gray-800">
                     <div class="date-slider flex overflow-x-scroll space-x-2 pb-2">
                         <button v-for="(day, index) in itinerary" :key="index"
                                 @click="selectDay(day)"
-                                class="flex-shrink-0 px-3 py-1 text-sm font-medium rounded-full transition-colors"
-                                :class="{'bg-nordic-blue text-white shadow-lg': selectedDay === day, 'bg-gray-200 text-gray-700 hover:bg-gray-300': selectedDay !== day}">
+                                class="flex-shrink-0 px-3 py-1 text-sm font-medium rounded-full transition-colors border"
+                                :class="{
+                                    'bg-accent border-accent text-aurora-dark shadow-lg font-bold': selectedDay === day, 
+                                    'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600': selectedDay !== day
+                                }">
                             {{ day.date.substring(5) }} <span class="text-xs ml-1 opacity-70">({{ day.day_of_week.substring(0, 1) }})</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="p-4" v-if="selectedDay">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ selectedDay.date.substring(5) }} - {{ selectedDay.city_country }}</h2>
+                    <h2 class="text-2xl font-bold text-aurora-light mb-4">{{ selectedDay.date.substring(5) }} - {{ selectedDay.city_country }}</h2>
 
-                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-blue-50 rounded-xl shadow-md border-l-4 border-nordic-blue flex items-center">
-                        <svg class="w-7 h-7 text-nordic-blue mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-highlight rounded-xl shadow-md border-l-4 border-gray-500 flex items-center">
+                        <svg class="w-7 h-7 text-gray-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         <div class="text-sm">
-                            <p class="font-bold text-gray-700">❄️ 預計天氣</p>
-                            <p class="text-gray-600">🌡️ {{ selectedDay.weather['氣溫'] || 'N/A' }} / ☀️ {{ selectedDay.weather['日照'] || 'N/A' }}</p>
+                            <p class="font-bold text-aurora-light">❄️ 預計天氣</p>
+                            <p class="text-gray-400">🌡️ {{ selectedDay.weather['氣溫'] || 'N/A' }} / ☀️ {{ selectedDay.weather['日照'] || 'N/A' }}</p>
                         </div>
                     </div>
 
-                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 bg-purple-50 rounded-xl shadow-md border-l-4 border-purple-600 flex items-center">
-                        <svg class="w-7 h-7 text-purple-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
-                        <div class="text-sm">
-                            <p class="font-bold text-gray-700">🌌 極光預報 (建議)</p>
-                            <p class="text-gray-600">**KP 指數：**<span class="font-semibold text-purple-700">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
-                            <p class="text-gray-600">**最佳時間：**{{ selectedDay.aurora_forecast['time_range'] }}</p>
-                            <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-purple-500 mt-1">💡 {{ selectedDay.aurora_forecast['notes'] }}</p>
+                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 rounded-xl shadow-lg border-l-4 border-accent" style="background-color: #1a425f;">
+                        <div class="flex items-center">
+                            <svg class="w-7 h-7 text-accent mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
+                            <div class="text-sm">
+                                <p class="font-bold text-aurora-light">🌌 極光預報 (建議)</p>
+                                <p class="text-gray-300">**KP 指數：**<span class="font-semibold text-accent">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
+                                <p class="text-gray-300">**最佳時間：**{{ selectedDay.aurora_forecast['time_range'] }}</p>
+                                <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-accent mt-1">💡 {{ selectedDay.aurora_forecast['notes'] }}</p>
+                            </div>
                         </div>
                     </div>
+                    
 
-                    <h3 class="text-xl font-bold text-gray-700 mb-3">當日安排</h3>
-                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-white rounded-xl shadow-md p-4">
+                    <h3 class="text-xl font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">當日安排</h3>
+                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-highlight rounded-xl shadow-md p-4 border border-gray-700">
                         <div class="flex justify-between items-start">
                             <div class="flex-grow">
-                                <p class="text-sm font-bold text-nordic-blue">{{ item.time }}</p>
-                                <p class="font-medium text-gray-800 text-lg">{{ item.schedule }}</p>
+                                <p class="text-sm font-bold text-accent">{{ item.time }}</p>
+                                <p class="font-medium text-aurora-light text-lg">{{ item.schedule }}</p>
                             </div>
-                            <button @click="showFeatureAlert('編輯行程')" class="text-gray-400 hover:text-nordic-blue transition p-1">
+                            <button @click="showFeatureAlert('編輯行程')" class="text-gray-500 hover:text-accent transition p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                             </button>
                         </div>
                         
-                        <a v-if="item.location" :href="getMapLink(item.location)" target="_blank" class="text-sm text-green-600 hover:underline flex items-center mt-2 pt-2 border-t border-gray-100">
+                        <a v-if="item.location" :href="getMapLink(item.location)" target="_blank" class="text-sm text-blue-400 hover:underline flex items-center mt-2 pt-2 border-t border-gray-700">
                             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
                             {{ item.location }} (Google 地圖導航)
                         </a>
                     </div>
                     
-                    <div class="mt-6 p-4 bg-white rounded-xl shadow-md text-sm text-gray-600">
-                        <p class="font-bold text-gray-700">🏠 住宿：{{ selectedDay.accommodation }}</p>
+                    <div class="mt-6 p-4 bg-highlight rounded-xl shadow-md text-sm text-gray-400 border border-gray-700">
+                        <p class="font-bold text-aurora-light">🏠 住宿：{{ selectedDay.accommodation }}</p>
                     </div>
                 </div>
             </div>
 
             <div v-else-if="currentTab === 'checklist'" key="checklist" class="p-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">行前裝備清單 📋</h2>
+                <h2 class="text-2xl font-bold text-aurora-light mb-4">行前裝備清單 📋</h2>
                 <p class="text-sm text-gray-500 mb-4">點擊項目可標記為已完成 / 點擊分類標題可展開收合。</p>
-                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div @click="toggleChecklist(category)" class="p-4 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100">
-                        <h3 class="text-xl font-bold text-nordic-blue">{{ category }}</h3>
-                        <span class="text-sm text-gray-500">{{ getCheckedCount(category) }} / {{ items.length }}</span>
+                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-highlight rounded-xl shadow-lg overflow-hidden border border-gray-700">
+                    <div @click="toggleChecklist(category)" class="p-4 flex justify-between items-center cursor-pointer bg-gray-700 hover:bg-gray-600">
+                        <h3 class="text-xl font-bold text-accent">{{ category }}</h3>
+                        <span class="text-sm text-gray-400">{{ getCheckedCount(category) }} / {{ items.length }}</span>
                     </div>
                     
                     <ul v-if="!collapsedChecklist[category]" class="p-4 pt-0 space-y-3">
-                        <li v-for="(item, index) in items" :key="index" class="flex items-center text-gray-700 pt-3 border-t border-gray-100 first:border-t-0">
-                            <input type="checkbox" :id="category + index" v-model="item.checked" class="form-checkbox h-5 w-5 text-nordic-blue rounded-sm mr-3">
+                        <li v-for="(item, index) in items" :key="index" class="flex items-center text-gray-300 pt-3 border-t border-gray-700 first:border-t-0">
+                            <input type="checkbox" :id="category + index" v-model="item.checked" class="form-checkbox h-5 w-5 text-accent rounded-sm mr-3 border-gray-500 bg-gray-800">
                             <label :for="category + index" class="text-base flex-grow cursor-pointer" :class="{ 'line-through text-gray-500': item.checked }">
                                 {{ item.name }}
                                 <span v-if="item.notes" class="text-xs text-gray-500"> ({{ item.notes }})</span>
                             </label>
-                            <button @click.stop="showFeatureAlert('編輯清單項目')" class="text-gray-400 hover:text-nordic-blue transition p-1">
+                            <button @click.stop="showFeatureAlert('編輯清單項目')" class="text-gray-500 hover:text-accent transition p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                             </button>
                         </li>
@@ -136,49 +144,49 @@
             </div>
 
             <div v-else-if="currentTab === 'accounting'" key="accounting" class="p-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">記帳中心 💰</h2>
-                <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
-                    <p class="text-lg font-bold text-gray-800">總支出：<span class="text-red-600">NT$ {{ totalSpent.toLocaleString() }}</span></p>
+                <h2 class="text-2xl font-bold text-aurora-light mb-4">記帳中心 💰</h2>
+                <div class="bg-highlight rounded-xl shadow-lg p-4 mb-6 border border-gray-700">
+                    <p class="text-lg font-bold text-aurora-light">總支出：<span class="text-red-500">NT$ {{ totalSpent.toLocaleString() }}</span></p>
                 </div>
                 
-                <h3 class="text-xl font-bold text-gray-700 mb-3">支出紀錄</h3>
-                <div v-if="accounting.length === 0" class="bg-yellow-50 text-yellow-800 p-4 rounded-xl shadow-md text-center">
+                <h3 class="text-xl font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">支出紀錄</h3>
+                <div v-if="accounting.length === 0" class="bg-gray-800 text-yellow-400 p-4 rounded-xl shadow-md text-center border border-gray-700">
                     <p>目前沒有支出紀錄。請點擊右下角按鈕 **+ 新增支出**。</p>
                 </div>
-                <div v-for="(transaction, index) in accounting" :key="index" class="bg-white rounded-xl shadow-md p-4 mb-3 flex justify-between items-center">
+                <div v-for="(transaction, index) in accounting" :key="index" class="bg-highlight rounded-xl shadow-md p-4 mb-3 flex justify-between items-center border border-gray-700">
                     <div>
-                        <p class="font-medium text-gray-800">{{ transaction.description }}</p>
+                        <p class="font-medium text-aurora-light">{{ transaction.description }}</p>
                         <p class="text-sm text-gray-500">{{ transaction.date }} ({{ transaction.category }})</p>
                     </div>
-                    <p class="text-lg font-bold text-red-600">
+                    <p class="text-lg font-bold text-red-500">
                         - NT$ {{ transaction.amount.toLocaleString() }}
                     </p>
                 </div>
             </div>
 
             <div v-else-if="currentTab === 'shopping'" key="shopping" class="p-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">購物清單 🎁</h2>
-                <div v-if="shoppingList.length === 0" class="bg-yellow-50 text-yellow-800 p-4 rounded-xl shadow-md text-center mb-4">
+                <h2 class="text-2xl font-bold text-aurora-light mb-4">購物清單 🎁</h2>
+                <div v-if="shoppingList.length === 0" class="bg-gray-800 text-yellow-400 p-4 rounded-xl shadow-md text-center mb-4 border border-gray-700">
                     <p>目前沒有購物清單項目。請點擊右下角按鈕 **+ 購物項目**。</p>
                 </div>
-                <div v-for="(item, index) in shoppingList" :key="index" class="bg-white rounded-xl shadow-md p-4 mb-3 flex items-center">
-                    <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-green-500 rounded-sm mr-3">
-                    <label :for="'shop' + index" class="flex-grow text-gray-700" :class="{ 'line-through text-gray-500': item.purchased }">
+                <div v-for="(item, index) in shoppingList" :key="index" class="bg-highlight rounded-xl shadow-md p-4 mb-3 flex items-center border border-gray-700">
+                    <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-accent rounded-sm mr-3 border-gray-500 bg-gray-800">
+                    <label :for="'shop' + index" class="flex-grow text-gray-300" :class="{ 'line-through text-gray-500': item.purchased }">
                         <span class="font-medium text-lg">{{ item.name }}</span>
                         <span v-if="item.store" class="text-sm text-gray-500 block">({{ item.store }})</span>
                     </label>
-                    <button @click.stop="showFeatureAlert('編輯購物項目')" class="text-gray-400 hover:text-nordic-blue transition p-1">
+                    <button @click.stop="showFeatureAlert('編輯購物項目')" class="text-gray-500 hover:text-accent transition p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                     </button>
                 </div>
             </div>
             
             <div v-else-if="currentTab === 'info'" key="info" class="p-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">實用資訊 💡</h2>
+                <h2 class="text-2xl font-bold text-aurora-light mb-4">實用資訊 💡</h2>
                 <div class="space-y-4">
-                    <div class="bg-white rounded-xl shadow-lg p-4">
-                        <h3 class="text-xl font-bold text-gray-700 mb-2">編輯功能說明 (重要)</h3>
-                        <p class="text-sm text-red-500">
+                    <div class="bg-highlight rounded-xl shadow-lg p-4 border border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-300 mb-2">編輯功能說明 (重要)</h3>
+                        <p class="text-sm text-red-400">
                             **您目前使用的是單純的 HTML/Vue.js 程式碼，無法真正儲存您新增或編輯的資料。**
                             若要實現實際編輯和儲存 (例如新增行程)，需要搭配以下技術：
                             <br>1. **瀏覽器本地儲存 (Local Storage)**
@@ -193,33 +201,33 @@
     
     <div class="fixed bottom-20 right-4 z-50">
         <div v-if="isAddMenuOpen" @click.away="isAddMenuOpen = false" class="mb-3 space-y-2">
-            <button v-if="currentTab === 'itinerary'" @click.prevent="showFeatureAlert('新增行程')" class="block w-40 p-3 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-xl hover:bg-gray-100 transition">
+            <button v-if="currentTab === 'itinerary'" @click.prevent="showFeatureAlert('新增行程')" class="block w-40 p-3 bg-highlight text-aurora-light text-sm font-medium rounded-lg shadow-xl hover:bg-gray-700 transition border border-gray-700">
                 + 新增行程
             </button>
-            <button v-if="currentTab === 'accounting'" @click.prevent="showFeatureAlert('新增支出')" class="block w-40 p-3 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-xl hover:bg-gray-100 transition">
+            <button v-if="currentTab === 'accounting'" @click.prevent="showFeatureAlert('新增支出')" class="block w-40 p-3 bg-highlight text-aurora-light text-sm font-medium rounded-lg shadow-xl hover:bg-gray-700 transition border border-gray-700">
                 + 新增支出
             </button>
-            <button v-if="currentTab === 'shopping'" @click.prevent="showFeatureAlert('新增購物')" class="block w-40 p-3 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-xl hover:bg-gray-100 transition">
+            <button v-if="currentTab === 'shopping'" @click.prevent="showFeatureAlert('新增購物')" class="block w-40 p-3 bg-highlight text-aurora-light text-sm font-medium rounded-lg shadow-xl hover:bg-gray-700 transition border border-gray-700">
                 + 購物項目
             </button>
-            <button v-if="currentTab === 'checklist'" @click.prevent="showFeatureAlert('新增清單')" class="block w-40 p-3 bg-white text-gray-700 text-sm font-medium rounded-lg shadow-xl hover:bg-gray-100 transition">
+            <button v-if="currentTab === 'checklist'" @click.prevent="showFeatureAlert('新增清單')" class="block w-40 p-3 bg-highlight text-aurora-light text-sm font-medium rounded-lg shadow-xl hover:bg-gray-700 transition border border-gray-700">
                 + 新增清單項目
             </button>
         </div>
         
         <button v-if="['itinerary', 'accounting', 'shopping', 'checklist'].includes(currentTab)" 
                 @click="isAddMenuOpen = !isAddMenuOpen" 
-                class="bg-nordic-blue text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-blue-600 transition transform hover:rotate-90">
+                class="bg-accent text-aurora-dark w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-green-500 transition transform hover:rotate-90">
             <svg v-if="!isAddMenuOpen" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             <svg v-else class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
 
-    <nav class="sticky bottom-0 bg-white border-t border-gray-200 shadow-2xl p-2 z-20">
+    <nav class="sticky bottom-0 bg-highlight border-t border-gray-700 shadow-2xl p-2 z-20">
         <ul class="flex justify-around">
             <li v-for="tab in tabs" :key="tab.id" class="flex-1 text-center">
                 <a href="#" @click.prevent="changeTab(tab.id)" 
-                   :class="{'flex flex-col items-center p-2 rounded-lg transition-colors': true, 'text-nordic-blue bg-blue-50': currentTab === tab.id, 'text-gray-500 hover:text-gray-700': currentTab !== tab.id}">
+                   :class="{'flex flex-col items-center p-2 rounded-lg transition-colors': true, 'text-accent bg-gray-800': currentTab === tab.id, 'text-gray-400 hover:text-gray-300': currentTab !== tab.id}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" v-html="tab.icon"></svg>
                     <span class="text-xs mt-1 font-medium">{{ tab.name }}</span>
                 </a>
@@ -231,14 +239,14 @@
 <script>
     const { createApp, computed, ref } = Vue;
 
-    // **修正後的 Google Maps 導航連結生成器 (解決潛在亂碼問題)**
+    // Google Maps 導航連結生成器 (修正版)
     const getMapLink = (query) => {
-        // 使用 Google Maps 的標準搜尋 API 網址，並正確使用模板字串語法
+        // 使用 Google Maps 的標準搜尋 URL 參數，確保編碼正確
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     };
 
     // ----------------------------------------------------
-    // VUE APP 數據 (已包含 16 天行程與極光預報建議)
+    // VUE APP 數據 (行程已包含極光預報建議，記帳與購物清單已清空)
     // ----------------------------------------------------
     const itineraryData = [
         {
@@ -428,7 +436,7 @@
         
         itinerary: itineraryData,
 
-        // 2. 行前清單 (完整列出)
+        // 2. 行前清單
         checklist: {
             '衣物類': [
                 { name: '內衣褲', notes: '', checked: false },
@@ -452,7 +460,7 @@
             '個人用品': [
                 { name: '牙刷牙膏', notes: '', checked: false },
                 { name: '盥洗用品', notes: '洗髮精、沐浴乳等', checked: false },
-                { name: '臉部洗卸用品', notes: '', checked: false },
+                { name: '臉部洗卸用品', notes: '卸妝乳、洗面乳', checked: false },
                 { name: '保養品', notes: '臉、身體、護唇膏、護手霜 (北歐極度乾燥)', checked: false },
                 { name: '化妝品、梳子/面膜', notes: '', checked: false },
                 { name: '隱形眼鏡/近視眼鏡', notes: '', checked: false },
@@ -495,7 +503,7 @@
 
             const headerTitle = computed(() => {
                 const tab = tabs.find(t => t.id === currentTab.value);
-                return tab ? `❄️ ${tab.name}` : 'Nordic Bliss Planner';
+                return tab ? `⭐ ${tab.name}` : 'Aurora Bliss Planner';
             });
             
             // Methods
