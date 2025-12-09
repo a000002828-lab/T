@@ -1,789 +1,969 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐極簡之旅計畫 - Nordic Planner V13 (含編輯功能)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <style>
-        /* 1. Nordic Minimalism + Stronger Snowy Theme Color Palette */
-        :root {
-            --nordic-bg-soft: #eef4f7; /* Soft light blue/gray for main background (Stronger Nordic winter sky) */
-            --nordic-white: #ffffff; /* Pure White for card backgrounds (Snow) */
-            --nordic-dark: #343a40; /* Dark text for readability */
-            --nordic-muted: #adb5bd; /* Muted gray for secondary text/borders */
-            --nordic-accent: #2c6e73; /* Stronger Muted Teal/Pine Green for primary highlight */
-            --nordic-christmas: #a7333d; /* Deeper Christmas Red for contrast/alerts/expense */
-        }
-        
-        /* 2. Custom Tailwind-like classes using CSS variables */
-        .bg-nordic-soft { background-color: var(--nordic-bg-soft); }
-        .bg-nordic-white { background-color: var(--nordic-white); }
-        .text-nordic-dark { color: var(--nordic-dark); }
-        .text-nordic-accent { color: var(--nordic-accent); }
-        .border-nordic-muted { border-color: var(--nordic-muted); }
-        .text-nordic-christmas { color: var(--nordic-christmas); }
-        
-        /* Stronger, clearer shadow for a "floating on snow" effect */
-        .shadow-snowy { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); } 
-        .shadow-strong { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); } 
 
-        /* Mobile App Container */
-        #app {
-            max-width: 600px;
-            margin: auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--nordic-bg-soft); 
-            position: relative;
-        }
+    <meta charset="UTF-8">
 
-        /* Vue Transition Styles */
-        .fade-enter-active, .fade-leave-active {
-            transition: opacity 0.3s ease;
-        }
-        .fade-enter-from, .fade-leave-to {
-            opacity: 0;
-        }
-        
-        /* Itinerary Date Slider Scrollbar */
-        .date-slider::-webkit-scrollbar {
-            height: 4px;
-        }
-        .date-slider::-webkit-scrollbar-thumb {
-            background: var(--nordic-muted); 
-            border-radius: 2px;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        /* Modal Backdrop */
-        .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    <title>北歐之旅計畫 - Nordic Planner V13 (含編輯功能)</title>
 
-        /* Save Button Color (Ensuring it has color as requested) */
-        .btn-save {
-            background-color: var(--nordic-accent);
-        }
-        .btn-save:hover {
-            background-color: #24585c; /* A slightly darker teal for hover */
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+
+        /* 1. Nordic Minimalism + Stronger Snowy Theme Color Palette */
+
+        :root {
+
+            --nordic-bg-soft: #eef4f7; /* Soft light blue/gray for main background (Stronger Nordic winter sky) */
+
+            --nordic-white: #ffffff; /* Pure White for card backgrounds (Snow) */
+
+            --nordic-dark: #343a40; /* Dark text for readability */
+
+            --nordic-muted: #adb5bd; /* Muted gray for secondary text/borders */
+
+            --nordic-accent: #2c6e73; /* Stronger Muted Teal/Pine Green for primary highlight */
+
+            --nordic-christmas: #a7333d; /* Deeper Christmas Red for contrast/alerts/expense */
+
+        }
+
+        
+
+        /* 2. Custom Tailwind-like classes using CSS variables */
+
+        .bg-nordic-soft { background-color: var(--nordic-bg-soft); }
+
+        .bg-nordic-white { background-color: var(--nordic-white); }
+
+        .text-nordic-dark { color: var(--nordic-dark); }
+
+        .text-nordic-accent { color: var(--nordic-accent); }
+
+        .border-nordic-muted { border-color: var(--nordic-muted); }
+
+        .text-nordic-christmas { color: var(--nordic-christmas); }
+
+        
+
+        /* Stronger, clearer shadow for a "floating on snow" effect */
+
+        .shadow-snowy { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); } 
+
+        .shadow-strong { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); } 
+
+
+
+        /* Mobile App Container */
+
+        #app {
+
+            max-width: 600px;
+
+            margin: auto;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            flex-direction: column;
+
+            background-color: var(--nordic-bg-soft); 
+
+            position: relative;
+
+        }
+
+
+
+        /* Vue Transition Styles */
+
+        .fade-enter-active, .fade-leave-active {
+
+            transition: opacity 0.3s ease;
+
+        }
+
+        .fade-enter-from, .fade-leave-to {
+
+            opacity: 0;
+
+        }
+
+        
+
+        /* Itinerary Date Slider Scrollbar */
+
+        .date-slider::-webkit-scrollbar {
+
+            height: 4px;
+
+        }
+
+        .date-slider::-webkit-scrollbar-thumb {
+
+            background: var(--nordic-muted); 
+
+            border-radius: 2px;
+
+        }
+
+
+
+        /* Modal Backdrop */
+
+        .modal-backdrop {
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background-color: rgba(0, 0, 0, 0.4);
+
+            z-index: 50;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+        }
+
+
+
+        /* Save Button Color (Ensuring it has color as requested) */
+
+        .btn-save {
+
+            background-color: var(--nordic-accent);
+
+        }
+
+        .btn-save:hover {
+
+            background-color: #24585c; /* A slightly darker teal for hover */
+
+        }
+
+    </style>
+
 </head>
+
 <body class="bg-gray-100">
 
+
+
 <div id="app">
-    <header class="sticky top-0 bg-nordic-soft p-4 flex items-center justify-center z-20">
-        <h1 class="text-xl font-extrabold text-nordic-accent">
-            {{ headerTitle }}
-        </h1>
-    </header>
 
-    <main class="flex-grow overflow-y-auto bg-nordic-soft relative">
-        <transition name="fade" mode="out-in">
-            
-            <div v-if="currentTab === 'itinerary'" key="itinerary" class="pb-4">
-                
-                <div class="sticky top-0 bg-nordic-soft p-2 mb-4 z-10">
-                    <div class="date-slider flex overflow-x-scroll space-x-2 pb-2">
-                        <button v-for="(day, index) in itinerary" :key="index"
-                                @click="selectDay(day)"
-                                class="flex-shrink-0 px-3 py-1 text-sm font-medium rounded-full transition-colors border"
-                                :class="{
-                                    // 修正點：選中日期的樣式 (非反白，高對比邊框)
-                                    'bg-white border-2 border-nordic-accent text-nordic-accent shadow-md font-bold': selectedDay === day, 
-                                    'bg-white border-gray-300 text-nordic-dark hover:bg-gray-100': selectedDay !== day
-                                }">
-                            {{ day.date.substring(5) }} <span class="text-xs ml-1 opacity-70">({{ day.day_of_week.substring(0, 1) }})</span>
-                        </button>
-                    </div>
-                </div>
+    <header class="sticky top-0 bg-nordic-soft p-4 flex items-center justify-center z-20">
 
-                <div class="p-4" v-if="selectedDay">
-                    <h2 class="text-2xl font-bold text-nordic-dark mb-4">
-                        {{ getFlagEmoji(selectedDay.country_code) }} 
-                        {{ selectedDay.date.substring(5) }} - 
-                        {{ selectedDay.city_country_zh }}
-                    </h2>
+        <h1 class="text-xl font-extrabold text-nordic-accent">
 
-                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-nordic-white rounded-xl shadow-strong border-l-4 border-gray-300 flex items-center">
-                        <svg class="w-7 h-7 text-gray-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        <div class="text-sm">
-                            <p class="font-bold text-nordic-dark">❄️ 預計天氣</p>
-                            <p class="text-gray-500">🌡️ {{ selectedDay.weather['氣溫'] || 'N/A' }} / ☀️ {{ selectedDay.weather['日照'] || 'N/A' }}</p>
-                        </div>
-                    </div>
+            {{ headerTitle }}
 
-                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 rounded-xl shadow-strong border-l-4 border-nordic-accent bg-nordic-white">
-                        <div class="flex items-center">
-                            <svg class="w-7 h-7 text-nordic-accent mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
-                            <div class="text-sm">
-                                <p class="font-bold text-nordic-dark">🌌 極光預報 (建議)</p>
-                                <p class="text-gray-600">**KP 指數：**<span class="font-semibold text-nordic-accent">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
-                                <p class="text-gray-600">**最佳時間：**{{ selectedDay.aurora_forecast['time_range'] }}</p>
-                                <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-nordic-accent mt-1">💡 {{ selectedDay.aurora_forecast['notes'] }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">當日安排</h3>
-                    <div v-if="selectedDay.events.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center border border-gray-200 mb-4">
-                        <p>本日行程尚未安排。請點擊右下角按鈕 **+ 新增行程**。</p>
-                    </div>
-                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-grow">
-                                <p class="text-sm font-bold text-nordic-accent">{{ item.time.substring(0, 5) }}</p>
-                                <p class="font-medium text-nordic-dark text-lg">{{ item.schedule }}</p>
-                            </div>
-                            <button @click="openModalForEdit('itinerary', item, itemIndex)" class="text-nordic-accent hover:text-teal-600 transition p-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
-                            </button>
-                        </div>
-                        
-                        <a v-if="item.location" :href="getMapLink(item.location)" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center mt-2 pt-2 border-t border-gray-200">
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
-                            {{ item.location }}
-                        </a>
-                    </div>
-                    
-                    <div class="mt-6 p-4 bg-nordic-white rounded-xl shadow-strong text-sm text-gray-500 border border-gray-200">
-                        <p class="font-bold text-nordic-dark">🏠 住宿：{{ selectedDay.accommodation }}</p>
-                    </div>
-                </div>
-            </div>
+        </h1>
 
-            <div v-else-if="currentTab === 'checklist'" key="checklist" class="p-4">
-                <h2 class="text-2xl font-bold text-nordic-dark mb-4">行前裝備清單 📋</h2>
-                <p class="text-sm text-gray-500 mb-4">點擊項目可標記為已完成 / 點擊分類標題可展開收合。</p>
-                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-nordic-white rounded-xl shadow-strong overflow-hidden border border-gray-200">
-                    <div @click="toggleChecklist(category)" class="p-4 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100">
-                        <h3 class="text-xl font-bold text-nordic-accent">{{ category }}</h3>
-                        <span class="text-sm text-gray-500">{{ getCheckedCount(category) }} / {{ items.length }}</span>
-                    </div>
-                    
-                    <ul v-if="!collapsedChecklist[category]" class="p-4 pt-0 space-y-3">
-                        <li v-for="(item, index) in items" :key="index" class="flex items-center text-nordic-dark pt-3 border-t border-gray-200 first:border-t-0">
-                            <input type="checkbox" :id="category + index" v-model="item.checked" class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-3 border-gray-300 bg-white">
-                            <label :for="category + index" class="text-base flex-grow cursor-pointer" :class="{ 'line-through text-gray-400': item.checked }">
-                                {{ item.name }}
-                                <span v-if="item.notes" class="text-xs text-gray-500"> ({{ item.notes }})</span>
-                            </label>
-                            <button @click.stop="openModalForEdit('checklist', item, index, category)" class="text-nordic-accent hover:text-teal-600 transition p-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div v-else-if="currentTab === 'accounting'" key="accounting" class="p-4">
-                <h2 class="text-2xl font-bold text-nordic-dark mb-4">記帳中心 💰</h2>
-                <div class="bg-nordic-white rounded-xl shadow-strong p-4 mb-6 border border-gray-200">
-                    <p class="text-lg font-bold text-nordic-dark">總支出：<span class="text-nordic-christmas">NT$ {{ totalSpent.toLocaleString() }}</span></p>
-                </div>
-                
-                <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">支出紀錄</h3>
-                <div v-if="accounting.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center border border-gray-200">
-                    <p>目前沒有支出紀錄。請點擊右下角按鈕 **+ 新增支出**。</p>
-                </div>
-                <div v-for="(transaction, index) in accounting" :key="index" class="bg-nordic-white rounded-xl shadow-strong p-4 mb-3 flex justify-between items-center border border-gray-200">
-                    <div>
-                        <p class="font-medium text-nordic-dark">{{ transaction.description }}</p>
-                        <p class="text-sm text-gray-500">{{ transaction.date }} ({{ transaction.category }})</p>
-                    </div>
-                    <div class="flex items-center">
-                        <p class="text-lg font-bold text-nordic-christmas mr-3">
-                            - NT$ {{ transaction.amount.toLocaleString() }}
-                        </p>
-                        <button @click.stop="openModalForEdit('accounting', transaction, index)" class="text-nordic-accent hover:text-teal-600 transition p-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div v-else-if="currentTab === 'shopping'" key="shopping" class="p-4">
-                <h2 class="text-2xl font-bold text-nordic-dark mb-4">購物清單 🎁</h2>
-                <div v-if="shoppingList.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center mb-4 border border-gray-200">
-                    <p>目前沒有購物清單項目。請點擊右下角按鈕 **+ 購物項目**。</p>
-                </div>
-                <div v-for="(item, index) in shoppingList" :key="index" class="bg-nordic-white rounded-xl shadow-strong p-4 mb-3 flex items-center border border-gray-200">
-                    <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-3 border-gray-300 bg-white">
-                    <label :for="'shop' + index" class="flex-grow text-nordic-dark" :class="{ 'line-through text-gray-400': item.purchased }">
-                        <span class="font-medium text-lg">{{ item.name }}</span>
-                        <span v-if="item.store" class="text-sm text-gray-500 block">({{ item.store }})</span>
-                    </label>
-                    <button @click.stop="openModalForEdit('shopping', item, index)" class="text-nordic-accent hover:text-teal-600 transition p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
-                    </button>
-                </div>
-            </div>
-            
-            <div v-else-if="currentTab === 'info'" key="info" class="p-4">
-                <h2 class="text-2xl font-bold text-nordic-dark mb-4">實用資訊 💡</h2>
-                <div class="space-y-4">
-                    <div class="bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
-                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存與編輯說明 (V13 更新)</h3>
-                        <p class="text-sm text-nordic-accent mb-2 font-bold">
-                            ✅ 行程、記帳、清單功能已全面啟用編輯、新增、刪除！
-                        </p>
-                        <p class="text-sm text-gray-600">
-                            所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)，重新整理頁面數據不會遺失。<br>
-                            （首次載入時，將使用 **空的行程框架** 和 **預設的清單** 作為起始數據。）
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-        </transition>
-    </main>
-    
-    <div class="fixed bottom-24 right-4 z-50">
-        <div v-if="isAddMenuOpen" @click.away="isAddMenuOpen = false" class="mb-3 space-y-2">
-            
-            <button v-if="currentTab === 'shopping'" @click.prevent="openModalForAdd('shopping')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
-                + 購物項目
-            </button>
-            <button v-if="currentTab === 'accounting'" @click.prevent="openModalForAdd('accounting')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
-                + 新增支出
-            </button>
-            <button v-if="currentTab === 'itinerary'" @click.prevent="openModalForAdd('itinerary')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
-                + 新增行程 (今日)
-            </button>
-            <button v-if="currentTab === 'checklist'" @click.prevent="openModalForAdd('checklist')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
-                + 新增清單項目
-            </button>
-        </div>
-        
-        <button v-if="['itinerary', 'accounting', 'shopping', 'checklist'].includes(currentTab)" 
-                @click="isAddMenuOpen = !isAddMenuOpen" 
-                class="bg-nordic-accent text-white w-16 h-16 rounded-full flex items-center justify-center shadow-strong hover:bg-teal-700 transition transform hover:rotate-90">
-            <svg v-if="!isAddMenuOpen" class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-            <svg v-else class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-    </div>
-
-    <transition name="fade">
-        <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
-            <div class="bg-nordic-white p-6 rounded-xl shadow-2xl w-11/12 max-w-md border border-gray-300 transform transition-all scale-100">
-                <h3 class="text-xl font-bold text-nordic-dark mb-4 border-b pb-2">
-                    {{ editingItemIndex === -1 ? `新增${modalTypeLabel}` : `編輯${modalTypeLabel}` }}
-                </h3>
-                
-                <form @submit.prevent="saveModalItem">
-                    
-                    <div v-if="modalDataType === 'itinerary'" class="mb-4 space-y-4">
-                        <div class="w-full">
-                            <label for="itemTime" class="block text-sm font-medium text-gray-700 mb-1">時間 (HH:MM)</label>
-                            <input type="text" id="itemTime" v-model="editingItem.time" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                   placeholder="例如：14:30">
-                        </div>
-                        <div>
-                            <label for="itemLocation" class="block text-sm font-medium text-gray-700 mb-1">地點 / 備註 (Location)</label>
-                            <input type="text" id="itemLocation" v-model="editingItem.location"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                   placeholder="例如：Tivoli, 路程：15min">
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="itemName" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ modalDataType === 'accounting' ? '支出描述' : (modalDataType === 'itinerary' ? '行程項目' : '項目名稱') }}
-                        </label>
-                        <input type="text" id="itemName" v-model="editingItem.name" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                               :placeholder="modalDataType === 'accounting' ? '例如：晚餐、Tivoli門票' : (modalDataType === 'itinerary' ? '例如：聖誕老人村、狗拉雪橇' : '例如：保暖手套、紀念品')">
-                    </div>
-
-                    
-                    <div v-if="modalDataType === 'accounting'">
-                        <div class="mb-4">
-                            <label for="itemAmount" class="block text-sm font-medium text-gray-700 mb-1">金額 (NT$)</label>
-                            <input type="number" id="itemAmount" v-model.number="editingItem.amount" required min="1"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                   placeholder="例如：500">
-                        </div>
-                        <div class="mb-4 flex space-x-4">
-                            <div class="w-1/2">
-                                <label for="itemDate" class="block text-sm font-medium text-gray-700 mb-1">日期 (例如：12/20)</label>
-                                <input type="text" id="itemDate" v-model="editingItem.date"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                       placeholder="例如：12/20">
-                            </div>
-                            <div class="w-1/2">
-                                <label for="itemCategory" class="block text-sm font-medium text-gray-700 mb-1">類別</label>
-                                <select id="itemCategory" v-model="editingItem.category"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
-                                    <option value="餐飲">餐飲</option>
-                                    <option value="交通">交通</option>
-                                    <option value="住宿">住宿</option>
-                                    <option value="購物">購物</option>
-                                    <option value="門票/活動">門票/活動</option>
-                                    <option value="其他">其他</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div v-else-if="modalDataType === 'shopping'">
-                        <div class="mb-4">
-                            <label for="shopStore" class="block text-sm font-medium text-gray-700 mb-1">購買地點/備註 (選填)</label>
-                            <input type="text" id="shopStore" v-model="editingItem.store"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                   placeholder="例如：H&M、機場免稅店">
-                        </div>
-                        <div class="flex items-center mb-6">
-                            <input type="checkbox" id="shopPurchased" v-model="editingItem.purchased" 
-                                   class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
-                            <label for="shopPurchased" class="text-base text-gray-700">是否已購買？</label>
-                        </div>
-                    </div>
-
-                    <div v-else-if="modalDataType === 'checklist'">
-                        <div class="mb-4">
-                            <label for="checklistCategory" class="block text-sm font-medium text-gray-700 mb-1">分類</label>
-                            <select id="checklistCategory" v-model="editingItem.category" :required="editingItemIndex === -1"
-                                    :disabled="editingItemIndex !== -1 && editingItem.category"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
-                                <option v-for="cat in Object.keys(checklist)" :key="cat" :value="cat">{{ cat }}</option>
-                            </select>
-                            <p v-if="editingItemIndex !== -1" class="text-xs text-gray-500 mt-1">編輯模式下無法修改分類</p>
-                        </div>
-                        <div class="mb-4">
-                            <label for="itemNotes" class="block text-sm font-medium text-gray-700 mb-1">備註 (Notes)</label>
-                            <input type="text" id="itemNotes" v-model="editingItem.notes"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                                   placeholder="例如：需買新、數量*2">
-                        </div>
-                        <div class="flex items-center mb-6">
-                            <input type="checkbox" id="checkChecked" v-model="editingItem.checked" 
-                                   class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
-                            <label for="checkChecked" class="text-base text-gray-700">是否已勾選？</label>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-                        <button v-if="editingItemIndex !== -1" @click.prevent="deleteModalItem"
-                                type="button" 
-                                class="px-4 py-2 text-sm font-medium rounded-lg text-white" 
-                                :style="{ backgroundColor: 'var(--nordic-christmas)' }">
-                            刪除
-                        </button>
-                        
-                        <div class="flex space-x-3 ml-auto">
-                            <button @click.prevent="closeModal" type="button" class="px-4 py-2 text-sm font-medium text-gray-600 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
-                                取消
-                            </button>
-                            <button type="submit" 
-                                    class="px-4 py-2 text-sm font-medium rounded-lg text-white btn-save transition hover:bg-teal-700">
-                                儲存
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </transition>
+    </header>
 
 
-    <nav class="sticky bottom-0 bg-nordic-soft p-2 z-20">
-        <ul class="flex justify-around">
-            <li v-for="tab in tabs" :key="tab.id" class="flex-1 text-center">
-                <a href="#" @click.prevent="changeTab(tab.id)" 
-                   :class="{'flex flex-col items-center p-2 rounded-lg transition-colors': true, 'text-nordic-accent bg-gray-100': currentTab === tab.id, 'text-gray-500 hover:text-nordic-dark': currentTab !== tab.id}">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" v-html="tab.icon"></svg>
-                    <span class="text-xs mt-1 font-medium">{{ tab.name }}</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
+
+    <main class="flex-grow overflow-y-auto bg-nordic-soft relative">
+
+        <transition name="fade" mode="out-in">
+
+            
+
+            <div v-if="currentTab === 'itinerary'" key="itinerary" class="pb-4">
+
+                
+
+                <div class="sticky top-0 bg-nordic-soft p-2 mb-4 z-10">
+
+                    <div class="date-slider flex overflow-x-scroll space-x-2 pb-2">
+
+                        <button v-for="(day, index) in itinerary" :key="index"
+
+                                @click="selectDay(day)"
+
+                                class="flex-shrink-0 px-3 py-1 text-sm font-medium rounded-full transition-colors border"
+
+                                :class="{
+
+                                    // 修正點：選中日期的樣式 (非反白，高對比邊框)
+
+                                    'bg-white border-2 border-nordic-accent text-nordic-accent shadow-md font-bold': selectedDay === day, 
+
+                                    'bg-white border-gray-300 text-nordic-dark hover:bg-gray-100': selectedDay !== day
+
+                                }">
+
+                            {{ day.date.substring(5) }} <span class="text-xs ml-1 opacity-70">({{ day.day_of_week.substring(0, 1) }})</span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="p-4" v-if="selectedDay">
+
+                    <h2 class="text-2xl font-bold text-nordic-dark mb-4">
+
+                        {{ getFlagEmoji(selectedDay.country_code) }} 
+
+                        {{ selectedDay.date.substring(5) }} - 
+
+                        {{ selectedDay.city_country_zh }}
+
+                    </h2>
+
+
+
+                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-nordic-white rounded-xl shadow-strong border-l-4 border-gray-300 flex items-center">
+
+                        <svg class="w-7 h-7 text-gray-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+
+                        <div class="text-sm">
+
+                            <p class="font-bold text-nordic-dark">❄️ 預計天氣</p>
+
+                            <p class="text-gray-500">🌡️ {{ selectedDay.weather['氣溫'] || 'N/A' }} / ☀️ {{ selectedDay.weather['日照'] || 'N/A' }}</p>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 rounded-xl shadow-strong border-l-4 border-nordic-accent bg-nordic-white">
+
+                        <div class="flex items-center">
+
+                            <svg class="w-7 h-7 text-nordic-accent mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
+
+                            <div class="text-sm">
+
+                                <p class="font-bold text-nordic-dark">🌌 極光預報 (建議)</p>
+
+                                <p class="text-gray-600">**KP 指數：**<span class="font-semibold text-nordic-accent">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
+
+                                <p class="text-gray-600">**最佳時間：**{{ selectedDay.aurora_forecast['time_range'] }}</p>
+
+                                <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-nordic-accent mt-1">💡 {{ selectedDay.aurora_forecast['notes'] }}</p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">當日安排</h3>
+
+                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
+
+                        <div class="flex justify-between items-start">
+
+                            <div class="flex-grow">
+
+                                <p class="text-sm font-bold text-nordic-accent">{{ item.time.substring(0, 5) }}</p>
+
+                                <p class="font-medium text-nordic-dark text-lg">{{ item.schedule }}</p>
+
+                            </div>
+
+                            <button @click="openModalForEdit('itinerary', item, itemIndex)" class="text-nordic-accent hover:text-teal-600 transition p-1">
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
+
+                            </button>
+
+                        </div>
+
+                        
+
+                        <a v-if="item.location" :href="getMapLink(item.location)" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center mt-2 pt-2 border-t border-gray-200">
+
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+
+                            {{ item.location }}
+
+                        </a>
+
+                    </div>
+
+                    
+
+                    <div class="mt-6 p-4 bg-nordic-white rounded-xl shadow-strong text-sm text-gray-500 border border-gray-200">
+
+                        <p class="font-bold text-nordic-dark">🏠 住宿：{{ selectedDay.accommodation }}</p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <div v-else-if="currentTab === 'checklist'" key="checklist" class="p-4">
+
+                <h2 class="text-2xl font-bold text-nordic-dark mb-4">行前裝備清單 📋</h2>
+
+                <p class="text-sm text-gray-500 mb-4">點擊項目可標記為已完成 / 點擊分類標題可展開收合。</p>
+
+                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-nordic-white rounded-xl shadow-strong overflow-hidden border border-gray-200">
+
+                    <div @click="toggleChecklist(category)" class="p-4 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100">
+
+                        <h3 class="text-xl font-bold text-nordic-accent">{{ category }}</h3>
+
+                        <span class="text-sm text-gray-500">{{ getCheckedCount(category) }} / {{ items.length }}</span>
+
+                    </div>
+
+                    
+
+                    <ul v-if="!collapsedChecklist[category]" class="p-4 pt-0 space-y-3">
+
+                        <li v-for="(item, index) in items" :key="index" class="flex items-center text-nordic-dark pt-3 border-t border-gray-200 first:border-t-0">
+
+                            <input type="checkbox" :id="category + index" v-model="item.checked" class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-3 border-gray-300 bg-white">
+
+                            <label :for="category + index" class="text-base flex-grow cursor-pointer" :class="{ 'line-through text-gray-400': item.checked }">
+
+                                {{ item.name }}
+
+                                <span v-if="item.notes" class="text-xs text-gray-500"> ({{ item.notes }})</span>
+
+                            </label>
+
+                            <button @click.stop="openModalForEdit('checklist', item, index, category)" class="text-nordic-accent hover:text-teal-600 transition p-1">
+
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
+
+                            </button>
+
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+
+
+            <div v-else-if="currentTab === 'accounting'" key="accounting" class="p-4">
+
+                <h2 class="text-2xl font-bold text-nordic-dark mb-4">記帳中心 💰</h2>
+
+                <div class="bg-nordic-white rounded-xl shadow-strong p-4 mb-6 border border-gray-200">
+
+                    <p class="text-lg font-bold text-nordic-dark">總支出：<span class="text-nordic-christmas">NT$ {{ totalSpent.toLocaleString() }}</span></p>
+
+                </div>
+
+                
+
+                <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">支出紀錄</h3>
+
+                <div v-if="accounting.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center border border-gray-200">
+
+                    <p>目前沒有支出紀錄。請點擊右下角按鈕 **+ 新增支出**。</p>
+
+                </div>
+
+                <div v-for="(transaction, index) in accounting" :key="index" class="bg-nordic-white rounded-xl shadow-strong p-4 mb-3 flex justify-between items-center border border-gray-200">
+
+                    <div>
+
+                        <p class="font-medium text-nordic-dark">{{ transaction.description }}</p>
+
+                        <p class="text-sm text-gray-500">{{ transaction.date }} ({{ transaction.category }})</p>
+
+                    </div>
+
+                    <div class="flex items-center">
+
+                        <p class="text-lg font-bold text-nordic-christmas mr-3">
+
+                            - NT$ {{ transaction.amount.toLocaleString() }}
+
+                        </p>
+
+                        <button @click.stop="openModalForEdit('accounting', transaction, index)" class="text-nordic-accent hover:text-teal-600 transition p-1">
+
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <div v-else-if="currentTab === 'shopping'" key="shopping" class="p-4">
+
+                <h2 class="text-2xl font-bold text-nordic-dark mb-4">購物清單 🎁</h2>
+
+                <div v-if="shoppingList.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center mb-4 border border-gray-200">
+
+                    <p>目前沒有購物清單項目。請點擊右下角按鈕 **+ 購物項目**。</p>
+
+                </div>
+
+                <div v-for="(item, index) in shoppingList" :key="index" class="bg-nordic-white rounded-xl shadow-strong p-4 mb-3 flex items-center border border-gray-200">
+
+                    <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-3 border-gray-300 bg-white">
+
+                    <label :for="'shop' + index" class="flex-grow text-nordic-dark" :class="{ 'line-through text-gray-400': item.purchased }">
+
+                        <span class="font-medium text-lg">{{ item.name }}</span>
+
+                        <span v-if="item.store" class="text-sm text-gray-500 block">({{ item.store }})</span>
+
+                    </label>
+
+                    <button @click.stop="openModalForEdit('shopping', item, index)" class="text-nordic-accent hover:text-teal-600 transition p-1">
+
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            
+
+            <div v-else-if="currentTab === 'info'" key="info" class="p-4">
+
+                <h2 class="text-2xl font-bold text-nordic-dark mb-4">實用資訊 💡</h2>
+
+                <div class="space-y-4">
+
+                    <div class="bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
+
+                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存與編輯說明 (V13 更新)</h3>
+
+                        <p class="text-sm text-nordic-accent mb-2 font-bold">
+
+                            ✅ 行程、記帳、清單功能已全面啟用編輯、新增、刪除！
+
+                        </p>
+
+                        <p class="text-sm text-gray-600">
+
+                            所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)，重新整理頁面數據不會遺失。<br>
+
+                            （**範例資料**已在首次載入時自動儲存。）
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            
+
+        </transition>
+
+    </main>
+
+    
+
+    <div class="fixed bottom-24 right-4 z-50">
+
+        <div v-if="isAddMenuOpen" @click.away="isAddMenuOpen = false" class="mb-3 space-y-2">
+
+            
+
+            <button v-if="currentTab === 'shopping'" @click.prevent="openModalForAdd('shopping')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+
+                + 購物項目
+
+            </button>
+
+            <button v-if="currentTab === 'accounting'" @click.prevent="openModalForAdd('accounting')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+
+                + 新增支出
+
+            </button>
+
+            <button v-if="currentTab === 'itinerary'" @click.prevent="openModalForAdd('itinerary')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+
+                + 新增行程 (今日)
+
+            </button>
+
+            <button v-if="currentTab === 'checklist'" @click.prevent="openModalForAdd('checklist')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+
+                + 新增清單項目
+
+            </button>
+
+        </div>
+
+        
+
+        <button v-if="['itinerary', 'accounting', 'shopping', 'checklist'].includes(currentTab)" 
+
+                @click="isAddMenuOpen = !isAddMenuOpen" 
+
+                class="bg-nordic-accent text-white w-16 h-16 rounded-full flex items-center justify-center shadow-strong hover:bg-teal-700 transition transform hover:rotate-90">
+
+            <svg v-if="!isAddMenuOpen" class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+
+            <svg v-else class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+
+        </button>
+
+    </div>
+
+
+
+    <transition name="fade">
+
+        <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
+
+            <div class="bg-nordic-white p-6 rounded-xl shadow-2xl w-11/12 max-w-md border border-gray-300 transform transition-all scale-100">
+
+                <h3 class="text-xl font-bold text-nordic-dark mb-4 border-b pb-2">
+
+                    {{ editingItemIndex === -1 ? `新增${modalTypeLabel}` : `編輯${modalTypeLabel}` }}
+
+                </h3>
+
+                
+
+                <form @submit.prevent="saveModalItem">
+
+                    
+
+                    <div v-if="modalDataType === 'itinerary'" class="mb-4 space-y-4">
+
+                        <div class="w-full">
+
+                            <label for="itemTime" class="block text-sm font-medium text-gray-700 mb-1">時間 (HH:MM)</label>
+
+                            <input type="text" id="itemTime" v-model="editingItem.time" required
+
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                   placeholder="例如：14:30">
+
+                        </div>
+
+                        <div>
+
+                            <label for="itemLocation" class="block text-sm font-medium text-gray-700 mb-1">地點 / 備註 (Location)</label>
+
+                            <input type="text" id="itemLocation" v-model="editingItem.location"
+
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                   placeholder="例如：Tivoli, 路程：15min">
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="mb-4">
+
+                        <label for="itemName" class="block text-sm font-medium text-gray-700 mb-1">
+
+                            {{ modalDataType === 'accounting' ? '支出描述' : (modalDataType === 'itinerary' ? '行程項目' : '項目名稱') }}
+
+                        </label>
+
+                        <input type="text" id="itemName" v-model="editingItem.name" required
+
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                               :placeholder="modalDataType === 'accounting' ? '例如：晚餐、Tivoli門票' : (modalDataType === 'itinerary' ? '例如：聖誕老人村、狗拉雪橇' : '例如：保暖手套、紀念品')">
+
+                    </div>
+
+
+
+                    
+
+                    <div v-if="modalDataType === 'accounting'">
+
+                        <div class="mb-4">
+
+                            <label for="itemAmount" class="block text-sm font-medium text-gray-700 mb-1">金額 (NT$)</label>
+
+                            <input type="number" id="itemAmount" v-model.number="editingItem.amount" required min="1"
+
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                   placeholder="例如：500">
+
+                        </div>
+
+                        <div class="mb-4 flex space-x-4">
+
+                            <div class="w-1/2">
+
+                                <label for="itemDate" class="block text-sm font-medium text-gray-700 mb-1">日期 (例如：12/20)</label>
+
+                                <input type="text" id="itemDate" v-model="editingItem.date"
+
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                       placeholder="例如：12/20">
+
+                            </div>
+
+                            <div class="w-1/2">
+
+                                <label for="itemCategory" class="block text-sm font-medium text-gray-700 mb-1">類別</label>
+
+                                <select id="itemCategory" v-model="editingItem.category"
+
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
+
+                                    <option value="餐飲">餐飲</option>
+
+                                    <option value="交通">交通</option>
+
+                                    <option value="住宿">住宿</option>
+
+                                    <option value="購物">購物</option>
+
+                                    <option value="門票/活動">門票/活動</option>
+
+                                    <option value="其他">其他</option>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div v-else-if="modalDataType === 'shopping'">
+
+                        <div class="mb-4">
+
+                            <label for="shopStore" class="block text-sm font-medium text-gray-700 mb-1">購買地點/備註 (選填)</label>
+
+                            <input type="text" id="shopStore" v-model="editingItem.store"
+
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                   placeholder="例如：H&M、機場免稅店">
+
+                        </div>
+
+                        <div class="flex items-center mb-6">
+
+                            <input type="checkbox" id="shopPurchased" v-model="editingItem.purchased" 
+
+                                   class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
+
+                            <label for="shopPurchased" class="text-base text-gray-700">是否已購買？</label>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div v-else-if="modalDataType === 'checklist'">
+
+                        <div class="mb-4">
+
+                            <label for="checklistCategory" class="block text-sm font-medium text-gray-700 mb-1">分類</label>
+
+                            <select id="checklistCategory" v-model="editingItem.category" :required="editingItemIndex === -1"
+
+                                    :disabled="editingItemIndex !== -1 && editingItem.category"
+
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
+
+                                <option v-for="cat in Object.keys(checklist)" :key="cat" :value="cat">{{ cat }}</option>
+
+                            </select>
+
+                            <p v-if="editingItemIndex !== -1" class="text-xs text-gray-500 mt-1">編輯模式下無法修改分類</p>
+
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label for="itemNotes" class="block text-sm font-medium text-gray-700 mb-1">備註 (Notes)</label>
+
+                            <input type="text" id="itemNotes" v-model="editingItem.notes"
+
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+
+                                   placeholder="例如：需買新、數量*2">
+
+                        </div>
+
+                        <div class="flex items-center mb-6">
+
+                            <input type="checkbox" id="checkChecked" v-model="editingItem.checked" 
+
+                                   class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
+
+                            <label for="checkChecked" class="text-base text-gray-700">是否已勾選？</label>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+
+                        <button v-if="editingItemIndex !== -1" @click.prevent="deleteModalItem"
+
+                                type="button" 
+
+                                class="px-4 py-2 text-sm font-medium rounded-lg text-white" 
+
+                                :style="{ backgroundColor: 'var(--nordic-christmas)' }">
+
+                            刪除
+
+                        </button>
+
+                        
+
+                        <div class="flex space-x-3 ml-auto">
+
+                            <button @click.prevent="closeModal" type="button" class="px-4 py-2 text-sm font-medium text-gray-600 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
+
+                                取消
+
+                            </button>
+
+                            <button type="submit" 
+
+                                    class="px-4 py-2 text-sm font-medium rounded-lg text-white btn-save transition hover:bg-teal-700">
+
+                                儲存
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </transition>
+
+
+
+
+
+    <nav class="sticky bottom-0 bg-nordic-soft p-2 z-20">
+
+        <ul class="flex justify-around">
+
+            <li v-for="tab in tabs" :key="tab.id" class="flex-1 text-center">
+
+                <a href="#" @click.prevent="changeTab(tab.id)" 
+
+                   :class="{'flex flex-col items-center p-2 rounded-lg transition-colors': true, 'text-nordic-accent bg-gray-100': currentTab === tab.id, 'text-gray-500 hover:text-nordic-dark': currentTab !== tab.id}">
+
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" v-html="tab.icon"></svg>
+
+                    <span class="text-xs mt-1 font-medium">{{ tab.name }}</span>
+
+                </a>
+
+            </li>
+
+        </ul>
+
+    </nav>
+
 </div>
 
+
+
 <script>
-    // 引入 Vue 3 核心 API (ref 和 watch 用來實現資料持久化)
-    const { createApp, computed, ref, watch } = Vue;
 
-    // ----------------------------------------------------
-    // 核心資料庫 (數據初始化與預設值)
-    // ----------------------------------------------------
+    // 引入 Vue 3 核心 API (ref 和 watch 用來實現資料持久化)
 
-    // Google Maps 導航連結生成器
-    const getMapLink = (query) => {
-        // 請注意：此處的 URL 是範例，實際應用中您應使用正確的 Google Maps URL 格式
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-    };
-    
-    // 國旗 Emoji 映射表
-    const countryFlagMap = {
-        'TW': '🇹🇼',
-        'FI': '🇫🇮',
-        'NO': '🇳🇴',
-        'DK': '🇩🇰',
-        'SE': '🇸🇪',
-    };
-
-    // 新增日期：2025/12/19 到 2026/01/03 (共 16 天)
-    // 所有 events 均為空陣列 []
-    const defaultItineraryData = [
-        // --- 12 月份 ---
-        { date: "2025/12/19", day_of_week: "五", city_country_zh: "臺灣/啟程", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "飛機上" },
-        { date: "2025/12/20", day_of_week: "六", city_country_zh: "第一站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/21", day_of_week: "日", city_country_zh: "第二站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/22", day_of_week: "一", city_country_zh: "第三站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/23", day_of_week: "二", city_country_zh: "第四站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/24", day_of_week: "三", city_country_zh: "第五站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/25", day_of_week: "四", city_country_zh: "第六站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/26", day_of_week: "五", city_country_zh: "第七站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/27", day_of_week: "六", city_country_zh: "第八站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/28", day_of_week: "日", city_country_zh: "第九站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/29", day_of_week: "一", city_country_zh: "第十站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/30", day_of_week: "二", city_country_zh: "第十一站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2025/12/31", day_of_week: "三", city_country_zh: "第十二站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        // --- 01 月份 ---
-        { date: "2026/01/01", day_of_week: "四", city_country_zh: "第十三站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2026/01/02", day_of_week: "五", city_country_zh: "第十四站城市", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
-        { date: "2026/01/03", day_of_week: "六", city_country_zh: "返抵台灣", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "甜蜜的家" },
-    ];
-
-    // 新增的裝備清單數據
-    const defaultChecklistData = {
-        "文件/證件": [
-            { name: "護照", checked: false, notes: "" },
-            { name: "錢 / 信用卡", checked: false, notes: "旅平險" },
-            { name: "駕照", checked: false, notes: "" },
-            { name: "兩吋照片", checked: false, notes: "*2" }
-        ],
-        "保暖衣物/配件": [
-            { name: "內衣褲", checked: false, notes: "發熱衣、褲襪" },
-            { name: "保暖衣物", checked: false, notes: "上衣、下身衣物" },
-            { name: "睡衣", checked: false, notes: "" },
-            { name: "外套", checked: false, notes: "" },
-            { name: "襪子", checked: false, notes: "" },
-            { name: "鞋子", checked: false, notes: "" },
-            { name: "泳衣", checked: false, notes: "備用 (溫泉/桑拿)" },
-            { name: "帽子", checked: false, notes: "" },
-            { name: "圍巾、手套、耳罩", checked: false, notes: "需極度保暖" },
-            { name: "太陽眼鏡", checked: false, notes: "雪地強光用" }
-        ],
-        "個人盥洗/藥品": [
-            { name: "牙刷/牙膏", checked: false, notes: "" },
-            { name: "盥洗用品", checked: false, notes: "洗髮精、沐浴乳、護髮等" },
-            { name: "臉部洗卸用品", checked: false, notes: "卸妝乳、洗面乳" },
-            { name: "保養品", checked: false, notes: "臉部、身體、護唇膏、護手霜、防曬乳" },
-            { name: "化妝品/梳子/面膜", checked: false, notes: "" },
-            { name: "隱形眼鏡/近視眼鏡", checked: false, notes: "" },
-            { name: "刮鬍用品", checked: false, notes: "" },
-            { name: "個人藥品", checked: false, notes: "感冒藥、胃藥、保健食品、發泡錠、暈車藥" },
-            { name: "衛生棉/護墊", checked: false, notes: "" },
-            { name: "指甲剪", checked: false, notes: "" }
-        ],
-        "電子/充電設備": [
-            { name: "萬用插頭", checked: false, notes: "" },
-            { name: "充電器/充電線", checked: false, notes: "" },
-            { name: "行動電源", checked: false, notes: "" },
-            { name: "相機", checked: false, notes: "附充電線/電池" },
-            { name: "三腳架", checked: false, notes: "拍極光用" },
-            { name: "耳機", checked: false, notes: "" },
-            { name: "網卡/E-SIM", checked: false, notes: "" }
-        ],
-        "雜項/其他": [
-            { name: "包包", checked: false, notes: "" },
-            { name: "飾品", checked: false, notes: "" },
-            { name: "吹風機", checked: false, notes: "" },
-            { name: "夾鏈袋/收納袋", checked: false, notes: "防水防潮用" },
-            { name: "保溫瓶", checked: false, notes: "" },
-            { name: "面紙/濕紙巾", checked: false, notes: "" },
-            { name: "雨傘", checked: false, notes: "或輕便雨衣" },
-            { name: "筆", checked: false, notes: "" },
-            { name: "雪夾", checked: false, notes: "" },
-            { name: "痠痛貼布/休足時間", checked: false, notes: "" },
-            { name: "熱敷眼罩", checked: false, notes: "" },
-            { name: "洗衣精", checked: false, notes: "旅行用" },
-            { name: "暖暖包", checked: false, notes: "足夠數量" },
-            { name: "食物", checked: false, notes: "泡麵、酒 (少量)、筷子" }
-        ]
-    };
+    const { createApp, computed, ref, watch } = Vue;
 
 
-    const defaultAccountingData = [
-        { id: 1, amount: 8000, description: "來回機票/預付", category: "交通", date: "10/01" },
-        { id: 2, amount: 12000, description: "羅瓦涅米住宿/預付", category: "住宿", date: "10/05" },
-        { id: 3, amount: 500, description: "機場咖啡", category: "餐飲", date: "12/19" }
-    ];
 
-    const defaultShoppingListData = [
-        { id: 1, name: "紀念T恤", store: "Helsinki Stockmann", purchased: false },
-        { id: 2, name: "丹麥麵包", store: "哥本哈根本地烘焙店", purchased: false }
-    ];
+    // ----------------------------------------------------
+
+    // 核心資料庫 (數據初始化與預設值)
+
+    // ----------------------------------------------------
 
 
-    // 嘗試從本地儲存載入數據，如果沒有，則使用預設值
-    const loadData = (key, defaultData) => {
-        try {
-            const data = localStorage.getItem(key);
-            if (data) {
-                // 如果 localStorage 裡已經有資料，就用舊資料
-                return JSON.parse(data);
-            } else {
-                // 否則返回預設值，並將預設值存入 localStorage
-                localStorage.setItem(key, JSON.stringify(defaultData));
-                return defaultData;
-            }
-        } catch (e) {
-            console.error("Error loading data from localStorage:", e);
-            return defaultData; // 發生錯誤時返回預設值
-        }
-    };
 
-    // ----------------------------------------------------
-    // Vue 應用程式主體
-    // ----------------------------------------------------
-    createApp({
-        setup() {
-            // 核心數據 (使用 ref 和 loadData 實現持久化)
-            const itinerary = ref(loadData('nordic-planner-itinerary', defaultItineraryData));
-            const checklist = ref(loadData('nordic-planner-checklist', defaultChecklistData));
-            const accounting = ref(loadData('nordic-planner-accounting', defaultAccountingData));
-            const shoppingList = ref(loadData('nordic-planner-shopping', defaultShoppingListData));
+    // Google Maps 導航連結生成器
+
+    const getMapLink = (query) => {
+
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+    };
+
+    
+
+    // 國旗 Emoji 映射表
+
+    const countryFlagMap = {
+
+        'TW': '🇹🇼',
+
+        'FI': '🇫🇮',
+
+        'NO': '🇳🇴',
+
+        'DK': '🇩🇰',
+
+        'SE': '🇸🇪',
+
+    };
 
 
-            // 狀態管理
-            const tabs = [
-                { id: 'itinerary', name: '行程', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />' },
-                { id: 'checklist', name: '清單', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h.01M12 15h.01" />' },
-                { id: 'accounting', name: '記帳', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />' },
-                { id: 'shopping', name: '購物', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />' },
-                { id: 'info', name: '資訊', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />' }
-            ];
-            const currentTab = ref('itinerary');
-            const selectedDay = ref(itinerary.value[0]);
-            const collapsedChecklist = ref({});
 
-            // Modal 狀態
-            const isModalOpen = ref(false);
-            const isAddMenuOpen = ref(false);
-            const modalDataType = ref(null); // 'itinerary', 'checklist', 'accounting', 'shopping'
-            const editingItem = ref({});
-            const editingItemIndex = ref(-1);
-            const editingItemCategory = ref(null); // For checklist only
+    // 預設行程資料 (保留用戶原有數據)
 
-            // 監聽數據變化並存入 Local Storage
-            watch(itinerary, (newVal) => {
-                localStorage.setItem('nordic-planner-itinerary', JSON.stringify(newVal));
-            }, { deep: true });
-            watch(checklist, (newVal) => {
-                localStorage.setItem('nordic-planner-checklist', JSON.stringify(newVal));
-            }, { deep: true });
-            watch(accounting, (newVal) => {
-                localStorage.setItem('nordic-planner-accounting', JSON.stringify(newVal));
-            }, { deep: true });
-            watch(shoppingList, (newVal) => {
-                localStorage.setItem('nordic-planner-shopping', JSON.stringify(newVal));
-            }, { deep: true });
+    const defaultItineraryData = [
 
-            // Computed 屬性
-            const headerTitle = computed(() => {
-                const currentTabName = tabs.find(t => t.id === currentTab.value)?.name || '';
-                return `北歐極簡之旅 - ${currentTabName}`;
-            });
-            
-            const totalSpent = computed(() => {
-                return accounting.value.reduce((sum, item) => sum + item.amount, 0);
-            });
+        // 1. 2025/12/19 (Taiwan)
 
-            const modalTypeLabel = computed(() => {
-                switch (modalDataType.value) {
-                    case 'itinerary': return '行程';
-                    case 'checklist': return '清單項目';
-                    case 'accounting': return '支出';
-                    case 'shopping': return '購物項目';
-                    default: return '項目';
-                }
-            });
+        {
 
+            date: "2025/12/19", day_of_week: "五", city_country_zh: "臺灣", country_code: "TW",
 
-            // 方法 (Methods)
-            const changeTab = (tabId) => {
-                currentTab.value = tabId;
-                isAddMenuOpen.value = false; // 切換 tab 時關閉新增選單
-            };
+            weather: null, aurora_forecast: null,
 
-            const selectDay = (day) => {
-                selectedDay.value = day;
-            };
+            events: [
 
-            const getFlagEmoji = (code) => {
-                return countryFlagMap[code] || '🌍';
-            };
+                { time: "19:00:00", schedule: "板橋車站集合(約20:30前到桃機一航)", location: "路程：90min" },
 
-            const getCheckedCount = (category) => {
-                if (!checklist.value[category]) return 0;
-                return checklist.value[category].filter(item => item.checked).length;
-            };
+                { time: "23:00:00", schedule: "✈華航CI073 TPE 台北 23:05 起飛", location: "路程：15h45m" },
 
-            const toggleChecklist = (category) => {
-                collapsedChecklist.value[category] = !collapsedChecklist.value[category];
-            };
+            ],
 
-            // Modal 相關方法
-            const closeModal = () => {
-                isModalOpen.value = false;
-                editingItem.value = {};
-                editingItemIndex.value = -1;
-                editingItemCategory.value = null;
-            };
+            accommodation: "飛機上"
 
-            const openModalForAdd = (type) => {
-                isAddMenuOpen.value = false;
-                modalDataType.value = type;
-                editingItemIndex.value = -1;
-                
-                if (type === 'itinerary') {
-                    const now = new Date();
-                    const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                    editingItem.value = { time: timeString, schedule: '', location: '' };
-                } else if (type === 'accounting') {
-                    const today = `${new Date().getMonth() + 1}/${new Date().getDate()}`;
-                    editingItem.value = { amount: 0, description: '', category: '餐飲', date: today };
-                } else if (type === 'shopping') {
-                    editingItem.value = { name: '', store: '', purchased: false };
-                } else if (type === 'checklist') {
-                    editingItem.value = { name: '', notes: '', checked: false, category: Object.keys(checklist.value)[0] || '雜項/其他' };
-                }
-                isModalOpen.value = true;
-            };
+        },
 
-            const openModalForEdit = (type, item, index, category = null) => {
-                modalDataType.value = type;
-                editingItemIndex.value = index;
-                editingItem.value = JSON.parse(JSON.stringify(item)); // 深層複製避免直接修改原數據
-                editingItemCategory.value = category; // 儲存清單的分類
-                isModalOpen.value = true;
-            };
+        // 2. 2025/12/20 (Helsinki, Finland)
 
-            const saveModalItem = () => {
-                const item = editingItem.value;
-                const index = editingItemIndex.value;
-                
-                if (modalDataType.value === 'itinerary') {
-                    const targetEvents = selectedDay.value.events;
-                    if (index === -1) {
-                        targetEvents.push({ time: item.time, schedule: item.name, location: item.location });
-                    } else {
-                        targetEvents[index].time = item.time;
-                        targetEvents[index].schedule = item.name;
-                        targetEvents[index].location = item.location;
-                    }
-                    // 儲存後重新排序 (依時間)
-                    targetEvents.sort((a, b) => a.time.localeCompare(b.time));
-                } else if (modalDataType.value === 'accounting') {
-                    if (index === -1) {
-                        accounting.value.push({ id: Date.now(), amount: item.amount, description: item.name, category: item.category, date: item.date });
-                    } else {
-                        accounting.value[index].amount = item.amount;
-                        accounting.value[index].description = item.name;
-                        accounting.value[index].category = item.category;
-                        accounting.value[index].date = item.date;
-                    }
-                } else if (modalDataType.value === 'shopping') {
-                    if (index === -1) {
-                        shoppingList.value.push({ id: Date.now(), name: item.name, store: item.store, purchased: item.purchased });
-                    } else {
-                        shoppingList.value[index].name = item.name;
-                        shoppingList.value[index].store = item.store;
-                        shoppingList.value[index].purchased = item.purchased;
-                    }
-                } else if (modalDataType.value === 'checklist') {
-                    if (index === -1) {
-                        if (!checklist.value[item.category]) {
-                            checklist.value[item.category] = [];
-                        }
-                        checklist.value[item.category].push({ name: item.name, notes: item.notes, checked: item.checked });
-                    } else {
-                        // 編輯模式下，分類不能變更，使用儲存的分類
-                        const targetCategory = editingItemCategory.value;
-                        if (targetCategory && checklist.value[targetCategory]) {
-                            checklist.value[targetCategory][index].name = item.name;
-                            checklist.value[targetCategory][index].notes = item.notes;
-                            checklist.value[targetCategory][index].checked = item.checked;
-                        }
-                    }
-                }
-                
-                closeModal();
-            };
+        {
 
-            const deleteModalItem = () => {
-                if (editingItemIndex.value === -1) return;
-                
-                if (modalDataType.value === 'itinerary') {
-                    selectedDay.value.events.splice(editingItemIndex.value, 1);
-                } else if (modalDataType.value === 'accounting') {
-                    accounting.value.splice(editingItemIndex.value, 1);
-                } else if (modalDataType.value === 'shopping') {
-                    shoppingList.value.splice(editingItemIndex.value, 1);
-                } else if (modalDataType.value === 'checklist' && editingItemCategory.value) {
-                    checklist.value[editingItemCategory.value].splice(editingItemIndex.value, 1);
-                    // 如果分類下沒有任何項目，則移除該分類
-                    if (checklist.value[editingItemCategory.value].length === 0) {
-                        delete checklist.value[editingItemCategory.value];
-                    }
-                }
-                
-                closeModal();
-            };
+            date: "2025/12/20", day_of_week: "六", city_country_zh: "赫爾辛基", country_code: "FI",
 
-            return {
-                // 數據
-                itinerary,
-                checklist,
-                accounting,
-                shoppingList,
-                tabs,
-                
-                // 狀態
-                currentTab,
-                selectedDay,
-                collapsedChecklist,
-                isModalOpen,
-                isAddMenuOpen,
-                editingItem,
-                editingItemIndex,
-                modalDataType,
-                
-                // Computed
-                headerTitle,
-                totalSpent,
-                modalTypeLabel,
-                
-                // 方法
-                changeTab,
-                selectDay,
-                getMapLink,
-                getFlagEmoji,
-                getCheckedCount,
-                toggleChecklist,
-                closeModal,
-                openModalForAdd,
-                openModalForEdit,
-                saveModalItem,
-                deleteModalItem
-            };
-        }
-    }).mount('#app');
-</script>
+            weather: { '氣溫': '約 -6°C 到 0°C', '日照': '約 6 小時', '降水': '常有降雪或雨夾雪' }, aurora_forecast: null,
 
-</body>
-</html>
+            events: [
+
+                { time: "07:50:00", schedule: "✈07:50抵達 AMS阿姆斯特丹", location: "轉機" },
+
+                { time: "11:20:00", schedule: "✈芬蘭航空AY1302 AMS阿姆斯特丹 11:20 起飛", location: "路程：2h25m" },
+
+                { time: "14:45:00", schedule: "✈14:45抵達 HEL赫爾辛基", location: "" },
+
+                { time: "16:00:00", schedule: "🧳前往住宿放行李", location: "" },
+
+                { time: "17:00:00", schedule: "🎄Chrismas market", location: "備註：https://tuomaanmarkkinat.fi/en/" },
+
+                { time: "17:00:00", schedule: "♨️Sauna (2 hr)", location: "Löyly Helsinki" }, 
+
+                { time: "19:00:00", schedule: "🥣Sea horse resturant", location: "" },
+
+                { time: "21:00:00", schedule: "Bar Kallio or center", location: "備註：Beer or cocktail? Karaoke or club?" },
+
+            ],
+
+            accommodation: "老人家"
+
+        },
+
+        // 3. 2025/12/21 (Helsinki, Finland)
+
+        {
+
+            date: "2025/12/21", day_of_week: "日", city_country_zh: "赫爾辛基", country_code: "FI",
+
+            weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '備註': '極地寒冷，需注意保暖' }, aurora_forecast: null,
+
+            events: [
+
+                { time: "10:00:00", schedule: "☕️Cafe Regatta (肉桂小屋)", location: "海邊" },
+
+                { time: "11:00:00", schedule: "Temppeliaukio Church (岩石教堂)", location: "" },
+
+                { time: "11:00:00", schedule: "📚Oodi (圖書館)", location: "" },
+
+                { time: "12:00:00", schedule: "🛍️Moomin Shop", location: "" },
+
+                { time: "12:00:00", schedule: "Helsinki Cathedral", location: "備註：https://helsingintuomiokirkko.fi/en/index/uusipaataso.html" },
+
+                { time: "13:00:00", schedule: "🥣Lunch", location: "" },
+
+                { time: "14:00:00", schedule: "Marimekko Outlet Herttoniemi", location: "" },
+
+                { time: "17:00:00", schedule: "coffee or rest", location: "備註：back to put stuff and take swimming suit" },
+
+                { time: "22:00:00", schedule: "Heading to train station", location: "" },
+
+                { time: "23:13:00", schedule: "🚂23:13 前往羅瓦涅米 (夜鋪火車)", location: "" },
+
+            ],
+
+            accommodation: "火車上"
+
+        },
+
+        // 4. 2025/12/22 (Rovaniemi, Finland)
+
+        {
+
+            date: "2025/12/22", day_of_week: "一", city_country_zh: "羅瓦涅米", country_code: "FI",
+
+            weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '降水': '穩定積雪' },
+
+            aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' },
+
+            events: [
+
+                { time: "10:59:00", schedule: "🚂10:59抵達 羅瓦涅米", location: "路程：
