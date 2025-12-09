@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北歐極簡生活助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        /* 北歐風格色板 (淡雅、自然) */
+        :root {
+            --color-primary: #4C5A67; /* 深灰藍 (文字/標題) */
+            --color-secondary: #B0C4DE; /* 淺灰藍 (輔助/邊框) */
+            --color-background: #F8F8F8; /* 幾乎白色 (背景) */
+            --color-accent: #A3BE8C; /* 苔蘚綠 (點綴/重點) */
+            --color-card: #FFFFFF; /* 卡片背景 */
+        }
+        /* 定義 Tailwind 顏色以便在 class 中使用 */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': 'var(--color-primary)',
+                        'secondary': 'var(--color-secondary)',
+                        'background': 'var(--color-background)',
+                        'accent': 'var(--color-accent)',
+                        'card': 'var(--color-card)',
+                    }
+                }
+            }
+        }
+        /* 保持手機App美感：讓頁面撐滿螢幕並隱藏捲軸 */
+        body {
+            background-color: var(--color-background);
+        }
+        #app {
+            max-width: 480px; /* 模擬手機寬度 */
+            margin: 0 auto;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); /* 輕微陰影，增加質感 */
+            background-color: var(--color-background);
+            padding-bottom: 70px; /* 為底部導航留出空間 */
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+<div id="app">
+
+    <header class="p-4 bg-card shadow-sm sticky top-0 z-10">
+        <h1 class="text-xl font-bold text-primary">北歐極簡生活</h1>
+        <p class="text-sm text-secondary mt-1">{{ pageTitle }}</p>
+    </header>
+
+    <main class="p-4">
+
+        <section v-if="currentPage === 'schedule'" class="space-y-4">
+            <h2 class="text-lg font-semibold text-primary mb-3">🧭 我的行程</h2>
+            <div v-for="(item, index) in schedule" :key="index" class="bg-card p-4 rounded-xl shadow-md border-l-4" :class="{'border-accent': item.completed, 'border-secondary': !item.completed}">
+                <div class="flex items-center text-sm mb-2 text-primary" v-if="item.weather">
+                    <i class="fas fa-sun mr-2 text-yellow-500"></i>
+                    <span>{{ item.weather.location }}：{{ item.weather.temp }}°C，{{ item.weather.condition }}</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-primary font-bold">{{ item.time }} - {{ item.title }}</p>
+                        <p class="text-sm text-secondary mt-1">{{ item.location }}</p>
+                    </div>
+                    <button @click="navigateTo(item.location)" class="bg-accent text-white p-2 rounded-full hover:opacity-90 transition-opacity">
+                        <i class="fas fa-route"></i>
+                    </button>
+                </div>
+            </div>
+            <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-opacity-90 transition-colors mt-4">
+                <i class="fas fa-plus mr-2"></i>新增行程
+            </button>
+        </section>
+
+        <section v-if="currentPage === 'account'" class="space-y-4">
+            <h2 class="text-lg font-semibold text-primary mb-3">💰 簡約記帳</h2>
+
+            <div class="bg-card p-4 rounded-xl shadow-md border-l-4 border-accent">
+                <p class="text-sm text-secondary">本月總支出</p>
+                <p class="text-3xl font-bold text-primary mt-1">NT$ {{ totalExpense.toLocaleString() }}</p>
+            </div>
+
+            <div class="bg-card p-4 rounded-xl shadow-md space-y-3">
+                <h3 class="font-bold text-primary">記錄新支出</h3>
+                
+                <div>
+                    <label for="category" class="block text-sm font-medium text-primary mb-1">類別</label>
+                    <select id="category" v-model="newExpense.category" class="w-full p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent focus:ring focus:ring-accent focus:ring-opacity-50 transition-shadow">
+                        <option value="" disabled>請選擇支出類別</option>
+                        <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-primary mb-1">金額 (NT$)</label>
+                    <input type="number" id="amount" v-model.number="newExpense.amount" class="w-full p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent focus:ring focus:ring-accent focus:ring-opacity-50 transition-shadow" placeholder="輸入金額">
+                </div>
+
+                <button @click="addExpense" class="w-full bg-accent text-white py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                    <i class="fas fa-save mr-2"></i>新增記錄
+                </button>
+            </div>
+            
+            <div class="space-y-2 pt-2">
+                <div v-for="(exp, index) in expenses" :key="index" class="flex justify-between items-center bg-card p-3 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <span class="text-xl mr-3" :class="categoryIcon(exp.category)"></span>
+                        <div>
+                            <p class="font-medium text-primary">{{ exp.category }}</p>
+                            <p class="text-xs text-secondary">{{ exp.date }}</p>
+                        </div>
+                    </div>
+                    <p class="font-bold text-red-500">- NT$ {{ exp.amount.toLocaleString() }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section v-if="currentPage === 'list'" class="space-y-4">
+            <h2 class="text-lg font-semibold text-primary mb-3">🛒 極簡購物</h2>
+
+            <div class="flex space-x-2">
+                <input type="text" v-model="newItemText" placeholder="輸入購物項目..." class="flex-grow p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent focus:ring focus:ring-accent focus:ring-opacity-50 transition-shadow">
+                <button @click="addItem" class="bg-primary text-white p-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <div v-for="(item, index) in shoppingList" :key="index" class="bg-card p-3 rounded-lg shadow-sm flex justify-between items-center transition-all" :class="{'opacity-60': item.completed}">
+                    <label class="flex items-center space-x-3 cursor-pointer flex-grow">
+                        <input type="checkbox" v-model="item.completed" class="form-checkbox h-5 w-5 text-accent rounded border-secondary focus:ring-accent transition-colors">
+                        <span class="text-primary" :class="{'line-through text-secondary': item.completed}">{{ item.text }}</span>
+                    </label>
+                    <button @click="removeItem(index)" class="text-secondary hover:text-red-500 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section v-if="currentPage === 'map'" class="space-y-4">
+            <h2 class="text-lg font-semibold text-primary mb-3">📍 地圖與地點</h2>
+            <div class="bg-card p-4 rounded-xl shadow-md h-80 flex items-center justify-center text-center text-secondary">
+                <p>地圖 API 渲染區</p>
+                <p class="absolute mt-10 text-sm">（實際部署需使用 Google Maps API Key）</p>
+                
+            </div>
+            
+            <p class="text-sm text-secondary">提示：在行程表點擊導航按鈕可查看地點。</p>
+        </section>
+
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 max-w-sm mx-auto bg-card border-t border-secondary shadow-lg flex justify-around p-2 z-20 rounded-t-xl">
+        <button @click="changePage('schedule')" :class="{'text-accent': currentPage === 'schedule', 'text-secondary': currentPage !== 'schedule'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
+            <i class="fas fa-calendar-alt text-xl"></i>
+            <span class="text-xs mt-1">行程</span>
+        </button>
+        <button @click="changePage('account')" :class="{'text-accent': currentPage === 'account', 'text-secondary': currentPage !== 'account'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
+            <i class="fas fa-wallet text-xl"></i>
+            <span class="text-xs mt-1">記帳</span>
+        </button>
+        <button @click="changePage('list')" :class="{'text-accent': currentPage === 'list', 'text-secondary': currentPage !== 'list'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
+            <i class="fas fa-shopping-basket text-xl"></i>
+            <span class="text-xs mt-1">購物</span>
+        </button>
+        <button @click="changePage('map')" :class="{'text-accent': currentPage === 'map', 'text-secondary': currentPage !== 'map'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
+            <i class="fas fa-map-marked-alt text-xl"></i>
+            <span class="text-xs mt-1">地圖</span>
+        </button>
+    </nav>
+</div>
+
+<script>
+    const { createApp, ref, computed } = Vue
+
+    createApp({
+        data() {
+            return {
+                currentPage: 'schedule', // 預設頁面
+                pageTitles: {
+                    schedule: '生活中的美好規劃',
+                    account: '清楚簡潔的財務管理',
+                    list: '不再遺漏任何細節',
+                    map: '探索你的周邊世界'
+                },
+                // --- 行程表資料 ---
+                schedule: [
+                    { time: '09:00', title: '設計展覽', location: '松山文創園區', completed: false, weather: { temp: 24, condition: '多雲', location: '台北' } },
+                    { time: '12:30', title: '極簡咖啡廳午餐', location: '極光咖啡', completed: false, weather: { temp: 25, condition: '晴朗', location: '台北' } },
+                    { time: '16:00', title: '與朋友視訊會議', location: '家中書房', completed: true, weather: null },
+                ],
+                
+                // --- 記帳資料 ---
+                expenseCategories: ['餐飲', '交通', '生活用品', '娛樂', '雜項'],
+                newExpense: {
+                    category: '',
+                    amount: null
+                },
+                expenses: [
+                    { category: '生活用品', amount: 599, date: '2025/12/08' },
+                    { category: '餐飲', amount: 120, date: '2025/12/08' },
+                ],
+
+                // --- 購物清單資料 ---
+                newItemText: '',
+                shoppingList: [
+                    { text: '北歐風香氛蠟燭', completed: false },
+                    { text: '有機棉床單', completed: true },
+                    { text: '燕麥奶', completed: false },
+                ]
+            }
+        },
+        computed: {
+            pageTitle() {
+                return this.pageTitles[this.currentPage] || '簡約生活助手';
+            },
+            totalExpense() {
+                return this.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            }
+        },
+        methods: {
+            changePage(page) {
+                this.currentPage = page;
+            },
+            // Google Maps 導航功能
+            navigateTo(location) {
+                // 實際應用中，Google Maps API key 是必要的
+                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+                window.open(url, '_blank');
+            },
+            // 記帳功能
+            addExpense() {
+                if (this.newExpense.category && this.newExpense.amount > 0) {
+                    this.expenses.unshift({
+                        category: this.newExpense.category,
+                        amount: this.newExpense.amount,
+                        date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/').slice(0, -1) // 格式化日期
+                    });
+                    // 重置表單
+                    this.newExpense.category = '';
+                    this.newExpense.amount = null;
+                } else {
+                    alert('請選擇類別並輸入有效金額！');
+                }
+            },
+            categoryIcon(category) {
+                switch (category) {
+                    case '餐飲': return 'fas fa-utensils text-orange-400';
+                    case '交通': return 'fas fa-bus text-blue-400';
+                    case '生活用品': return 'fas fa-lightbulb text-yellow-400';
+                    case '娛樂': return 'fas fa-gamepad text-purple-400';
+                    default: return 'fas fa-tag text-gray-400';
+                }
+            },
+            // 購物清單功能
+            addItem() {
+                if (this.newItemText.trim() !== '') {
+                    this.shoppingList.unshift({ text: this.newItemText.trim(), completed: false });
+                    this.newItemText = '';
+                }
+            },
+            removeItem(index) {
+                this.shoppingList.splice(index, 1);
+            }
+        }
+    }).mount('#app')
+</script>
+
+</body>
+</html>
