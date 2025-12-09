@@ -8,7 +8,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vuedraggable/4.1.0/vuedraggable.umd.min.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
+    
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
     
     <style>
         /* 北歐/下雪風格的客製化樣式 */
@@ -20,12 +21,12 @@
         }
         body {
             background-color: var(--nordic-light);
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>'); /* 簡單的雪花背景 */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>');
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: var(--nordic-dark);
         }
         .app-container {
-            max-width: 420px; /* 模擬手機 App 寬度 */
+            max-width: 420px;
             margin: 0 auto;
             min-height: 100vh;
             background-color: var(--nordic-light);
@@ -54,13 +55,12 @@
             color: white;
             font-weight: bold;
         }
-        /* 橫向滑動效果 */
         .date-scroll-container {
             -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
         .date-scroll-container::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
         }
     </style>
 </head>
@@ -76,7 +76,7 @@
         </div>
     </div>
     
-    <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2">
+    <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
         <div class="flex space-x-2 p-1 bg-white rounded-full shadow-lg">
             <template v-for="(date, index) in travelDates" :key="index">
                 <button 
@@ -90,14 +90,15 @@
             </template>
         </div>
     </div>
+    <div v-else class="text-center p-8 text-gray-500">應用程式載入中...</div>
 
-    <div class="p-4 pt-6">
+    <div class="p-4 pt-6" v-if="travelDates.length">
         
         <div class="flex justify-around bg-white p-2 rounded-full shadow-lg mb-6 sticky top-0 z-20">
             <button 
                 v-for="tab in tabs" :key="tab.id"
                 @click="activeTab = tab.id"
-                :class="{'tab-active': activeTab === tab.id, 'text-gray-600': activeTab !== tab.id}"
+                :class="{'text-blue-600 font-bold': activeTab === tab.id, 'text-gray-600': activeTab !== tab.id}"
                 class="flex items-center space-x-1 text-sm font-medium transition-colors"
             >
                 <span class="text-xl" v-html="tab.icon"></span>
@@ -150,7 +151,10 @@
         <div v-show="activeTab === 'map'">
             <h2 class="text-xl font-bold text-gray-700 mb-4">📍 當日行程地圖與導航</h2>
             <div id="googleMap" class="card h-80 w-full mb-4">
+                <div v-if="!isGoogleMapsLoaded" class="flex items-center justify-center h-full text-gray-500">
+                    地圖服務載入中... (請確認 API Key 是否有效)
                 </div>
+            </div>
             <p class="text-sm text-gray-600 p-2 border-l-4 border-blue-500 bg-blue-50/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
             <a :href="currentMapLink" target="_blank" class="block mt-4 text-center py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
                 開啟 Google 地圖導航
@@ -208,7 +212,7 @@
         
     </div>
 
-    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8">
+    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8" v-if="travelDates.length">
         <div class="flex justify-around text-gray-500">
             <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
                 :class="{'text-blue-600 font-bold': activeTab === tab.id}"
@@ -282,10 +286,104 @@
 </div>
 
 <script>
-const { createApp, ref, computed, onMounted, nextTick } = Vue
+const { createApp, ref, computed, nextTick, watch } = Vue
 const { Draggable } = vuedraggable
 
-// 生成旅行日期列表 (12/19 - 1/3)
+// 修正 4：將 Vue 應用程式的邏輯包裝在一個函式中，並將地圖載入狀態獨立出來
+let appInstance = null;
+let googleMapsLoaded = ref(false); // 新增地圖載入狀態
+
+// 全域 callback 函式，當 Google Maps 載入完成後會自動呼叫
+window.initApp = function() {
+    googleMapsLoaded.value = true;
+    if (appInstance) {
+        // 如果 Vue 應用程式已經掛載，通知它地圖已載入
+        nextTick(() => {
+            if (appInstance.activeTab === 'map') {
+                 appInstance.initMap();
+            }
+        });
+    } else {
+        // 如果還沒掛載，現在可以安全地掛載
+        mountVueApp();
+    }
+}
+
+// 修正 5：處理地圖未載入時的錯誤，並使用 googleMapsLoaded 狀態
+function initMap() {
+    if (!googleMapsLoaded.value) {
+        // 地圖庫尚未載入，稍後再試或顯示錯誤訊息
+        console.warn("Google Maps 尚未載入。請檢查 API Key 或網路連線。");
+        return;
+    }
+    
+    // 檢查地圖容器是否存在
+    const mapElement = document.getElementById('googleMap');
+    if (typeof google === 'undefined' || !mapElement) return;
+
+    const locations = appInstance.currentItinerary.filter(item => item.lat && item.lng);
+    let center = { lat: 60.12816, lng: 18.6435 }; 
+    let zoom = 5;
+
+    if (locations.length > 0) {
+        center = { lat: locations[0].lat, lng: locations[0].lng };
+        zoom = 12;
+    }
+
+    const map = new google.maps.Map(mapElement, {
+        zoom: zoom,
+        center: center,
+        mapId: "DEMO_MAP_ID" 
+    });
+
+    locations.forEach((item, index) => {
+        new google.maps.Marker({
+            position: { lat: item.lat, lng: item.lng },
+            map: map,
+            title: `${index + 1}. ${item.location}`,
+            label: (index + 1).toString(),
+            icon: {
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent('<svg width="24" height="24" viewBox="0 0 24 24" fill="#02B8D2" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#02B8D2"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">' + (index + 1) + '</text></svg>'),
+                scaledSize: new google.maps.Size(24, 24)
+            }
+        });
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+
+                new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: 'Your Location',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#EA4335',
+                        fillOpacity: 1,
+                        strokeColor: '#fff',
+                        strokeWeight: 2
+                    }
+                });
+
+                if (locations.length === 0) {
+                    map.setCenter(pos);
+                    map.setZoom(14);
+                }
+            },
+            (error) => {
+                console.error("Geolocation failed:", error);
+            }
+        );
+    }
+}
+
+// 生成旅行日期列表
 function getTravelDates() {
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
@@ -298,301 +396,228 @@ function getTravelDates() {
     return dates;
 }
 
-const app = createApp({
-    components: {
-        Draggable
-    },
-    setup() {
-        const tabs = [
-            { id: 'itinerary', name: '行程', icon: '🗺️' },
-            { id: 'map', name: '地圖', icon: '📍' },
-            { id: 'accounting', name: '記帳', icon: '💰' },
-            { id: 'shopping', name: '購物', icon: '🛍️' },
-        ];
-        const activeTab = ref('itinerary');
-        
-        // 1. 日期與行程管理
-        const travelDates = getTravelDates();
-        const activeDate = ref(travelDates[0]); // 預設為第一天
+function mountVueApp() {
+    const app = createApp({
+        components: { Draggable },
+        setup() {
+            const tabs = [
+                { id: 'itinerary', name: '行程', icon: '🗺️' },
+                { id: 'map', name: '地圖', icon: '📍' },
+                { id: 'accounting', name: '記帳', icon: '💰' },
+                { id: 'shopping', name: '購物', icon: '🛍️' },
+            ];
+            const activeTab = ref('itinerary');
+            
+            const travelDates = getTravelDates();
+            const activeDate = ref(travelDates[0]);
 
-        const itineraryCategories = ['景點', '交通', '航班', '美食', '購物', '其他'];
+            const itineraryCategories = ['景點', '交通', '航班', '美食', '購物', '其他'];
 
-        // 靜態行程數據 (Key為日期)
-        const itinerary = ref({
-            '2025-12-19': [
-                { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
-                { id: 2, time: '18:00', location: '抵達奧斯陸機場 (OSL)', category: '航班', notes: '搭乘機場快線 Flytoget', lat: 60.1939, lng: 11.1004 },
-            ],
-            '2025-12-20': [
-                { id: 3, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂拍照', lat: 59.9079, lng: 10.7511 },
-                { id: 4, time: '13:00', location: 'Kaffistova 傳統午餐', category: '美食', notes: '試試挪威肉丸', lat: 59.9138, lng: 10.7390 },
-                { id: 5, time: '15:00', location: '維格朗雕塑公園', category: '景點', notes: '巨大的生命之柱', lat: 59.9270, lng: 10.7029 },
-            ],
-            '2025-12-21': [], // 範例：空白
-            '2026-01-03': [
-                { id: 6, time: '14:00', location: '哥本哈根機場 (CPH) 返程', category: '航班', notes: '預留充足時間退稅', lat: 55.6268, lng: 12.6558 },
-            ]
-        });
+            const itinerary = ref({
+                '2025-12-19': [
+                    { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
+                    { id: 2, time: '18:00', location: '抵達奧斯陸機場 (OSL)', category: '航班', notes: '搭乘機場快線 Flytoget', lat: 60.1939, lng: 11.1004 },
+                ],
+                '2025-12-20': [
+                    { id: 3, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂拍照', lat: 59.9079, lng: 10.7511 },
+                    { id: 4, time: '13:00', location: 'Kaffistova 傳統午餐', category: '美食', notes: '試試挪威肉丸', lat: 59.9138, lng: 10.7390 },
+                    { id: 5, time: '15:00', location: '維格朗雕塑公園', category: '景點', notes: '巨大的生命之柱', lat: 59.9270, lng: 10.7029 },
+                ],
+                '2025-12-21': [],
+                '2026-01-03': [
+                    { id: 6, time: '14:00', location: '哥本哈根機場 (CPH) 返程', category: '航班', notes: '預留充足時間退稅', lat: 55.6268, lng: 12.6558 },
+                ]
+            });
 
-        const currentItinerary = computed(() => {
-            return itinerary.value[activeDate.value] || [];
-        });
+            const currentItinerary = computed(() => {
+                return itinerary.value[activeDate.value] || [];
+            });
 
-        function setActiveDate(date) {
-            activeDate.value = date;
-            // 當切換日期到地圖頁面時，重新渲染地圖
-            if (activeTab.value === 'map') {
-                nextTick(() => initMap());
+            function setActiveDate(date) {
+                activeDate.value = date;
+                if (activeTab.value === 'map') {
+                    nextTick(() => initMap());
+                }
             }
-        }
 
-        // 模擬天氣數據
-        function getCurrentWeather() {
-            // 實際應透過 API 獲取
+            function getCurrentWeather() {
+                return {
+                    temp: '-5°C',
+                    desc: '多雲，偶有雪花',
+                    icon: '🌨️'
+                };
+            }
+            
+            const expenses = ref([
+                { id: 101, date: '2025-12-19', item: '機場快線車票', amount: 350.00, method: '信用卡' },
+                { id: 102, date: '2025-12-19', item: '晚餐 (便利商店)', amount: 85.50, method: '現金' },
+            ]);
+
+            const totalExpense = computed(() => {
+                return expenses.value.reduce((sum, item) => sum + item.amount, 0);
+            });
+
+            const shoppingList = ref([
+                { id: 201, name: '極光專用三腳架', done: false },
+                { id: 202, name: '芬蘭毛帽', done: false },
+                { id: 203, name: '旅遊保險', done: true },
+            ]);
+            
+            const currentMapLink = computed(() => {
+                const locations = currentItinerary.value.filter(item => item.lat && item.lng);
+                if (locations.length === 0) {
+                    return `https://www.google.com/maps/search/Norway+landmarks`;
+                }
+                const firstLoc = locations[0];
+                return `https://www.google.com/maps/dir/?api=1&destination=${firstLoc.lat},${firstLoc.lng}`;
+            });
+
+            const isModalOpen = ref(false);
+            const modalType = ref('');
+            const modalTitle = computed(() => {
+                switch(modalType.value) {
+                    case 'itinerary': return '新增/編輯行程';
+                    case 'accounting': return '新增花費紀錄';
+                    case 'shopping': return '新增購物項目';
+                    default: return '';
+                }
+            });
+            const tempItem = ref({});
+            let isEditing = false;
+            let editingId = null;
+
+            function showModal(type, item = null) {
+                modalType.value = type;
+                isEditing = !!item;
+                editingId = item ? item.id : null;
+                
+                if (type === 'itinerary') {
+                    tempItem.value = item ? { ...item } : { time: '10:00', location: '', category: '景點', notes: '', lat: null, lng: null };
+                } else if (type === 'accounting') {
+                    tempItem.value = item ? { ...item } : { item: '', amount: null, method: '信用卡', date: activeDate.value };
+                } else if (type === 'shopping') {
+                    tempItem.value = item ? { ...item } : { name: '', done: false };
+                }
+                
+                isModalOpen.value = true;
+            }
+            
+            function editItem(type, item) {
+                showModal(type, item);
+            }
+
+            function saveItem() {
+                if (modalType.value === 'itinerary') {
+                    if (!tempItem.value.location || !tempItem.value.time) return alert('請填寫地點和時間');
+
+                    if (isEditing) {
+                        const index = currentItinerary.value.findIndex(i => i.id === editingId);
+                        if (index !== -1) {
+                            currentItinerary.value[index] = { ...tempItem.value, id: editingId };
+                        }
+                    } else {
+                        const newId = Date.now();
+                        const currentList = itinerary.value[activeDate.value] || [];
+                        currentList.push({ ...tempItem.value, id: newId, lat: null, lng: null });
+                        itinerary.value[activeDate.value] = currentList;
+                    }
+                    
+                } else if (modalType.value === 'accounting') {
+                    if (!tempItem.value.item || !tempItem.value.amount) return alert('請填寫項目和金額');
+                    
+                    if (!isEditing) {
+                        const newId = Date.now();
+                        expenses.value.push({ ...tempItem.value, id: newId, date: new Date().toISOString().split('T')[0] });
+                    }
+                } else if (modalType.value === 'shopping') {
+                    if (!tempItem.value.name) return alert('請填寫購物項目');
+                    
+                    if (!isEditing) {
+                        const newId = Date.now();
+                        shoppingList.value.push({ ...tempItem.value, id: newId });
+                    }
+                }
+                
+                isModalOpen.value = false;
+            }
+
+            function deleteItem(type, id) {
+                if (!confirm('確定要刪除嗎?')) return;
+                
+                if (type === 'itinerary') {
+                    itinerary.value[activeDate.value] = currentItinerary.value.filter(item => item.id !== id);
+                    // 修正：刪除後重新初始化地圖 (如果在地圖 Tab)
+                    if (activeTab.value === 'map') {
+                        nextTick(() => initMap());
+                    }
+                } else if (type === 'accounting') {
+                    expenses.value = expenses.value.filter(item => item.id !== id);
+                } else if (type === 'shopping') {
+                    shoppingList.value = shoppingList.value.filter(item => item.id !== id);
+                }
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            }
+            
+            // 修正 6：監聽 activeTab 變化，確保只有在地圖庫載入完成後才呼叫 initMap
+            watch(activeTab, (newTab) => {
+                if (newTab === 'map' && googleMapsLoaded.value) {
+                    nextTick(() => initMap());
+                }
+            });
+            
+            // 修正 7：暴露給全域環境，以便 initApp 可以在地圖載入完成時使用
+            appInstance = { activeTab, initMap, currentItinerary };
+
+            // 處理 Vue 應用程式比 Google Maps 載入得更快的情況
+            if (activeTab.value === 'map' && googleMapsLoaded.value) {
+                 nextTick(() => initMap());
+            }
+
             return {
-                temp: '-5°C',
-                desc: '多雲，偶有雪花',
-                icon: '🌨️'
+                tabs,
+                activeTab,
+                travelDates,
+                activeDate,
+                currentItinerary,
+                itineraryCategories,
+                setActiveDate,
+                getCurrentWeather,
+                formatDate,
+                initMap, // 仍然暴露出來，但現在是內部調用
+                currentMapLink,
+                expenses,
+                totalExpense,
+                shoppingList,
+                isModalOpen,
+                modalType,
+                modalTitle,
+                tempItem,
+                showModal,
+                editItem,
+                saveItem,
+                deleteItem,
+                isGoogleMapsLoaded: googleMapsLoaded // 暴露地圖載入狀態
             };
         }
-        
-        // 2. 記帳系統
-        const expenses = ref([
-            { id: 101, date: '2025-12-19', item: '機場快線車票', amount: 350.00, method: '信用卡' },
-            { id: 102, date: '2025-12-19', item: '晚餐 (便利商店)', amount: 85.50, method: '現金' },
-        ]);
+    });
 
-        const totalExpense = computed(() => {
-            return expenses.value.reduce((sum, item) => sum + item.amount, 0);
-        });
+    // 修正 8：將掛載操作放在 `mountVueApp` 內
+    app.mount('#app');
+}
 
-        // 3. 購物清單
-        const shoppingList = ref([
-            { id: 201, name: '極光專用三腳架', done: false },
-            { id: 202, name: '芬蘭毛帽', done: false },
-            { id: 203, name: '旅遊保險', done: true },
-        ]);
-        
-        // 4. Google 地圖整合
-        let map = null;
-
-        function initMap() {
-            if (typeof google === 'undefined' || !document.getElementById('googleMap')) return;
-            
-            const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-            let center = { lat: 60.12816, lng: 18.6435 }; // 預設北歐中心點
-            let zoom = 5;
-
-            if (locations.length > 0) {
-                center = { lat: locations[0].lat, lng: locations[0].lng };
-                zoom = 12;
-            }
-
-            map = new google.maps.Map(document.getElementById('googleMap'), {
-                zoom: zoom,
-                center: center,
-                mapId: "DEMO_MAP_ID" // 可以在 Google Cloud Console 設定
-            });
-
-            // 標記所有行程地點
-            locations.forEach((item, index) => {
-                new google.maps.Marker({
-                    position: { lat: item.lat, lng: item.lng },
-                    map: map,
-                    title: `${index + 1}. ${item.location}`,
-                    label: (index + 1).toString(),
-                    icon: {
-                        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent('<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#02B8D2"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">' + (index + 1) + '</text></svg>'),
-                        scaledSize: new google.maps.Size(24, 24)
-                    }
-                });
-            });
-
-            // 顯示當前位置 (Geolocation)
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                        };
-
-                        new google.maps.Marker({
-                            position: pos,
-                            map: map,
-                            title: 'Your Location',
-                            icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
-                                fillColor: '#EA4335',
-                                fillOpacity: 1,
-                                strokeColor: '#fff',
-                                strokeWeight: 2
-                            }
-                        });
-
-                        // 如果沒有行程地點，則以用戶位置為中心
-                        if (locations.length === 0) {
-                            map.setCenter(pos);
-                            map.setZoom(14);
-                        }
-                    },
-                    (error) => {
-                        console.error("Geolocation failed:", error);
-                    }
-                );
-            }
-        }
-
-        const currentMapLink = computed(() => {
-            const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-            if (locations.length === 0) {
-                return `https://www.google.com/maps/search/Nordic+countries/`;
-            }
-            // 簡單的導航連結，使用第一個地點作為目標
-            const firstLoc = locations[0];
-            return `https://www.google.com/maps/dir/?api=1&destination=${firstLoc.lat},${firstLoc.lng}`;
-        });
-
-        // 5. Modal 彈窗
-        const isModalOpen = ref(false);
-        const modalType = ref(''); // itinerary, accounting, shopping
-        const modalTitle = computed(() => {
-            switch(modalType.value) {
-                case 'itinerary': return '新增/編輯行程';
-                case 'accounting': return '新增花費紀錄';
-                case 'shopping': return '新增購物項目';
-                default: return '';
-            }
-        });
-        const tempItem = ref({});
-        let isEditing = false;
-        let editingId = null;
-
-        function showModal(type, item = null) {
-            modalType.value = type;
-            isEditing = !!item;
-            editingId = item ? item.id : null;
-            
-            if (type === 'itinerary') {
-                tempItem.value = item ? { ...item } : { time: '10:00', location: '', category: '景點', notes: '', lat: null, lng: null };
-            } else if (type === 'accounting') {
-                tempItem.value = item ? { ...item } : { item: '', amount: null, method: '信用卡', date: activeDate.value };
-            } else if (type === 'shopping') {
-                tempItem.value = item ? { ...item } : { name: '', done: false };
-            }
-            
-            isModalOpen.value = true;
-        }
-        
-        function editItem(type, item) {
-            showModal(type, item);
-        }
-
-        function saveItem() {
-            if (modalType.value === 'itinerary') {
-                if (!tempItem.value.location || !tempItem.value.time) return alert('請填寫地點和時間');
-
-                if (isEditing) {
-                    const index = currentItinerary.value.findIndex(i => i.id === editingId);
-                    if (index !== -1) {
-                        currentItinerary.value[index] = { ...tempItem.value, id: editingId };
-                    }
-                } else {
-                    const newId = Date.now();
-                    const currentList = itinerary.value[activeDate.value] || [];
-                    currentList.push({ ...tempItem.value, id: newId, lat: null, lng: null }); // 實際應用中需透過地址轉換為經緯度
-                    itinerary.value[activeDate.value] = currentList;
-                }
-                
-            } else if (modalType.value === 'accounting') {
-                if (!tempItem.value.item || !tempItem.value.amount) return alert('請填寫項目和金額');
-                
-                if (isEditing) {
-                    // 記帳系統目前不支援編輯，只支援新增/刪除
-                } else {
-                    const newId = Date.now();
-                    expenses.value.push({ ...tempItem.value, id: newId, date: new Date().toISOString().split('T')[0] });
-                }
-            } else if (modalType.value === 'shopping') {
-                if (!tempItem.value.name) return alert('請填寫購物項目');
-                
-                if (isEditing) {
-                    // 購物清單目前不支援編輯，只支援新增/刪除/切換狀態
-                } else {
-                    const newId = Date.now();
-                    shoppingList.value.push({ ...tempItem.value, id: newId });
-                }
-            }
-            
-            isModalOpen.value = false;
-        }
-
-        function deleteItem(type, id) {
-            if (!confirm('確定要刪除嗎?')) return;
-            
-            if (type === 'itinerary') {
-                itinerary.value[activeDate.value] = currentItinerary.value.filter(item => item.id !== id);
-            } else if (type === 'accounting') {
-                expenses.value = expenses.value.filter(item => item.id !== id);
-            } else if (type === 'shopping') {
-                shoppingList.value = shoppingList.value.filter(item => item.id !== id);
-            }
-        }
-
-        // Helper 函數
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return `${date.getMonth() + 1}/${date.getDate()}`;
-        }
-        
-        // 切換到地圖 Tab 時，重新初始化地圖
-        watch(activeTab, (newTab) => {
-            if (newTab === 'map') {
-                nextTick(() => initMap());
-            }
-        });
-        
-        onMounted(() => {
-            // 初始化時，如果直接進入地圖，則加載地圖
-            if (activeTab.value === 'map') {
-                initMap();
-            }
-        });
-
-        return {
-            tabs,
-            activeTab,
-            // 行程
-            travelDates,
-            activeDate,
-            currentItinerary,
-            itineraryCategories,
-            setActiveDate,
-            getCurrentWeather,
-            formatDate,
-            // 地圖
-            initMap,
-            currentMapLink,
-            // 記帳
-            expenses,
-            totalExpense,
-            // 購物
-            shoppingList,
-            // Modal
-            isModalOpen,
-            modalType,
-            modalTitle,
-            tempItem,
-            showModal,
-            editItem,
-            saveItem,
-            deleteItem,
-        };
-    }
-});
-
-app.mount('#app');
+// 修正 9：如果 Google Maps 載入失敗或不使用，確保 Vue 應用程式仍能掛載
+if (typeof google === 'undefined') {
+    // 延遲掛載，確保所有 CDN 都已載入
+    setTimeout(() => {
+        googleMapsLoaded.value = false; // 假設地圖載入失敗
+        mountVueApp();
+    }, 500); 
+}
+// 如果地圖先載入，則由 initApp 呼叫 mountVueApp
 </script>
 
 </body>
