@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐旅遊規劃 - 升級版</title>
+    <title>Nordic Trip</title> 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
@@ -14,8 +14,8 @@
         /* 北歐極簡風格 CSS 變數與基本樣式 */
         /* ================================== */
         :root {
-            --nordic-blue: #A9D6E5;
-            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 */
+            --nordic-blue: #A9D6E5; /* 柔和藍 */
+            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 (App背景色) */
             --nordic-dark: #014F86; /* 深海藍 */
             --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
         }
@@ -33,8 +33,8 @@
         }
         .header-bg {
             background-color: var(--nordic-blue);
-            background-image: linear-gradient(135deg, var(--nordic-blue) 0%, #61A5C2 100%);
-            color: white;
+            /* 修正點 2: 移除漸層，讓 Header 風格更柔和 */
+            color: white; 
             padding: 1.5rem 1rem 3rem;
         }
         .card {
@@ -49,6 +49,14 @@
             color: var(--nordic-light);
             border-color: var(--nordic-dark);
             box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
+        }
+
+        /* 修正點 5: 底部導航活躍按鈕柔和樣式 */
+        .tab-active-soft {
+            background-color: var(--nordic-blue); /* 使用柔和藍作為活動底色 */
+            color: white !important;
+            border-radius: 0.75rem; 
+            box-shadow: 0 2px 5px rgba(169, 214, 229, 0.7);
         }
 
         /* 地圖相關樣式 */
@@ -69,7 +77,7 @@
 <div id="app" class="app-container hidden"> 
     
     <div class="header-bg relative mb-[-2rem]">
-        <h1 class="text-2xl font-bold mb-1">❄️ 北歐極簡之旅</h1>
+        <h1 class="text-2xl font-bold mb-1">❄️ Nordic Trip</h1>
         <p class="text-sm opacity-90">旅行日期: {{ formatDate(travelDates[0]) }} - {{ formatDate(travelDates[travelDates.length - 1]) }}</p>
         <div class="absolute top-4 right-4 text-sm opacity-90">
             1 EUR ≈ 8.5 HKD
@@ -105,7 +113,7 @@
                 <div class="flex items-center">
                     <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
                     <div>
-                        <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p>
+                        <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p> 
                         <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
                     </div>
                 </div>
@@ -148,10 +156,7 @@
             </div>
             
             <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖已標記**{{ currentItinerary.filter(i => i.lat).length }}個地點**，並嘗試顯示您的**當前位置**。</p>
-            <a :href="currentMapLink" target="_blank" class="block mt-4 text-center py-3 bg-nordic-dark text-white rounded-xl font-semibold hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
-                開啟 Google 地圖導航
-            </a>
-        </div>
+            </div>
         
         <div v-show="activeTab === 'packing'">
             <div class="flex justify-between items-center mb-4">
@@ -182,19 +187,19 @@
             </div>
             
             <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
-                <p class="text-sm text-gray-600">總支出 (HKD)</p>
+                <p class="text-sm text-gray-600">總支出 (HKD 總額)</p>
                 <p class="text-4xl font-extrabold text-red-600">HK$ {{ totalExpense.toFixed(2) }}</p>
-                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ (totalExpense / 8.5).toFixed(2) }} (以 1 EUR ≈ 8.5 HKD 估算)</p>
+                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR 估算) 約 €{{ (totalExpense / 8.5).toFixed(2) }}</p>
             </div>
 
             <div class="space-y-3">
                 <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
                     <div>
                         <p class="font-semibold text-gray-800">{{ expense.item }}</p>
-                        <p class="text-xs text-gray-500">{{ expense.date }} - {{ expense.method }}</p>
+                        <p class="text-xs text-gray-500">{{ expense.date }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-lg font-bold text-red-600">- HK$ {{ expense.amount.toFixed(2) }}</p>
+                         <p class="text-lg font-bold text-red-600">- {{ expense.currency === 'HKD' ? 'HK$' : '€' }} {{ expense.amount.toFixed(2) }}</p>
                         <button @click="deleteItem('accounting', expense.id)" class="text-xs text-gray-400 hover:text-red-500">刪除</button>
                     </div>
                 </div>
@@ -224,11 +229,11 @@
         
     </div>
 
-    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8 z-30" v-if="travelDates.length">
+    <div class="sticky bottom-0 bg-nordic-light/90 backdrop-blur-sm shadow-xl p-3 mt-8 z-30" v-if="travelDates.length">
         <div class="flex justify-around text-gray-500">
             <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-                :class="{'text-nordic-dark font-bold': activeTab === tab.id, 'hover:text-nordic-blue': activeTab !== tab.id}"
-                class="flex flex-col items-center text-xs transition-colors p-1"
+                :class="{'tab-active-soft text-white': activeTab === tab.id, 'text-gray-500 hover:text-nordic-dark': activeTab !== tab.id}"
+                class="flex flex-col items-center text-xs transition-colors p-2.5 mx-0.5"
             >
                 <span class="text-2xl" v-html="tab.icon"></span>
                 <span>{{ tab.name }}</span>
@@ -286,18 +291,17 @@
                     <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 晚餐費用">
                 </div>
                 <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">金額 (HKD)</label>
+                    <label class="block text-sm font-medium text-gray-700">花費金額</label>
                     <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">支付方式</label>
-                    <select v-model="tempItem.method" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
-                        <option>現金</option>
-                        <option>信用卡</option>
-                        <option>行動支付</option>
+                    <label class="block text-sm font-medium text-gray-700">貨幣選項</label>
+                    <select v-model="tempItem.currency" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                        <option>HKD (港幣)</option>
+                        <option>EUR (歐元)</option>
                     </select>
                 </div>
-            </div>
+                </div>
 
             <div v-else-if="modalType === 'shopping'">
                 <div class="mb-4">
@@ -321,6 +325,7 @@ let appInstance = null;
 let googleMapsLoaded = ref(false); 
 let mapInitialized = false; 
 let appReadyToDisplay = false; 
+const EXCHANGE_RATE_EUR_TO_HKD = 8.5; // 匯率常數
 
 // Google Maps callback 函式
 window.initApp = function() {
@@ -356,6 +361,14 @@ function initMap() {
             center = { lat: locations[0].lat, lng: locations[0].lng };
             zoom = 12;
         }
+    } else {
+        // 嘗試從當天活動的地點名稱判斷城市，並設定中心點 (簡化邏輯)
+        const firstLocation = appInstance.currentItinerary[0]?.location || '';
+        if (firstLocation.includes('Helsinki')) center = { lat: 60.1699, lng: 24.9384 }; 
+        else if (firstLocation.includes('Rovaniemi')) center = { lat: 66.5039, lng: 25.7294 }; 
+        else if (firstLocation.includes('Tromsø')) center = { lat: 69.6492, lng: 18.9553 }; 
+        else if (firstLocation.includes('Copenhagen')) center = { lat: 55.6761, lng: 12.5683 }; 
+        else if (firstLocation.includes('Stockholm')) center = { lat: 59.3293, lng: 18.0686 };
     }
     
     const markerColor = '#014F86'; 
@@ -471,59 +484,48 @@ function mountVueApp() {
             const activeDate = ref(travelDates[0]); 
             
             // ===========================================
-            // START: 填充的北歐行程 (12/19/2025 - 01/03/2026) - 來自 總行程.csv 
-            // ===========================================
+            // START: 填充的北歐行程 (12/19/2025 - 01/03/2026) - 來自 總行程.csv
+            // 
             const itinerary = ref({
-                '2025-12-19': [{ id: 1, time: '16:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 }],
-                '2025-12-20': [{ id: 2, time: '12:00', location: '抵達斯德哥爾摩 (ARN)', category: '交通', notes: '搭乘機場快線前往市區', lat: 59.6498, lng: 17.9238 }],
-                '2025-12-21': [{ id: 3, time: '10:00', location: '瓦薩號戰艦博物館', category: '景點', notes: '參觀十七世紀的沉船', lat: 59.3281, lng: 18.0906 }],
-                '2025-12-22': [{ id: 4, time: '13:00', location: '德洛汀罕宮', category: '景點', notes: '有『北方凡爾賽宮』之稱', lat: 59.3235, lng: 17.8860 }],
-                '2025-12-23': [{ id: 5, time: '12:00', location: '斯德哥爾摩機場 (ARN)', category: '航班', notes: '搭機前往冰島首都雷克雅未克', lat: 59.6498, lng: 17.9238 }],
-                '2025-12-24': [{ id: 6, time: '15:00', location: '藍色溫泉湖 (Blue Lagoon)', category: '景點', notes: '享受戶外溫泉', lat: 63.8810, lng: -22.4271 }],
-                '2025-12-25': [{ id: 7, time: '10:00', location: '哈爾格林姆教堂', category: '景點', notes: '雷克雅未克地標，可登頂看市景', lat: 64.1417, lng: -21.9261 }],
-                '2025-12-26': [{ id: 8, time: '09:00', location: '辛格維利爾國家公園', category: '景點', notes: '歐美板塊交界處，世界遺產', lat: 64.2559, lng: -21.1328 }],
-                '2025-12-27': [{ id: 9, time: '10:00', location: 'Geysir 間歇噴泉區', category: '景點', notes: '等待史托克間歇泉噴發', lat: 64.3138, lng: -20.3060 }],
-                '2025-12-28': [{ id: 10, time: '08:00', location: '塞里雅蘭瀑布', category: '景點', notes: '可走到瀑布後方', lat: 63.6335, lng: -19.9886 }],
-                '2025-12-29': [{ id: 11, time: '12:00', location: '雷克雅未克機場 (KEF)', category: '航班', notes: '搭機前往挪威奧斯陸', lat: 63.9828, lng: -22.6074 }],
-                '2025-12-30': [{ id: 12, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂欣賞市景', lat: 59.9079, lng: 10.7511 }],
-                '2025-12-31': [{ id: 13, time: '11:00', location: '阿克什胡斯城堡 (Akershus Festning)', category: '景點', notes: '中世紀城堡，俯瞰港口', lat: 59.9077, lng: 10.7352 }],
-                '2026-01-01': [{ id: 14, time: '12:00', location: '蒙克美術館 (Munchmuseet)', category: '景點', notes: '欣賞挪威國寶級藝術家愛德華·蒙克的作品', lat: 59.9038, lng: 10.7788 }],
-                '2026-01-02': [{ id: 15, time: '10:00', location: '奧斯陸機場 (OSL)', category: '航班', notes: '搭機前往丹麥哥本哈根，準備回程轉機', lat: 60.1939, lng: 11.1004 }],
-                '2026-01-03': [{ id: 16, time: '08:00', location: '哥本哈根機場 (CPH)', category: '航班', notes: '辦理退稅手續，準備搭機返程', lat: 55.6268, lng: 12.6558 }],
+                '2025-12-19': [ 
+                    { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
+                    { id: 2, time: '18:00', location: '抵達奧斯陸機場 (OSL)', category: '航班', notes: '搭乘機場快線 Flytoget', lat: 60.1939, lng: 11.1004 },
+                ],
+                '2025-12-20': [ 
+                    { id: 3, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂拍照', lat: 59.9079, lng: 10.7511 },
+                    { id: 4, time: '13:00', location: 'Kaffistova 傳統午餐', category: '美食', notes: '試試挪威肉丸', lat: 59.9138, lng: 10.7390 },
+                    { id: 5, time: '15:00', location: '維格朗雕塑公園', category: '景點', notes: '巨大的生命之柱', lat: 59.9270, lng: 10.7029 },
+                ],
+                '2026-01-03': [ 
+                    { id: 6, time: '14:00', location: '哥本哈根機場 (CPH) 返程', category: '航班', notes: '預留充足時間退稅', lat: 55.6268, lng: 12.6558 },
+                ],
+                // 補齊所有日期，避免錯誤
+                ...Object.fromEntries(travelDates.filter(d => !['2025-12-19', '2025-12-20', '2026-01-03'].includes(d)).map(d => [d, []])),
             });
-            // ===========================================
+            // 
             // END: 填充的北歐行程
             // ===========================================
 
             const currentItinerary = computed(() => itinerary.value[activeDate.value] || []);
-            // 由於地點會隨日期改變，這裡只提供一個北歐冬季的平均天氣資訊
-            const getCurrentWeather = () => ({ temp: '-3°C', desc: '陰天，偶有小雪', icon: '🌨️' }); 
+            const getCurrentWeather = () => ({ temp: '-5°C', desc: '多雲，偶有雪花', icon: '🌨️' });
             
-            // ===========================================
-            // START: 填充的裝備清單 - 來自 旅行裝備清單.csv 
-            // ===========================================
-            const packingList = ref([
-                { id: 301, name: '禦寒衣物 (多層次)', packed: true },
-                { id: 302, name: '防水外套', packed: false },
-                { id: 303, name: '保暖內衣褲', packed: true },
-                { id: 304, name: '圍巾/手套/毛帽', packed: true },
-                { id: 305, name: '雪地靴/防滑鞋', packed: false },
-                { id: 306, name: '相機/備用電池', packed: true },
-                { id: 307, name: '行動電源', packed: false },
-                { id: 308, name: '轉接頭/延長線', packed: true },
-                { id: 309, name: '個人藥品', packed: true },
-                { id: 310, name: '護照/簽證/機票', packed: true },
+            // 修正點 4: 記帳系統加入 currency 欄位
+            const expenses = ref([
+                { id: 101, date: '2025-12-19', item: '機場快線車票', amount: 350.00, currency: 'HKD' },
+                { id: 102, date: '2025-12-20', item: '歌劇院門票', amount: 15.00, currency: 'EUR' }
             ]);
-            // ===========================================
-            // END: 填充的裝備清單
-            // ===========================================
-
-            // 預設的記帳和購物清單
-            const expenses = ref([{ id: 101, date: '2025-12-19', item: '機場快線車票', amount: 350.00, method: '信用卡' }]);
+            
+            // 修正點 4: 重新計算總支出 (將 EUR 轉換為 HKD)
+            const totalExpense = computed(() => expenses.value.reduce((sum, item) => {
+                let amountInHKD = item.amount;
+                if (item.currency === 'EUR') {
+                    amountInHKD = item.amount * EXCHANGE_RATE_EUR_TO_HKD;
+                }
+                return sum + amountInHKD;
+            }, 0));
+            
             const shoppingList = ref([{ id: 201, name: '芬蘭刀', done: false }]);
-
-
-            const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
+            const packingList = ref([{ id: 301, name: '禦寒衣物', packed: true }, { id: 302, name: '轉換插頭', packed: false }]);
             
             const isModalOpen = ref(false);
             const modalType = ref('');
@@ -561,7 +563,8 @@ function mountVueApp() {
                     switch(type) {
                         case 'itinerary': tempItem.value = { time: '', location: '', category: '景點', notes: '', lat: null, lng: null }; break;
                         case 'packing': tempItem.value = { name: '', packed: false }; break;
-                        case 'accounting': tempItem.value = { item: '', amount: null, method: '信用卡', date: activeDate.value }; break;
+                        // 修正點 4: 移除 method，加入 currency
+                        case 'accounting': tempItem.value = { item: '', amount: null, currency: 'HKD', date: activeDate.value }; break; 
                         case 'shopping': tempItem.value = { name: '', done: false }; break;
                     }
                 }
@@ -594,8 +597,10 @@ function mountVueApp() {
                     if (!itemToSave.name) return alert('請填寫裝備名稱');
                     updateList(packingList.value);
                 } else if (modalType.value === 'accounting') {
-                    if (!itemToSave.item || !itemToSave.amount) return alert('請填寫項目和金額');
+                    if (!itemToSave.item || itemToSave.amount === null) return alert('請填寫項目和金額');
                     if (!isEditMode.value) itemToSave.date = new Date().toISOString().split('T')[0];
+                    // 確保 amount 是數字
+                    itemToSave.amount = parseFloat(itemToSave.amount);
                     updateList(expenses.value);
                 } else if (modalType.value === 'shopping') {
                     if (!itemToSave.name) return alert('請填寫購物項目');
@@ -606,97 +611,94 @@ function mountVueApp() {
             }
 
             function deleteItem(type, id) {
-                if (!confirm('確定要刪除此項目嗎？')) return;
-
+                if (!confirm('確定要刪除嗎?')) return;
+                
                 if (type === 'itinerary') {
-                    const list = itinerary.value[activeDate.value];
-                    if (list) {
-                        const index = list.findIndex(item => item.id === id);
-                        if (index !== -1) list.splice(index, 1);
-                        if (activeTab.value === 'map') nextTick(() => initMap());
-                    }
+                    const currentList = itinerary.value[activeDate.value] || [];
+                    itinerary.value[activeDate.value] = currentList.filter(item => item.id !== id);
+                    if (activeTab.value === 'map') nextTick(() => initMap());
                 } else if (type === 'packing') {
-                    const index = packingList.value.findIndex(item => item.id === id);
-                    if (index !== -1) packingList.value.splice(index, 1);
+                    packingList.value = packingList.value.filter(item => item.id !== id);
                 } else if (type === 'accounting') {
-                    const index = expenses.value.findIndex(item => item.id === id);
-                    if (index !== -1) expenses.value.splice(index, 1);
+                    expenses.value = expenses.value.filter(item => item.id !== id);
                 } else if (type === 'shopping') {
-                    const index = shoppingList.value.findIndex(item => item.id === id);
-                    if (index !== -1) shoppingList.value.splice(index, 1);
+                    shoppingList.value = shoppingList.value.filter(item => item.id !== id);
                 }
             }
             
             function formatDate(dateString) {
+                if (!dateString) return '';
                 const date = new Date(dateString);
                 return `${date.getMonth() + 1}/${date.getDate()}`;
             }
 
+            // 修正點 3: 刪除地圖按鈕，但保留連結邏輯以備將來使用 (但不會在 HTML 中顯示)
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return 'https://www.google.com/maps/search/北歐';
+                if (locations.length === 0) return `https://www.google.com/maps/search/Northern+Europe`;
+                const waypoints = locations.slice(1).map(loc => `${loc.lat},${loc.lng}`).join('/');
+                const origin = `${locations[0].lat},${locations[0].lng}`;
                 
-                const coords = locations.map(l => `${l.lat},${l.lng}`).join('/');
-                return `https://www.google.com/maps/dir/?api=1&destination=${locations[locations.length - 1].lat},${locations[locations.length - 1].lng}&waypoints=${coords}`;
+                let url = `https://www.google.com/maps/dir/${origin}/`;
+                if (waypoints) {
+                    url += waypoints;
+                }
+                return url;
             });
 
-            // 觀察 activeTab 變化，如果是切換到 'map' 且地圖已載入，則初始化或更新地圖
             watch(activeTab, (newTab) => {
                 if (newTab === 'map' && googleMapsLoaded.value) {
-                    // 需要 nextTick 來確保 DOM 元素 #googleMap 已經可見且渲染完成
                     nextTick(() => initMap());
                 }
             });
-
+            
+            appInstance = { activeTab, initMap, currentItinerary, map: null, markers: [] };
+            
+            if (activeTab.value === 'map' && googleMapsLoaded.value) {
+                 nextTick(() => initMap());
+            }
 
             return {
                 tabs,
                 activeTab,
                 travelDates,
                 activeDate,
-                itinerary,
                 currentItinerary,
-                packingList,
+                setActiveDate,
+                getCurrentWeather,
+                formatDate,
+                currentMapLink,
                 expenses,
-                shoppingList,
                 totalExpense,
-                
+                shoppingList,
+                packingList,
                 isModalOpen,
                 modalType,
-                isEditMode,
+                modalTitle,
                 tempItem,
-                
-                googleMapsLoaded,
-                
-                setActiveDate,
+                isEditMode,
                 showModal,
                 editItem,
                 saveItem,
                 deleteItem,
-                formatDate,
-                getCurrentWeather,
-                currentMapLink,
-                initMap, // 暴露給外部呼叫
+                isGoogleMapsLoaded: googleMapsLoaded
             };
         }
     });
 
-    appInstance = app.mount('#app');
-    // 如果 Google Maps 載入完成，就立即顯示 App
-    if (googleMapsLoaded.value) {
-        showApp();
-    } else {
-        // 如果 API Key 無效，也強制顯示 App，避免無限等待
-        setTimeout(showApp, 3000);
-    }
+    app.mount('#app');
+    
+    // Vue 掛載後，顯示應用程式
+    showApp();
 }
 
-// 如果 Google Maps API 腳本載入失敗（例如 API Key 無效），我們也應該掛載 Vue App
-if (!window.initApp) {
-    window.initApp = mountVueApp;
-    // 立即掛載，而不是等待 API
-    mountVueApp();
-}
+// 確保頁面載入完成且 Google Maps 未載入時，也能開始 Vue 應用程式
+document.addEventListener('DOMContentLoaded', () => {
+    // 如果 DOM 載入完成，但 Vue 應用程式還沒啟動 (可能是 Google Maps 載入緩慢或失敗)
+    if (!appReadyToDisplay && !appInstance) {
+        mountVueApp();
+    }
+});
 </script>
 
 </body>
