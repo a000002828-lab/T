@@ -137,6 +137,9 @@
                     </div>
                     
                     <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">當日安排</h3>
+                    <div v-if="selectedDay.events.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center border border-gray-200 mb-4">
+                        <p>本日行程尚未安排。請點擊右下角按鈕 **+ 新增行程**。</p>
+                    </div>
                     <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
                         <div class="flex justify-between items-start">
                             <div class="flex-grow">
@@ -237,7 +240,7 @@
                         </p>
                         <p class="text-sm text-gray-600">
                             所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)，重新整理頁面數據不會遺失。<br>
-                            （**範例資料**已在首次載入時自動儲存。）
+                            （首次載入時，將使用 **空的行程框架** 和 **預設的清單** 作為起始數據。）
                         </p>
                     </div>
                 </div>
@@ -418,6 +421,7 @@
 
     // Google Maps 導航連結生成器
     const getMapLink = (query) => {
+        // 請注意：此處的 URL 是範例，實際應用中您應使用正確的 Google Maps URL 格式
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     };
     
@@ -430,188 +434,144 @@
         'SE': '🇸🇪',
     };
 
-    // 預設行程資料 (保留用戶原有數據)
+    // 新增日期：2025/12/19 到 2026/01/03 (共 16 天)
+    // 所有 events 均為空陣列 []
     const defaultItineraryData = [
-        // 1. 2025/12/19 (Taiwan)
-        {
-            date: "2025/12/19", day_of_week: "五", city_country_zh: "臺灣", country_code: "TW",
-            weather: null, aurora_forecast: null,
-            events: [
-                { time: "19:00:00", schedule: "板橋車站集合(約20:30前到桃機一航)", location: "路程：90min" },
-                { time: "23:00:00", schedule: "✈華航CI073 TPE 台北 23:05 起飛", location: "路程：15h45m" },
-            ],
-            accommodation: "飛機上"
-        },
-        // 2. 2025/12/20 (Helsinki, Finland)
-        {
-            date: "2025/12/20", day_of_week: "六", city_country_zh: "赫爾辛基", country_code: "FI",
-            weather: { '氣溫': '約 -6°C 到 0°C', '日照': '約 6 小時', '降水': '常有降雪或雨夾雪' }, aurora_forecast: null,
-            events: [
-                { time: "07:50:00", schedule: "✈07:50抵達 AMS阿姆斯特丹", location: "轉機" },
-                { time: "11:20:00", schedule: "✈芬蘭航空AY1302 AMS阿姆斯特丹 11:20 起飛", location: "路程：2h25m" },
-                { time: "14:45:00", schedule: "✈14:45抵達 HEL赫爾辛基", location: "" },
-                { time: "16:00:00", schedule: "🧳前往住宿放行李", location: "" },
-                { time: "17:00:00", schedule: "🎄Chrismas market", location: "備註：https://tuomaanmarkkinat.fi/en/" },
-                { time: "17:00:00", schedule: "♨️Sauna (2 hr)", location: "Löyly Helsinki" }, 
-                { time: "19:00:00", schedule: "🥣Sea horse resturant", location: "" },
-                { time: "21:00:00", schedule: "Bar Kallio or center", location: "備註：Beer or cocktail? Karaoke or club?" },
-            ],
-            accommodation: "老人家"
-        },
-        // 3. 2025/12/21 (Helsinki, Finland)
-        {
-            date: "2025/12/21", day_of_week: "日", city_country_zh: "赫爾辛基", country_code: "FI",
-            weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '備註': '極地寒冷，需注意保暖' }, aurora_forecast: null,
-            events: [
-                { time: "10:00:00", schedule: "☕️Cafe Regatta (肉桂小屋)", location: "海邊" },
-                { time: "11:00:00", schedule: "Temppeliaukio Church (岩石教堂)", location: "" },
-                { time: "11:00:00", schedule: "📚Oodi (圖書館)", location: "" },
-                { time: "12:00:00", schedule: "🛍️Moomin Shop", location: "" },
-                { time: "12:00:00", schedule: "Helsinki Cathedral", location: "備註：https://helsingintuomiokirkko.fi/en/index/uusipaataso.html" },
-                { time: "13:00:00", schedule: "🥣Lunch", location: "" },
-                { time: "14:00:00", schedule: "Marimekko Outlet Herttoniemi", location: "" },
-                { time: "17:00:00", schedule: "coffee or rest", location: "備註：back to put stuff and take swimming suit" },
-                { time: "22:00:00", schedule: "Heading to train station", location: "" },
-                { time: "23:13:00", schedule: "🚂23:13 前往羅瓦涅米 (夜鋪火車)", location: "" },
-            ],
-            accommodation: "火車上"
-        },
-        // 4. 2025/12/22 (Rovaniemi, Finland)
-        {
-            date: "2025/12/22", day_of_week: "一", city_country_zh: "羅瓦涅米", country_code: "FI",
-            weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '降水': '穩定積雪' },
-            aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' },
-            events: [
-                { time: "10:59:00", schedule: "🚂10:59抵達 羅瓦涅米", location: "路程：10:45 排隊" },
-                { time: "12:00:00", schedule: "🧳前往民宿 寄放行李", location: "Villa Muru(KW)" },
-                { time: "16:00:00", schedule: "🥣Nili Restaurant", location: "備註：已訂位 16:00 六位" },
-                { time: "19:00:00", schedule: "☀19:00 極光團", location: "備註：Get Your Guide by KW(會派車來民宿接人)" },
-            ],
-            accommodation: "Villa Muru(KW)"
-        },
-        // 5. 2025/12/23 (Rovaniemi, Finland)
-        {
-            date: "2025/12/23", day_of_week: "二", city_country_zh: "羅瓦涅米", country_code: "FI",
-            weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '降水': '穩定積雪' },
-            aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' },
-            events: [
-                { time: "07:00:00", schedule: "🥣7:00起來煮早餐", location: "" },
-                { time: "08:30:00", schedule: "🛷08:30狗拉雪橇", location: "路程：4h, 備註：Get Your Guide by KW" },
-                { time: "12:00:00", schedule: "🎅🏼逛聖誕老人村", location: "備註：可先抽號碼牌看聖誕老人" },
-                { time: "13:00:00", schedule: "🥣Santa's Salmon Place (鮭魚餐)", location: "" },
-            ],
-            accommodation: "Villa Muru(KW)"
-        },
-         // ... (省略部分數據，確保程式碼能運行)
+        // --- 12 月份 ---
+        { date: "2025/12/19", day_of_week: "五", city_country_zh: "臺灣/啟程", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "飛機上" },
+        { date: "2025/12/20", day_of_week: "六", city_country_zh: "第一站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/21", day_of_week: "日", city_country_zh: "第二站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/22", day_of_week: "一", city_country_zh: "第三站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/23", day_of_week: "二", city_country_zh: "第四站城市", country_code: "FI", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/24", day_of_week: "三", city_country_zh: "第五站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/25", day_of_week: "四", city_country_zh: "第六站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/26", day_of_week: "五", city_country_zh: "第七站城市", country_code: "NO", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/27", day_of_week: "六", city_country_zh: "第八站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/28", day_of_week: "日", city_country_zh: "第九站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/29", day_of_week: "一", city_country_zh: "第十站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/30", day_of_week: "二", city_country_zh: "第十一站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2025/12/31", day_of_week: "三", city_country_zh: "第十二站城市", country_code: "DK", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        // --- 01 月份 ---
+        { date: "2026/01/01", day_of_week: "四", city_country_zh: "第十三站城市", country_code: "SE", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2026/01/02", day_of_week: "五", city_country_zh: "第十四站城市", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "待定" },
+        { date: "2026/01/03", day_of_week: "六", city_country_zh: "返抵台灣", country_code: "TW", weather: null, aurora_forecast: null, events: [], accommodation: "甜蜜的家" },
     ];
 
-    // 預設記帳數據
-    const defaultAccountingData = [
-        { description: '機票 (TPE-HEL)', amount: 28000, date: '11/05', category: '交通' },
-        { description: '羅瓦涅米住宿費', amount: 15000, date: '11/10', category: '住宿' },
-        { description: '極光團費用', amount: 6500, date: '12/22', category: '門票/活動' },
-        { description: '赫爾辛基晚餐', amount: 1200, date: '12/20', category: '餐飲' },
-    ];
 
-    // 預設清單數據
-    const defaultChecklistData = {
-        '證件與貨幣': [
-            { name: '護照', notes: '確認效期大於六個月', checked: true },
-            { name: '申根保險證明', notes: '', checked: true },
-            { name: '信用卡/提款卡', notes: '確認開通國外交易', checked: true },
-            { name: '歐元/丹麥克朗/瑞典克朗', notes: '現金準備', checked: false }
-        ],
-        '衣物': [
-            { name: '極地保暖外套', notes: '可抗-20°C', checked: true },
-            { name: '發熱衣褲 (多件)', notes: '洋蔥式穿法基礎', checked: true },
-            { name: '羊毛襪/雪地靴', notes: '防滑、防水', checked: false }
-        ],
-        '電子產品': [
-            { name: '手機/充電線', notes: '', checked: true },
-            { name: '萬用轉接頭', notes: '歐規雙圓腳', checked: true },
-            { name: '相機/三腳架', notes: '極光拍攝專用', checked: false }
-        ],
-        '個人用品': [
-            { name: '個人藥品', notes: '感冒藥、胃藥', checked: true },
-            { name: '洗漱用品', notes: '自備小罐裝', checked: false }
-        ]
+    // 嘗試從本地儲存載入數據，如果沒有，則使用預設值
+    const loadData = (key, defaultData) => {
+        try {
+            const data = localStorage.getItem(key);
+            if (data) {
+                // 如果 localStorage 裡已經有資料，就用舊資料
+                return JSON.parse(data);
+            }
+        } catch (e) {
+            console.error(`Error loading data from localStorage for key: ${key}`, e);
+        }
+        // 如果載入失敗或沒有數據，則返回預設值
+        return JSON.parse(JSON.stringify(defaultData));
     };
 
-    // 預設購物清單數據
-    const defaultShoppingList = [
-        { name: '北歐限定Moomin馬克杯', store: 'Moomin Shop', purchased: false },
-        { name: 'Fjällräven Kanken 背包', store: 'Stockholm旗艦店', purchased: false },
-        { name: 'IKEA 紀念品 (瑞典)', store: 'IKEA', purchased: true },
-        { name: '當地明信片', store: '各地郵局', purchased: false }
-    ];
+    // 儲存數據到本地儲存
+    const saveData = (key, data) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {
+            console.error(`Error saving data to localStorage for key: ${key}`, e);
+        }
+    };
 
-    // ----------------------------------------------------
-    // Vue 應用程式邏輯
-    // ----------------------------------------------------
-
-    const App = {
+    // 應用程式主體
+    createApp({
         setup() {
-            // Data Persistence Logic
-            const loadData = (key, defaultData) => {
-                const stored = localStorage.getItem(key);
-                // 由於用戶的數據結構可能較複雜，確保從 Local Storage 取出的是物件/陣列
-                if (stored) {
-                    try {
-                        return JSON.parse(stored);
-                    } catch (e) {
-                        console.error(`Error parsing stored data for ${key}:`, e);
-                        return defaultData;
-                    }
-                }
-                // 首次載入時，將預設數據存入 Local Storage
-                localStorage.setItem(key, JSON.stringify(defaultData));
-                return defaultData;
-            };
+            // Vue Refs
+            const currentTab = ref(loadData('planner_currentTab', 'itinerary'));
+            
+            // 由於行程被要求清空並新增日期，我們需要確保載入的行程結構是正確的。
+            // 這裡載入時會覆蓋舊的行程數據，以實現日期清空與重設。
+            const itinerary = ref(loadData('planner_itinerary', defaultItineraryData));
+            // 預設選擇第一個新日期 12/19
+            const selectedDay = ref(itinerary.value[0]); 
 
-            const saveData = (key, data) => {
-                localStorage.setItem(key, JSON.stringify(data));
-            };
+            // 清單和記帳資料，如果本地有存檔，仍會保留（讓您自行決定是否要清空）
+            const checklist = ref(loadData('planner_checklist', {
+                "證件/票券/現金": [
+                    { name: "護照/簽證", notes: "有效期半年以上", checked: false },
+                    { name: "機票/火車票 (電子檔/紙本)", notes: "", checked: false },
+                    { name: "當地現金/信用卡", notes: "備用卡片", checked: false },
+                ],
+                "電子產品/充電": [
+                    { name: "手機/充電器/行動電源", notes: "北歐天冷，電池易耗盡", checked: false },
+                    { name: "歐規轉接頭/延長線", notes: "備用轉接頭", checked: false },
+                    { name: "相機/記憶卡/Gopro", notes: "防水殼", checked: false },
+                ],
+                "衣物/保暖 (洋蔥式穿法)": [
+                    { name: "保暖內衣褲/發熱衣", notes: "多套備用", checked: false },
+                    { name: "羊毛/抓絨中層衣", notes: "", checked: false },
+                    { name: "防水防風外套 (外層)", notes: "重要", checked: false },
+                    { name: "防水/防滑雪褲", notes: "", checked: false },
+                    { name: "羊毛襪/厚襪", notes: "必備", checked: false },
+                    { name: "保暖手套/毛帽/圍巾", notes: "必備", checked: false },
+                ],
+                "日用品/藥物": [
+                    { name: "盥洗用品/毛巾", notes: "部分飯店不提供牙刷", checked: false },
+                    { name: "個人藥品", notes: "感冒藥/腸胃藥/止痛藥", checked: false },
+                    { name: "太陽眼鏡/護目鏡", notes: "雪地強光專用", checked: false },
+                ]
+            }));
 
-            // State Variables
-            const currentTab = ref(loadData('currentTab', 'itinerary'));
-            const itinerary = ref(loadData('itinerary', defaultItineraryData));
-            const selectedDay = ref(itinerary.value[0]);
-            const checklist = ref(loadData('checklist', defaultChecklistData));
-            const collapsedChecklist = ref({});
-            const accounting = ref(loadData('accounting', defaultAccountingData));
-            const shoppingList = ref(loadData('shoppingList', defaultShoppingList));
+            const accounting = ref(loadData('planner_accounting', []));
+            const shoppingList = ref(loadData('planner_shoppingList', []));
+            const isAddMenuOpen = ref(false);
+
+            // 檢查清單的收合狀態 (如果本地有存檔，也保留)
+            const collapsedChecklist = ref(loadData('planner_collapsedChecklist', 
+                Object.keys(checklist.value).reduce((acc, key) => ({ ...acc, [key]: false }), {})
+            ));
 
             // Modal State
             const isModalOpen = ref(false);
-            const isAddMenuOpen = ref(false);
-            const modalDataType = ref(''); // 'itinerary', 'accounting', 'shopping', 'checklist'
-            const modalTypeLabel = ref('');
+            const modalDataType = ref(null); // 'itinerary', 'accounting', 'shopping', 'checklist'
             const editingItem = ref({});
             const editingItemIndex = ref(-1);
-            const editingDayIndex = ref(-1); // For itinerary
+            const editingChecklistCategory = ref(null);
+            
+            // Watchers for Persistence
+            watch(itinerary, (newVal) => saveData('planner_itinerary', newVal), { deep: true });
+            watch(checklist, (newVal) => saveData('planner_checklist', newVal), { deep: true });
+            watch(accounting, (newVal) => saveData('planner_accounting', newVal), { deep: true });
+            watch(shoppingList, (newVal) => saveData('planner_shoppingList', newVal), { deep: true });
+            watch(collapsedChecklist, (newVal) => saveData('planner_collapsedChecklist', newVal), { deep: true });
+            watch(currentTab, (newVal) => saveData('planner_currentTab', newVal));
 
-            // Watchers for Data Persistence
-            watch(currentTab, (newValue) => saveData('currentTab', newValue));
-            watch(itinerary, (newValue) => saveData('itinerary', newValue), { deep: true });
-            watch(checklist, (newValue) => saveData('checklist', newValue), { deep: true });
-            watch(accounting, (newValue) => saveData('accounting', newValue), { deep: true });
-            watch(shoppingList, (newValue) => saveData('shoppingList', newValue), { deep: true });
 
             // Computed Properties
             const headerTitle = computed(() => {
-                const tabNames = {
-                    'itinerary': '行程規劃 🗺️',
-                    'checklist': '行前清單 📋',
-                    'accounting': '記帳中心 💰',
-                    'shopping': '購物清單 🎁',
-                    'info': '實用資訊 💡'
+                const map = {
+                    'itinerary': '🗓️ 北歐極簡行程',
+                    'checklist': '📋 行前準備清單',
+                    'accounting': '💰 旅遊記帳中心',
+                    'shopping': '🎁 購物慾望清單',
+                    'info': '💡 實用資訊說明'
                 };
-                return tabNames[currentTab.value] || '北歐極簡之旅計畫';
+                return map[currentTab.value] || '北歐極簡之旅計畫';
+            });
+            
+            const totalSpent = computed(() => {
+                return accounting.value.reduce((sum, item) => sum + item.amount, 0);
+            });
+            
+            const modalTypeLabel = computed(() => {
+                const map = {
+                    'itinerary': '行程',
+                    'accounting': '支出',
+                    'shopping': '購物項目',
+                    'checklist': '清單項目'
+                };
+                return map[modalDataType.value] || '項目';
             });
 
-            const totalSpent = computed(() => {
-                return accounting.value.reduce((sum, item) => sum + (item.amount || 0), 0);
-            });
 
             // Methods
             const changeTab = (tabId) => {
@@ -621,10 +581,11 @@
 
             const selectDay = (day) => {
                 selectedDay.value = day;
+                // 自動滾動到選中的日期 (CSS 處理，這裡只是選中數據)
             };
 
             const getFlagEmoji = (code) => {
-                return countryFlagMap[code] || '🏳️';
+                return countryFlagMap[code] || '🚩';
             };
 
             const toggleChecklist = (category) => {
@@ -634,185 +595,158 @@
             const getCheckedCount = (category) => {
                 return checklist.value[category].filter(item => item.checked).length;
             };
-            
-            // Helper to get selectedDay index
-            const getSelectedDayIndex = () => {
-                if (selectedDay.value) {
-                    return itinerary.value.findIndex(day => day.date === selectedDay.value.date);
-                }
-                return 0; // Default to first day if none selected
-            };
 
-            // MODAL LOGIC (新增、編輯、刪除)
+            // Modal Methods
             const closeModal = () => {
                 isModalOpen.value = false;
                 editingItem.value = {};
                 editingItemIndex.value = -1;
-                editingDayIndex.value = -1;
+                editingChecklistCategory.value = null;
             };
-
+            
             const openModalForAdd = (type) => {
                 modalDataType.value = type;
-                editingItemIndex.value = -1; // New item
-                editingDayIndex.value = -1; // Reset day index
-
-                if (type === 'accounting') {
-                    modalTypeLabel.value = '支出';
-                    editingItem.value = {
-                        name: '', // Mapped to description
-                        amount: null,
-                        date: new Date().toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }).replace(/\//g, '/'),
-                        category: '餐飲'
+                editingItemIndex.value = -1; // -1 表示新增
+                isAddMenuOpen.value = false; // 關閉新增選單
+                
+                if (type === 'itinerary') {
+                    // 新增行程時，預設時間為當前時間的 HH:MM:00
+                    const now = new Date();
+                    const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+                    editingItem.value = { 
+                        time: timeString, 
+                        schedule: "", 
+                        location: "" 
+                    };
+                } else if (type === 'accounting') {
+                    const today = new Date();
+                    const dateString = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+                    editingItem.value = { 
+                        description: "", 
+                        amount: 0, 
+                        date: dateString, 
+                        category: "餐飲" 
                     };
                 } else if (type === 'shopping') {
-                    modalTypeLabel.value = '購物項目';
-                    editingItem.value = { name: '', store: '', purchased: false };
-                } else if (type === 'itinerary') {
-                    modalTypeLabel.value = '行程';
-                    editingDayIndex.value = getSelectedDayIndex();
-                    editingItem.value = {
-                        time: '12:00', // Simplify time input format for user
-                        name: '', // Mapped to schedule
-                        location: '',
-                    };
+                    editingItem.value = { name: "", store: "", purchased: false };
                 } else if (type === 'checklist') {
-                    modalTypeLabel.value = '清單項目';
-                    editingItem.value = { 
-                        name: '', 
-                        notes: '', 
-                        checked: false, 
-                        category: Object.keys(checklist.value)[0] || '' // Default to first category
-                    };
+                    // 預設選擇第一個分類
+                    const defaultCategory = Object.keys(checklist.value)[0];
+                    editingItem.value = { name: "", notes: "", checked: false, category: defaultCategory };
+                    editingChecklistCategory.value = defaultCategory;
                 }
 
-                if (type === 'itinerary') {
-                     // Initial selected day object for context
-                } else if (type === 'accounting') {
-                     // Initial description mapping
-                }
-                
-                isAddMenuOpen.value = false;
                 isModalOpen.value = true;
             };
-
+            
             const openModalForEdit = (type, item, index, category = null) => {
                 modalDataType.value = type;
                 editingItemIndex.value = index;
-                
-                // Deep copy the item to editingItem to prevent direct mutation
-                const itemCopy = JSON.parse(JSON.stringify(item));
-                editingItem.value = itemCopy;
+                editingItem.value = JSON.parse(JSON.stringify(item)); // 深度複製，避免直接修改原始數據
+                editingChecklistCategory.value = category; // 僅用於 checklist
 
-                if (type === 'accounting') {
-                    modalTypeLabel.value = '支出';
-                    editingItem.value.name = editingItem.value.description; // Map description to generic name field
-                } else if (type === 'shopping') {
-                    modalTypeLabel.value = '購物項目';
-                } else if (type === 'itinerary') {
-                    modalTypeLabel.value = '行程';
-                    editingDayIndex.value = getSelectedDayIndex(); // Set the day index for deletion/saving
-                    editingItem.value.name = editingItem.value.schedule; // Map schedule to generic name field
-                    editingItem.value.time = editingItem.value.time.substring(0, 5); // Format time for input HH:MM
-                } else if (type === 'checklist') {
-                    modalTypeLabel.value = '清單項目';
-                    editingItem.value.category = category; // Store the category for saving/deleting
+                // 處理 itinerary 的特殊情況：行程項目對應 modal 的 'name'
+                if (type === 'itinerary') {
+                    editingItem.value.name = item.schedule;
                 }
                 
                 isModalOpen.value = true;
             };
-
+            
             const saveModalItem = () => {
-                if (modalDataType.value === 'itinerary') {
-                    const day = itinerary.value[editingDayIndex.value];
-                    // Map back 'name' to 'schedule'
-                    editingItem.value.schedule = editingItem.value.name;
-
-                    // Clean up time format
-                    let timeStr = editingItem.value.time || '00:00';
-                    if (timeStr.length === 5) { timeStr += ':00'; }
-
-                    const newItem = {
-                        time: timeStr,
-                        schedule: editingItem.value.schedule,
-                        location: editingItem.value.location || '',
-                    };
-
-                    if (editingItemIndex.value === -1) {
-                        day.events.push(newItem);
-                    } else {
-                        day.events[editingItemIndex.value] = newItem;
-                    }
-
-                    // Sort events by time
-                    day.events.sort((a, b) => a.time.localeCompare(b.time));
-
-                } else if (modalDataType.value === 'accounting') {
-                    // Map back 'name' to 'description'
-                    editingItem.value.description = editingItem.value.name;
-
-                    // Ensure amount is a number
-                    editingItem.value.amount = parseInt(editingItem.value.amount);
-                    if (isNaN(editingItem.value.amount)) editingItem.value.amount = 0;
-
-                    if (editingItemIndex.value === -1) {
-                        accounting.value.push(editingItem.value);
-                    } else {
-                        accounting.value[editingItemIndex.value] = editingItem.value;
-                    }
-                } else if (modalDataType.value === 'shopping') {
-                    if (editingItemIndex.value === -1) {
-                        shoppingList.value.push(editingItem.value);
-                    } else {
-                        shoppingList.value[editingItemIndex.value] = editingItem.value;
-                    }
-                } else if (modalDataType.value === 'checklist') {
-                    if (!editingItem.value.category) {
-                        alert('請選擇清單分類！');
-                        return;
-                    }
-                    const categoryItems = checklist.value[editingItem.value.category];
-                    const newItem = {
-                        name: editingItem.value.name,
-                        notes: editingItem.value.notes,
-                        checked: editingItem.value.checked || false
-                    };
-
-                    if (editingItemIndex.value === -1) {
-                        categoryItems.push(newItem);
-                    } else {
-                        categoryItems[editingItemIndex.value] = newItem;
-                    }
-                }
-
-                closeModal();
-            };
-
-            const deleteModalItem = () => {
-                if (!confirm(`確定要刪除「${editingItem.value.name || editingItem.value.description || '此項目'}」嗎？`)) {
+                // 執行驗證 (簡單的檢查)
+                if (modalDataType.value === 'accounting' && editingItem.value.amount <= 0) {
+                    alert("金額必須大於 0");
                     return;
                 }
 
                 if (modalDataType.value === 'itinerary') {
-                    if (editingDayIndex.value !== -1 && editingItemIndex.value !== -1) {
-                        itinerary.value[editingDayIndex.value].events.splice(editingItemIndex.value, 1);
+                    // 確保 schedule 欄位被更新
+                    editingItem.value.schedule = editingItem.value.name;
+                    delete editingItem.value.name;
+                }
+
+                const index = editingItemIndex.value;
+                const newItem = editingItem.value;
+
+                if (index === -1) {
+                    // 新增項目
+                    if (modalDataType.value === 'itinerary') {
+                        selectedDay.value.events.push(newItem);
+                        // 新增後重新排序
+                        selectedDay.value.events.sort((a, b) => a.time.localeCompare(b.time));
+                    } else if (modalDataType.value === 'accounting') {
+                        accounting.value.unshift(newItem); // 新增到最前面
+                    } else if (modalDataType.value === 'shopping') {
+                        shoppingList.value.push(newItem);
+                    } else if (modalDataType.value === 'checklist') {
+                        // 新增到對應的分類
+                        if (checklist.value[newItem.category]) {
+                             // 確保只存入 name/notes/checked 屬性
+                            checklist.value[newItem.category].push({ 
+                                name: newItem.name, 
+                                notes: newItem.notes, 
+                                checked: newItem.checked 
+                            });
+                        }
                     }
-                } else if (modalDataType.value === 'accounting') {
-                    accounting.value.splice(editingItemIndex.value, 1);
-                } else if (modalDataType.value === 'shopping') {
-                    shoppingList.value.splice(editingItemIndex.value, 1);
-                } else if (modalDataType.value === 'checklist') {
-                    const categoryItems = checklist.value[editingItem.value.category];
-                    categoryItems.splice(editingItemIndex.value, 1);
+                } else {
+                    // 編輯現有項目
+                    if (modalDataType.value === 'itinerary') {
+                        // 替換選中日期的特定事件
+                        Object.assign(selectedDay.value.events[index], newItem);
+                         // 編輯後重新排序
+                        selectedDay.value.events.sort((a, b) => a.time.localeCompare(b.time));
+                    } else if (modalDataType.value === 'accounting') {
+                        Object.assign(accounting.value[index], newItem);
+                    } else if (modalDataType.value === 'shopping') {
+                        Object.assign(shoppingList.value[index], newItem);
+                    } else if (modalDataType.value === 'checklist') {
+                        // 在清單中，因為我們不允許編輯分類，所以直接修改原項目
+                        Object.assign(checklist.value[editingChecklistCategory.value][index], { 
+                            name: newItem.name, 
+                            notes: newItem.notes, 
+                            checked: newItem.checked 
+                        });
+                    }
                 }
 
                 closeModal();
             };
             
-            // Placeholder for removed alert function
-            const showFeatureAlert = (feature) => {
-                // This is now redundant as features are implemented, but kept for legacy calls if any remain
-                alert(`「${feature}」功能已啟用！請使用編輯或新增按鈕。`);
+            const deleteModalItem = () => {
+                if (!confirm(`確定要刪除此${modalTypeLabel.value}嗎？`)) {
+                    return;
+                }
+
+                const index = editingItemIndex.value;
+                
+                if (modalDataType.value === 'itinerary') {
+                    selectedDay.value.events.splice(index, 1);
+                } else if (modalDataType.value === 'accounting') {
+                    accounting.value.splice(index, 1);
+                } else if (modalDataType.value === 'shopping') {
+                    shoppingList.value.splice(index, 1);
+                } else if (modalDataType.value === 'checklist') {
+                    checklist.value[editingChecklistCategory.value].splice(index, 1);
+                }
+
+                closeModal();
             };
+            
+
+            // 初始化時，如果 itinerary 是空的，填充預設值並儲存
+            if (itinerary.value.length === 0) {
+                 itinerary.value = defaultItineraryData;
+                 selectDay(itinerary.value[0]);
+                 saveData('planner_itinerary', defaultItineraryData);
+            }
+            
+            // 確保 checklist 的收合狀態與分類列表匹配
+            if (Object.keys(collapsedChecklist.value).length !== Object.keys(checklist.value).length) {
+                collapsedChecklist.value = Object.keys(checklist.value).reduce((acc, key) => ({ ...acc, [key]: false }), {});
+                saveData('planner_collapsedChecklist', collapsedChecklist.value);
+            }
 
 
             return {
@@ -821,26 +755,22 @@
                 itinerary,
                 selectedDay,
                 checklist,
-                collapsedChecklist,
                 accounting,
                 shoppingList,
-                isModalOpen,
+                collapsedChecklist,
                 isAddMenuOpen,
+
+                // Modal
+                isModalOpen,
                 modalDataType,
-                modalTypeLabel,
                 editingItem,
                 editingItemIndex,
+                editingChecklistCategory,
 
                 // Computed
                 headerTitle,
                 totalSpent,
-                tabs: [
-                    { id: 'itinerary', name: '行程', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' },
-                    { id: 'checklist', name: '清單', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>' },
-                    { id: 'accounting', name: '記帳', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0l-3 3m3-3l3 3m-9 3h9a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>' },
-                    { id: 'shopping', name: '購物', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' },
-                    { id: 'info', name: '資訊', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
-                ],
+                modalTypeLabel,
 
                 // Methods
                 changeTab,
@@ -854,12 +784,19 @@
                 saveModalItem,
                 deleteModalItem,
                 closeModal,
-                showFeatureAlert // Kept for safety, but calls should be removed in template
+                
+                // Tabs definition (放這裡方便調用 svg)
+                tabs: [
+                    { id: 'itinerary', name: '行程', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' },
+                    { id: 'checklist', name: '清單', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>' },
+                    { id: 'accounting', name: '記帳', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m4 2h7m-7 0a2 2 0 100-4m0 4a2 2 0 110-4m-9 8h9a2 2 0 002-2v-2M7 13h2a2 2 0 002-2V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2a2 2 0 002 2z"></path>' },
+                    { id: 'shopping', name: '購物', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' },
+                    { id: 'info', name: '資訊', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
+                ]
             };
         }
-    };
-
-    createApp(App).mount('#app');
+    }).mount('#app');
 </script>
+
 </body>
 </html>
