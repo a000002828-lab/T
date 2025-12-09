@@ -1,3 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nordic Trip</title> 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
+    
+    <style>
+        /* ================================== */
+        /* 北歐極簡風格 CSS 變數與基本樣式 */
+        /* ================================== */
+        :root {
+            --nordic-blue: #A9D6E5; /* 柔和藍 */
+            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 (App背景色) */
+            --nordic-dark: #014F86; /* 深海藍 */
+            --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
+        }
+        body {
+            background-color: var(--nordic-light);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: var(--nordic-dark);
+        }
+        .app-container {
+            max-width: 420px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--nordic-light);
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+        }
+        .header-bg {
+            background-color: var(--nordic-blue);
+            /* 修正點 2: 移除漸層，讓 Header 風格更柔和 */
+            color: white; 
+            padding: 1.5rem 1rem 3rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        /* 日期按鈕風格 */
+        .tab-date-active {
+            background-color: var(--nordic-dark); 
+            color: var(--nordic-light);
+            border-color: var(--nordic-dark);
+            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
+        }
+
+        /* 修正點 5: 底部導航活躍按鈕柔和樣式 */
+        .tab-active-soft {
+            background-color: var(--nordic-blue); /* 使用柔和藍作為活動底色 */
+            color: white !important;
+            border-radius: 0.75rem; 
+            box-shadow: 0 2px 5px rgba(169, 214, 229, 0.7);
+        }
+
+        /* 地圖相關樣式 */
+        .map-container {
+            height: 320px; 
+            width: 100%;
+        }
+        .map-hidden {
+            visibility: hidden;
+            height: 0;
+            margin-bottom: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="app-container hidden"> 
+    
+    <div class="header-bg relative mb-[-2rem]">
+        <h1 class="text-2xl font-bold mb-1">❄️ Nordic Trip</h1>
+        <p class="text-sm opacity-90">旅行日期: {{ formatDate(travelDates[0]) }} - {{ formatDate(travelDates[travelDates.length - 1]) }}</p>
+        <div class="absolute top-4 right-4 text-sm opacity-90">
+            1 EUR ≈ 8.5 HKD
+        </div>
+    </div>
+    
+    <div class="relative z-10 mx-4 overflow-x-scroll pb-2" v-if="travelDates.length && (activeTab === 'itinerary' || activeTab === 'map')">
+        <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
+            <template v-for="(date, index) in travelDates" :key="index">
+                <button 
+                    @click="setActiveDate(date)" 
+                    :class="{'tab-date-active': activeDate === date, 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeDate !== date}"
+                    class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 transition-all rounded-lg"
+                >
+                    <span class="block text-sm font-bold">Day {{ index + 1 }}</span>
+                    <span class="block text-xs font-normal opacity-90 mt-0.5">{{ formatDate(date) }}</span>
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <div class="p-4 pt-6" v-if="travelDates.length">
+        
+        <div v-show="activeTab === 'itinerary'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">🗓️ {{ formatDate(activeDate) }} 行程安排</h2>
+                <button @click="showModal('itinerary')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增行程
+                </button>
+            </div>
+            
+            <div class="card p-4 mb-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-l-4 border-nordic-accent">
+                <div class="flex items-center">
+                    <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
+                    <div>
+                        <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p> 
+                        <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
+                    </div>
+                </div>
+                <p class="text-3xl font-extrabold text-nordic-dark">{{ getCurrentWeather().temp }}</p>
+            </div>
+
+            <div class="space-y-4">
+                <div v-for="element in currentItinerary" :key="element.id" 
+                    class="card p-4 relative border-l-4" 
+                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通', 'border-purple-400': element.category === '住宿'}"
+                >
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">
+                                {{ element.time }} 
+                                <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-nordic-light text-nordic-dark': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span>
+                            </p>
+                            <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
+                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 border-gray-200 pl-2 mt-2 italic">備註: {{ element.notes }}</p>
+                        </div>
+                        <div class="flex space-x-1 ml-4">
+                            <button @click="editItem('itinerary', element)" class="text-gray-400 hover:text-blue-500 p-1">✏️</button>
+                            <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p v-if="currentItinerary.length === 0" class="text-center text-gray-500 p-6">本日無行程安排。快點擊「+ 新增行程」吧！</p>
+        </div>
+
+        <div v-show="activeTab === 'map'">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">📍 當日行程地圖與導航 ({{ formatDate(activeDate) }})</h2>
+            
+            <div id="googleMapWrapper" class="card mb-4 map-container" :class="{'map-hidden': activeTab !== 'map'}">
+                <div id="googleMap" class="map-container">
+                    <div v-if="!isGoogleMapsLoaded" class="flex items-center justify-center h-full text-gray-500">
+                        地圖服務載入中... (請確認 API Key 是否有效)
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖已標記**{{ currentItinerary.filter(i => i.lat).length }}個地點**，並嘗試顯示您的**當前位置**。</p>
+            </div>
+        
+        <div v-show="activeTab === 'packing'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">🧳 欲帶行李裝備 ({{ packingList.filter(i => i.packed).length }}/{{ packingList.length }} 已打包)</h2>
+                <button @click="showModal('packing')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增裝備
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div v-for="item in packingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.packed}">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="item.packed" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
+                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
+                    </label>
+                    <button @click="deleteItem('packing', item.id)" class="text-gray-400 hover:text-red-500 p-2">🗑️</button>
+                </div>
+            </div>
+            <p v-if="packingList.length === 0" class="text-center text-gray-500 p-6">裝備清單已清空，別忘了帶護照！</p>
+        </div>
+
+        <div v-show="activeTab === 'accounting'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">💰 記帳系統 (可新增/刪除)</h2>
+                <button @click="showModal('accounting')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增花費
+                </button>
+            </div>
+            
+            <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
+                <p class="text-sm text-gray-600">總支出 (HKD 總額)</p>
+                <p class="text-4xl font-extrabold text-red-600">HK$ {{ totalExpense.toFixed(2) }}</p>
+                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR 估算) 約 €{{ (totalExpense / 8.5).toFixed(2) }}</p>
+            </div>
+
+            <div class="space-y-3">
+                <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ expense.item }}</p>
+                        <p class="text-xs text-gray-500">{{ expense.date }}</p>
+                    </div>
+                    <div class="text-right">
+                         <p class="text-lg font-bold text-red-600">- {{ expense.currency === 'HKD' ? 'HK$' : '€' }} {{ expense.amount.toFixed(2) }}</p>
+                        <button @click="deleteItem('accounting', expense.id)" class="text-xs text-gray-400 hover:text-red-500">刪除</button>
+                    </div>
+                </div>
+            </div>
+            <p v-if="expenses.length === 0" class="text-center text-gray-500 p-6">尚未新增任何花費。</p>
+        </div>
+
+        <div v-show="activeTab === 'shopping'">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">🛍️ 購物頁面 (可新增/刪除)</h2>
+                <button @click="showModal('shopping')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
+                    <span class="text-lg">+</span> 新增項目
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.done}">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
+                        <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
+                    </label>
+                    <button @click="deleteItem('shopping', item.id)" class="text-gray-400 hover:text-red-500 p-2">🗑️</button>
+                </div>
+            </div>
+            <p v-if="shoppingList.length === 0" class="text-center text-gray-500 p-6">購物清單已清空！</p>
+        </div>
+        
+    </div>
+
+    <div class="sticky bottom-0 bg-nordic-light/90 backdrop-blur-sm shadow-xl p-3 mt-8 z-30" v-if="travelDates.length">
+        <div class="flex justify-around text-gray-500">
+            <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                :class="{'tab-active-soft text-white': activeTab === tab.id, 'text-gray-500 hover:text-nordic-dark': activeTab !== tab.id}"
+                class="flex flex-col items-center text-xs transition-colors p-2.5 mx-0.5"
+            >
+                <span class="text-2xl" v-html="tab.icon"></span>
+                <span>{{ tab.name }}</span>
+            </button>
+        </div>
+    </div>
+
+    <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-nordic-dark">
+                {{ modalTitle }}
+            </h3>
+            
+            <div v-if="modalType === 'itinerary'">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">時間</label>
+                    <input type="text" v-model="tempItem.time" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 10:00">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">地點名稱</label>
+                    <input type="text" v-model="tempItem.location" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 奧斯陸歌劇院">
+                </div>
+                 <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">類別</label>
+                    <select v-model="tempItem.category" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                        <option>景點</option>
+                        <option>美食</option>
+                        <option>交通</option>
+                        <option>航班</option>
+                        <option>住宿</option>
+                        <option>其他</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">備註/詳細</label>
+                    <textarea v-model="tempItem.notes" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" rows="2" placeholder="例如: 爬上屋頂拍照，記得穿防滑鞋"></textarea>
+                </div>
+                <div class="mb-4 text-xs text-gray-500 border-t pt-2">
+                    <p>地圖經緯度 (選填，用於地圖釘選)</p>
+                    <input type="number" v-model.number="tempItem.lat" class="mt-1 w-1/2 rounded-lg border-gray-300 shadow-sm p-2.5 inline-block" placeholder="緯度 (Lat)">
+                    <input type="number" v-model.number="tempItem.lng" class="mt-1 w-1/2 rounded-lg border-gray-300 shadow-sm p-2.5 inline-block" placeholder="經度 (Lng)">
+                </div>
+            </div>
+
+            <div v-else-if="modalType === 'packing'">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">裝備名稱</label>
+                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 禦寒手套">
+                </div>
+            </div>
+
+            <div v-else-if="modalType === 'accounting'">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">項目</label>
+                    <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 晚餐費用">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700">花費金額</label>
+                    <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">貨幣選項</label>
+                    <select v-model="tempItem.currency" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                        <option>HKD (港幣)</option>
+                        <option>EUR (歐元)</option>
+                    </select>
+                </div>
+                </div>
+
+            <div v-else-if="modalType === 'shopping'">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">待買項目</label>
+                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 芬蘭刀">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button @click="isModalOpen = false" class="px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">取消</button>
+                <button @click="saveItem" class="px-4 py-2 bg-nordic-dark text-white rounded-lg hover:bg-nordic-blue hover:text-nordic-dark transition-colors font-semibold">{{ isEditMode ? '更新' : '儲存' }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const { createApp, ref, computed, nextTick, watch } = Vue
 
@@ -142,8 +462,7 @@ function showApp() {
 
     const appElement = document.getElementById('app');
     if (appElement) {
-        // 移除 hidden class 以顯示應用程式
-        appElement.classList.remove('hidden'); 
+        appElement.classList.remove('hidden');
     }
     appReadyToDisplay = true;
 }
@@ -333,72 +652,54 @@ function mountVueApp() {
                 }
             });
             
-            // 修正截斷問題：appInstance 賦值與 setup 函式返回
-            appInstance = { 
-                activeTab: activeTab, 
-                initMap: initMap, 
-                currentItinerary: currentItinerary, 
-                map: null, 
-                markers: [] 
-            };
+            appInstance = { activeTab, initMap, currentItinerary, map: null, markers: [] };
+            
+            if (activeTab.value === 'map' && googleMapsLoaded.value) {
+                 nextTick(() => initMap());
+            }
 
-            // 這是 setup 函式的回傳值，將所有響應式數據和方法暴露給模板
             return {
                 tabs,
                 activeTab,
                 travelDates,
                 activeDate,
                 currentItinerary,
+                setActiveDate,
                 getCurrentWeather,
+                formatDate,
+                currentMapLink,
                 expenses,
                 totalExpense,
                 shoppingList,
                 packingList,
                 isModalOpen,
                 modalType,
-                isEditMode,
                 modalTitle,
                 tempItem,
-                setActiveDate,
+                isEditMode,
                 showModal,
                 editItem,
                 saveItem,
                 deleteItem,
-                formatDate,
-                currentMapLink,
-                isGoogleMapsLoaded: googleMapsLoaded,
-                initMap
-            }
-        } // <--- 結束 setup 函式
-    }); // <--- 結束 createApp 呼叫
-    
-    // **最關鍵的一步：將 Vue 應用程式掛載到 DOM 上**
+                isGoogleMapsLoaded: googleMapsLoaded
+            };
+        }
+    });
+
     app.mount('#app');
     
-    // 顯示應用程式容器
-    showApp(); 
+    // Vue 掛載後，顯示應用程式
+    showApp();
 }
 
-// 如果 Google Maps API 較早載入，它會呼叫 initApp，其中包含 mountVueApp。
-// 如果 API 載入較慢，我們在這裡手動呼叫 mountVueApp
-if (typeof google === 'undefined' || !googleMapsLoaded.value) {
-    // 確保只在 Google Maps API 未載入時執行，避免雙重初始化
-    if (!appInstance) {
-        // 在 DOM 載入完成後嘗試掛載 Vue App
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!appInstance) {
-                mountVueApp();
-            }
-        });
-        
-        // 如果 DOM 已經載入，直接嘗試掛載
-        if (document.readyState !== 'loading') {
-            mountVueApp();
-        }
+// 確保頁面載入完成且 Google Maps 未載入時，也能開始 Vue 應用程式
+document.addEventListener('DOMContentLoaded', () => {
+    // 如果 DOM 載入完成，但 Vue 應用程式還沒啟動 (可能是 Google Maps 載入緩慢或失敗)
+    if (!appReadyToDisplay && !appInstance) {
+        mountVueApp();
     }
-} else if (googleMapsLoaded.value && !appInstance) {
-    // 如果 googleMapsLoaded 已經是 true 但 appInstance 尚未建立 (不太可能，但作為防護)
-    mountVueApp();
-}
-
+});
 </script>
+
+</body>
+</html>
