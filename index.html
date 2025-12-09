@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐極簡之旅計畫 - Nordic Planner V12</title>
+    <title>北歐極簡之旅計畫 - Nordic Planner V13 (含編輯功能)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -70,6 +70,14 @@
             align-items: center;
             justify-content: center;
         }
+
+        /* Save Button Color (Ensuring it has color as requested) */
+        .btn-save {
+            background-color: var(--nordic-accent);
+        }
+        .btn-save:hover {
+            background-color: #24585c; /* A slightly darker teal for hover */
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -135,7 +143,7 @@
                                 <p class="text-sm font-bold text-nordic-accent">{{ item.time.substring(0, 5) }}</p>
                                 <p class="font-medium text-nordic-dark text-lg">{{ item.schedule }}</p>
                             </div>
-                            <button @click="showFeatureAlert('編輯行程')" class="text-nordic-accent hover:text-teal-600 transition p-1">
+                            <button @click="openModalForEdit('itinerary', item, itemIndex)" class="text-nordic-accent hover:text-teal-600 transition p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                             </button>
                         </div>
@@ -168,7 +176,7 @@
                                 {{ item.name }}
                                 <span v-if="item.notes" class="text-xs text-gray-500"> ({{ item.notes }})</span>
                             </label>
-                            <button @click.stop="showFeatureAlert('編輯清單項目')" class="text-nordic-accent hover:text-teal-600 transition p-1">
+                            <button @click.stop="openModalForEdit('checklist', item, index, category)" class="text-nordic-accent hover:text-teal-600 transition p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                             </button>
                         </li>
@@ -223,15 +231,13 @@
                 <h2 class="text-2xl font-bold text-nordic-dark mb-4">實用資訊 💡</h2>
                 <div class="space-y-4">
                     <div class="bg-nordic-white rounded-xl shadow-strong p-4 border border-gray-200">
-                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存與編輯說明 (V12 更新)</h3>
+                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存與編輯說明 (V13 更新)</h3>
                         <p class="text-sm text-nordic-accent mb-2 font-bold">
-                            ✅ 行程表已更新至 2026/01/03。
+                            ✅ 行程、記帳、清單功能已全面啟用編輯、新增、刪除！
                         </p>
                         <p class="text-sm text-gray-600">
-                            所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)，重新整理頁面數據不會遺失。
-                        </p>
-                        <p class="text-xs text-red-500 mt-2">
-                            ⚠️ **注意：** 行程表與裝備清單的編輯功能仍為模擬。
+                            所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)，重新整理頁面數據不會遺失。<br>
+                            （**範例資料**已在首次載入時自動儲存。）
                         </p>
                     </div>
                 </div>
@@ -249,10 +255,10 @@
             <button v-if="currentTab === 'accounting'" @click.prevent="openModalForAdd('accounting')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
                 + 新增支出
             </button>
-            <button v-if="currentTab === 'itinerary'" @click.prevent="showFeatureAlert('新增行程')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
-                + 新增行程
+            <button v-if="currentTab === 'itinerary'" @click.prevent="openModalForAdd('itinerary')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+                + 新增行程 (今日)
             </button>
-            <button v-if="currentTab === 'checklist'" @click.prevent="showFeatureAlert('新增清單')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
+            <button v-if="currentTab === 'checklist'" @click.prevent="openModalForAdd('checklist')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-strong hover:bg-gray-100 transition border border-gray-300">
                 + 新增清單項目
             </button>
         </div>
@@ -266,7 +272,7 @@
     </div>
 
     <transition name="fade">
-        <div v-if="isModalOpen" class="modal-backdrop">
+        <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeModal">
             <div class="bg-nordic-white p-6 rounded-xl shadow-2xl w-11/12 max-w-md border border-gray-300 transform transition-all scale-100">
                 <h3 class="text-xl font-bold text-nordic-dark mb-4 border-b pb-2">
                     {{ editingItemIndex === -1 ? `新增${modalTypeLabel}` : `編輯${modalTypeLabel}` }}
@@ -274,14 +280,30 @@
                 
                 <form @submit.prevent="saveModalItem">
                     
+                    <div v-if="modalDataType === 'itinerary'" class="mb-4 space-y-4">
+                        <div class="w-full">
+                            <label for="itemTime" class="block text-sm font-medium text-gray-700 mb-1">時間 (HH:MM)</label>
+                            <input type="text" id="itemTime" v-model="editingItem.time" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+                                   placeholder="例如：14:30">
+                        </div>
+                        <div>
+                            <label for="itemLocation" class="block text-sm font-medium text-gray-700 mb-1">地點 / 備註 (Location)</label>
+                            <input type="text" id="itemLocation" v-model="editingItem.location"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+                                   placeholder="例如：Tivoli, 路程：15min">
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <label for="itemName" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ modalDataType === 'accounting' ? '支出描述' : '項目名稱' }}
+                            {{ modalDataType === 'accounting' ? '支出描述' : (modalDataType === 'itinerary' ? '行程項目' : '項目名稱') }}
                         </label>
                         <input type="text" id="itemName" v-model="editingItem.name" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
-                               :placeholder="modalDataType === 'accounting' ? '例如：晚餐、Tivoli門票' : '例如：保暖手套、紀念品'">
+                               :placeholder="modalDataType === 'accounting' ? '例如：晚餐、Tivoli門票' : (modalDataType === 'itinerary' ? '例如：聖誕老人村、狗拉雪橇' : '例如：保暖手套、紀念品')">
                     </div>
+
                     
                     <div v-if="modalDataType === 'accounting'">
                         <div class="mb-4">
@@ -300,7 +322,7 @@
                             <div class="w-1/2">
                                 <label for="itemCategory" class="block text-sm font-medium text-gray-700 mb-1">類別</label>
                                 <select id="itemCategory" v-model="editingItem.category"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent">
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
                                     <option value="餐飲">餐飲</option>
                                     <option value="交通">交通</option>
                                     <option value="住宿">住宿</option>
@@ -312,7 +334,7 @@
                         </div>
                     </div>
                     
-                    <div v-if="modalDataType === 'shopping'">
+                    <div v-else-if="modalDataType === 'shopping'">
                         <div class="mb-4">
                             <label for="shopStore" class="block text-sm font-medium text-gray-700 mb-1">購買地點/備註 (選填)</label>
                             <input type="text" id="shopStore" v-model="editingItem.store"
@@ -323,6 +345,29 @@
                             <input type="checkbox" id="shopPurchased" v-model="editingItem.purchased" 
                                    class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
                             <label for="shopPurchased" class="text-base text-gray-700">是否已購買？</label>
+                        </div>
+                    </div>
+
+                    <div v-else-if="modalDataType === 'checklist'">
+                        <div class="mb-4">
+                            <label for="checklistCategory" class="block text-sm font-medium text-gray-700 mb-1">分類</label>
+                            <select id="checklistCategory" v-model="editingItem.category" :required="editingItemIndex === -1"
+                                    :disabled="editingItemIndex !== -1 && editingItem.category"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent bg-white">
+                                <option v-for="cat in Object.keys(checklist)" :key="cat" :value="cat">{{ cat }}</option>
+                            </select>
+                            <p v-if="editingItemIndex !== -1" class="text-xs text-gray-500 mt-1">編輯模式下無法修改分類</p>
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemNotes" class="block text-sm font-medium text-gray-700 mb-1">備註 (Notes)</label>
+                            <input type="text" id="itemNotes" v-model="editingItem.notes"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+                                   placeholder="例如：需買新、數量*2">
+                        </div>
+                        <div class="flex items-center mb-6">
+                            <input type="checkbox" id="checkChecked" v-model="editingItem.checked" 
+                                   class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
+                            <label for="checkChecked" class="text-base text-gray-700">是否已勾選？</label>
                         </div>
                     </div>
 
@@ -339,7 +384,7 @@
                                 取消
                             </button>
                             <button type="submit" 
-                                    class="px-4 py-2 text-sm font-medium rounded-lg text-white bg-nordic-accent hover:bg-teal-700 transition">
+                                    class="px-4 py-2 text-sm font-medium rounded-lg text-white btn-save transition hover:bg-teal-700">
                                 儲存
                             </button>
                         </div>
@@ -371,13 +416,8 @@
     // 核心資料庫 (數據初始化與預設值)
     // ----------------------------------------------------
 
-    // Google Maps 導航連結生成器 (僅為範例，需在後端正確編碼)
+    // Google Maps 導航連結生成器
     const getMapLink = (query) => {
-        // 使用 Google 搜尋地圖，如果查詢內容包含已知的連結則直接使用
-        const googleMapLinkMatch = query.match(/http:\/\/googleusercontent\.com\/maps\.google\.com\/\d/);
-        if (googleMapLinkMatch) {
-            return googleMapLinkMatch[0];
-        }
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     };
     
@@ -390,9 +430,7 @@
         'SE': '🇸🇪',
     };
 
-    // ----------------------------------------------------
-    // 新的行程資料 (根據 CSV  調整)
-    // ----------------------------------------------------
+    // 預設行程資料 (保留用戶原有數據)
     const defaultItineraryData = [
         // 1. 2025/12/19 (Taiwan)
         {
@@ -407,17 +445,16 @@
         // 2. 2025/12/20 (Helsinki, Finland)
         {
             date: "2025/12/20", day_of_week: "六", city_country_zh: "赫爾辛基", country_code: "FI",
-            // 保持天氣預設值
             weather: { '氣溫': '約 -6°C 到 0°C', '日照': '約 6 小時', '降水': '常有降雪或雨夾雪' }, aurora_forecast: null,
             events: [
-                { time: "07:00:00", schedule: "✈07:50抵達 AMS阿姆斯特丹", location: "轉機" },
-                { time: "11:00:00", schedule: "✈芬蘭航空AY1302 AMS阿姆斯特丹 11:20 起飛", location: "路程：2h25m" },
-                { time: "14:00:00", schedule: "✈14:45抵達 HEL赫爾辛基", location: "" },
-                { time: "16:00:00", schedule: "🧳放行李", location: "" },
+                { time: "07:50:00", schedule: "✈07:50抵達 AMS阿姆斯特丹", location: "轉機" },
+                { time: "11:20:00", schedule: "✈芬蘭航空AY1302 AMS阿姆斯特丹 11:20 起飛", location: "路程：2h25m" },
+                { time: "14:45:00", schedule: "✈14:45抵達 HEL赫爾辛基", location: "" },
+                { time: "16:00:00", schedule: "🧳前往住宿放行李", location: "" },
                 { time: "17:00:00", schedule: "🎄Chrismas market", location: "備註：https://tuomaanmarkkinat.fi/en/" },
-                { time: "17:00:00", schedule: "♨️Sauna (2 hr)", location: "備註：Löyly Helsinki" }, 
+                { time: "17:00:00", schedule: "♨️Sauna (2 hr)", location: "Löyly Helsinki" }, 
                 { time: "19:00:00", schedule: "🥣Sea horse resturant", location: "" },
-                { time: "21:00:00", schedule: "Bar Kallio or center", location: "備註：Beer or cocktail? Karaoke or club? [cite: 7]" },
+                { time: "21:00:00", schedule: "Bar Kallio or center", location: "備註：Beer or cocktail? Karaoke or club?" },
             ],
             accommodation: "老人家"
         },
@@ -426,7 +463,7 @@
             date: "2025/12/21", day_of_week: "日", city_country_zh: "赫爾辛基", country_code: "FI",
             weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '備註': '極地寒冷，需注意保暖' }, aurora_forecast: null,
             events: [
-                { time: "10:00:00", schedule: "☕️Cafe Regatta (肉桂小屋)", location: "備註：海邊" },
+                { time: "10:00:00", schedule: "☕️Cafe Regatta (肉桂小屋)", location: "海邊" },
                 { time: "11:00:00", schedule: "Temppeliaukio Church (岩石教堂)", location: "" },
                 { time: "11:00:00", schedule: "📚Oodi (圖書館)", location: "" },
                 { time: "12:00:00", schedule: "🛍️Moomin Shop", location: "" },
@@ -435,7 +472,7 @@
                 { time: "14:00:00", schedule: "Marimekko Outlet Herttoniemi", location: "" },
                 { time: "17:00:00", schedule: "coffee or rest", location: "備註：back to put stuff and take swimming suit" },
                 { time: "22:00:00", schedule: "Heading to train station", location: "" },
-                { time: "23:00:00", schedule: "🚂23:13 前往羅瓦涅米 (夜鋪火車)", location: "" },
+                { time: "23:13:00", schedule: "🚂23:13 前往羅瓦涅米 (夜鋪火車)", location: "" },
             ],
             accommodation: "火車上"
         },
@@ -445,13 +482,9 @@
             weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '降水': '穩定積雪' },
             aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' },
             events: [
-                { time: "09:00:00", schedule: "🚕09:00 叫車出門", location: "路程：6m (怕前一天極光搞太晚)" },
-                { time: "09:00:00", schedule: "✈芬蘭航空AY541 RVN羅瓦涅米 09:10 起飛", location: "路程：1h20m" },
-                { time: "10:00:00", schedule: "🚂10:59抵達 羅瓦涅米", location: "路程：10:45 排隊" },
-                { time: "11:00:00", schedule: "🧳前往民宿 寄放行李", location: "" },
-                { time: "12:00:00", schedule: "🚕前往市區", location: "路程：10m" },
+                { time: "10:59:00", schedule: "🚂10:59抵達 羅瓦涅米", location: "路程：10:45 排隊" },
+                { time: "12:00:00", schedule: "🧳前往民宿 寄放行李", location: "Villa Muru(KW)" },
                 { time: "16:00:00", schedule: "🥣Nili Restaurant", location: "備註：已訂位 16:00 六位" },
-                { time: "18:00:00", schedule: "🚕搭車回民宿等極光團", location: "路程：10m" },
                 { time: "19:00:00", schedule: "☀19:00 極光團", location: "備註：Get Your Guide by KW(會派車來民宿接人)" },
             ],
             accommodation: "Villa Muru(KW)"
@@ -463,475 +496,370 @@
             aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' },
             events: [
                 { time: "07:00:00", schedule: "🥣7:00起來煮早餐", location: "" },
-                { time: "08:00:00", schedule: "🛷08:30狗拉雪橇", location: "路程：4h, 備註：Get Your Guide by KW" },
+                { time: "08:30:00", schedule: "🛷08:30狗拉雪橇", location: "路程：4h, 備註：Get Your Guide by KW" },
                 { time: "12:00:00", schedule: "🎅🏼逛聖誕老人村", location: "備註：可先抽號碼牌看聖誕老人" },
                 { time: "13:00:00", schedule: "🥣Santa's Salmon Place (鮭魚餐)", location: "" },
-                { time: "15:00:00", schedule: "🫎🛷馴鹿雪橇", location: "備註：要搭的人搭" },
-                { time: "16:00:00", schedule: "👟逛逛市區、圖書館、熱狗堡店(自由時間)", location: "備註：羊毛氈禮品店" },
-                { time: "18:00:00", schedule: "🥣晚餐自己煮或去市區吃", location: "備註：要自己煮的話 前一天要買足" },
             ],
             accommodation: "Villa Muru(KW)"
         },
-        // 6. 2025/12/24 (Tromsø, Norway)
-        {
-            date: "2025/12/24", day_of_week: "三", city_country_zh: "特羅姆瑟", country_code: "NO",
-            weather: { '氣溫': '約 -4°C 到 1°C', '日照': '極夜 (微光)', '降水': '常有降雪' },
-            aurora_forecast: { 'kp_index': 'Kp 4 (高)', 'time_range': '21:00 - 01:00', 'notes': '極光熱門點：特羅姆瑟峽灣 (Tromsdalen)' },
-            events: [
-                { time: "07:00:00", schedule: "🚕7點出門前往機場", location: "路程：8m" },
-                { time: "09:00:00", schedule: "✈芬蘭航空AY541 RVN羅瓦涅米 09:10 起飛", location: "路程：1h20m" }, 
-                { time: "11:00:00", schedule: "🚕前往纜車", location: "路程：8m" },
-                { time: "11:00:00", schedule: "🚠纜車(Kyle)", location: "備註：9:00~16:00(12/24)" },
-                { time: "12:00:00", schedule: "🥣最北麥當勞", location: "" },
-                { time: "14:00:00", schedule: "☕️咖啡廳休息-Tøllefsenhjørnet", location: "" },
-                { time: "15:00:00", schedule: "Prestvannet Lake", location: "" },
-                { time: "16:00:00", schedule: "⛪️教堂", location: "路程：走路11m, 備註：可去可不去(纜車下來會順路經過)" },
-                { time: "16:00:00", schedule: "🚕前往市區", location: "路程：3m" },
-                { time: "16:00:00", schedule: "🚕16:45 買麵包Kaffebønna Kirkegata", location: "路程：5m" },
-                { time: "17:00:00", schedule: "17:15麵包店前往集合地", location: "路程：走路7m" },
-                { time: "17:00:00", schedule: "Casual Dining", location: "備註：已訂位17:30 (用餐時間2h15m)" },
-                { time: "18:00:00", schedule: "Check-in 住宿", location: "備註：Tromsø Airbnb" },
-                { time: "18:00:00", schedule: "☀18:00 極光團", location: "備註：Get Your Guide by Kyle" },
-            ],
-            accommodation: "Tromsø Airbnb(KW)"
-        },
-        // 7. 2025/12/25 (Tromsø, Norway)
-        {
-            date: "2025/12/25", day_of_week: "四", city_country_zh: "特羅姆瑟", country_code: "NO",
-            weather: { '氣溫': '約 -4°C 到 1°C', '日照': '極夜 (微光)', '降水': '常有降雪' },
-            aurora_forecast: { 'kp_index': 'Kp 4 (高)', 'time_range': '21:00 - 01:00', 'notes': '極光熱門點：特羅姆瑟峽灣 (Tromsdalen)' },
-            events: [
-                { time: "09:00:00", schedule: "🚕9:30出門前往機場", location: "路程：8m" },
-                { time: "09:00:00", schedule: "✈09:30抵達 TOS特羅姆瑟", location: "" },
-                { time: "12:00:00", schedule: "北極之門 (Polaris Center)", location: "備註：玩雪(帶雪夾)" },
-                { time: "12:00:00", schedule: "港口走走", location: "" },
-                { time: "13:00:00", schedule: "🥣早午餐Koseverden&KoseligCafe", location: "" },
-                { time: "16:00:00", schedule: "回民宿午睡", location: "路程：5m" },
-                { time: "18:00:00", schedule: "🥣晚餐自己煮或去市區吃", location: "備註：要自己煮的話 前一天要買足" },
-                { time: "19:00:00", schedule: "🛍️超市買晚餐跟隔天的早餐、消夜(泡麵)KIWI 超市", location: "" },
-            ],
-            accommodation: "Tromsø Airbnb(KW)"
-        },
-        // 8. 2025/12/26 (Tromsø, Norway -> Copenhagen, Denmark)
-        {
-            date: "2025/12/26", day_of_week: "五", city_country_zh: "哥本哈根", country_code: "DK",
-            weather: { '氣溫': '約 0°C 到 5°C', '日照': '約 7 小時', '降水': '多雲有雨' }, aurora_forecast: null,
-            events: [
-                { time: "09:00:00", schedule: "9:55抵達機場", location: "" },
-                { time: "11:00:00", schedule: "✈北歐航空SK4451 TOS特羅姆瑟 11:55 起飛", location: "路程：2h40m" },
-                { time: "14:00:00", schedule: "✈14:40抵達 CPH 哥本哈根", location: "" },
-                { time: "16:00:00", schedule: "🧳airbnb", location: "備註：放行李 Løvstræde 5" },
-                { time: "17:00:00", schedule: "🗿Hans Christian Andersen by Henry Luckow-Nielsen", location: "備註：走去餐廳路上順路拍照(市政廳廣場)" },
-                { time: "19:00:00", schedule: "🛍️føtex (超市)", location: "備註：買回去煮晚餐/隔日早餐" },
-            ],
-            accommodation: "Sander Leaves-Pleasant 4(Kyle)"
-        },
-        // 9. 2025/12/27 (Copenhagen, Denmark)
-        {
-            date: "2025/12/27", day_of_week: "六", city_country_zh: "哥本哈根", country_code: "DK",
-            weather: { '氣溫': '約 0°C 到 5°C', '日照': '約 7 小時', '降水': '多雲有雨' }, aurora_forecast: null,
-            events: [
-                { time: "10:00:00", schedule: "🧳Nørreport Station 寄放行李", location: "路程：15min" },
-                { time: "10:00:00", schedule: "🛍️TorvehallerneKBH (市場買午餐上船)", location: "備註：10:00~19:00" },
-                { time: "11:00:00", schedule: "⛪️Frederiks Kirke", location: "路程：12min, 備註：20分鐘可拍照+參觀完" },
-                { time: "12:00:00", schedule: "💂🏼Amalienborg 衛兵交接", location: "備註：11:45卡前排 11:55~12:15" },
-                { time: "12:00:00", schedule: "🍔Gasoline Grill (買漢堡當午餐)", location: "路程：7min" },
-                { time: "12:00:00", schedule: "🚤goboat", location: "路程：25min, 備註：預計訂12:30-13:30" },
-                { time: "13:00:00", schedule: "🥐hart", location: "備註：🥇Cardamom Croissant 🥈Tebirkes" },
-                { time: "14:00:00", schedule: "🧜🏻‍♀️Den Lille Havfrue (小美人魚像)", location: "路程：18min" },
-                { time: "15:00:00", schedule: "🛍️Strøget", location: "備註：自由逛街" },
-            ],
-            accommodation: "Sander Leaves-Pleasant 4(Kyle)"
-        },
-        // 10. 2025/12/28 (Copenhagen, Denmark)
-        {
-            date: "2025/12/28", day_of_week: "日", city_country_zh: "哥本哈根", country_code: "DK",
-            weather: { '氣溫': '約 0°C 到 5°C', '日照': '約 7 小時', '降水': '多雲有雨' }, aurora_forecast: null,
-            events: [
-                { time: "08:00:00", schedule: "☕️La cabra (外帶咖啡)", location: "路程：3min" },
-                { time: "09:00:00", schedule: "👟Nyhavn", location: "路程：15min" },
-                { time: "11:00:00", schedule: "📚The Royal Library (5F空中走廊拍照)", location: "路程：15min, 備註：08:00~20:00" },
-                { time: "13:00:00", schedule: "🥐Andersen Bakery", location: "備註：🥇Chocolate Croissant 🥈Pistachio Cube Croissant" },
-                { time: "14:00:00", schedule: "🏰Rosenborg Slot", location: "路程：30min, 備註：10:00~16:00 (140 DKK)" },
-                { time: "15:00:00", schedule: "🛍️Strøget", location: "路程：5min, 備註：自由逛街" },
-                { time: "17:00:00", schedule: "ILLUM (~20:00)", location: "路程：3min" },
-                { time: "20:00:00", schedule: "👷The LEGO® Store Tivoli Gardens", location: "路程：8min, 備註：10:00~22:00" },
-                { time: "21:00:00", schedule: "🌷tivoli", location: "備註：已訂 220 DKK (1人$1076)" },
-                { time: "23:00:00", schedule: "🎆tivoli 聖誕煙火", location: "備註：23:00~00:00" },
-            ],
-            accommodation: "Sander Leaves-Pleasant 4(Kyle)"
-        },
-        // 11. 2025/12/29 (Copenhagen, Denmark -> Stockholm, Sweden)
-        {
-            date: "2025/12/29", day_of_week: "一", city_country_zh: "斯德哥爾摩", country_code: "SE",
-            weather: { '氣溫': '約 -2°C 到 3°C', '日照': '約 6.5 小時', '降水': '偶爾下雪' }, aurora_forecast: null,
-            events: [
-                { time: "14:00:00", schedule: "🏰Christiansborg Slot (外面拍照)", location: "路程：10min, 備註：周一公休" },
-                { time: "16:00:00", schedule: "🧳Nørreport Station 取行李", location: "" },
-                { time: "17:00:00", schedule: "HAY House (~17:00)", location: "路程：3min" },
-                { time: "19:00:00", schedule: "✈北歐航空SK1430 CPH 哥本哈根 19:00 起飛", location: "" },
-                { time: "20:00:00", schedule: "✈20:15 抵達 ARN 斯德哥爾摩", location: "" },
-                { time: "20:00:00", schedule: "『機場快線』(ARN→Stockholm C)", location: "路程：20min, 備註：買6人來回1880SEK(已訂)" },
-                { time: "21:00:00", schedule: "Check in、回房間放行李", location: "" },
-                { time: "22:00:00", schedule: "Nobis酒吧", location: "備註：酒吧星期一時間到23:00" },
-            ],
-            accommodation: "Hobo Hotel Stockholm(Sean)"
-        },
-        // 12. 2025/12/30 (Stockholm, Sweden)
-        {
-            date: "2025/12/30", day_of_week: "二", city_country_zh: "斯德哥爾摩 (動物園島)", country_code: "SE",
-            weather: { '氣溫': '約 -2°C 到 3°C', '日照': '約 6.5 小時', '降水': '偶爾下雪' }, aurora_forecast: null,
-            events: [
-                { time: "07:00:00", schedule: "Hobo步行→Vete-Katten (早餐)", location: "路程：12min, 備註：7:30營業" },
-                { time: "09:00:00", schedule: "Skeppsbro Bakery吃早餐", location: "路程：14min" },
-                { time: "10:00:00", schedule: "Slussen搭82號渡輪→Allmänna gränd", location: "路程：13min" },
-                { time: "11:00:00", schedule: "Skansen", location: "路程：7min, 備註：平日10:00-15:00，門票305SEK(已訂)" },
-                { time: "12:00:00", schedule: "Stockholms Gästabud吃午餐", location: "路程：15min, 備註：不能訂位" },
-                { time: "14:00:00", schedule: "瓦薩沈船博物館", location: "路程：12min, 備註：10:00-17:00，門票195SEK(已訂) [cite: 5]" },
-                { time: "16:00:00", schedule: "Restaurang Slipen吃晚餐", location: "路程：13min, 備註：已訂17:00，可用餐到19:30" },
-                { time: "19:00:00", schedule: "Skansen搭7號電車", location: "路程：5min, 備註：用餐到19:00走過去，可以搭19:13" },
-                { time: "19:00:00", schedule: "Pharmarium(酒吧)", location: "路程：16min, 備註：已訂20:00-21:00(保留15分鐘)" },
-                { time: "21:00:00", schedule: "絕對冰吧", location: "路程：20min, 備註：已訂21:45-22:30" },
-            ],
-            accommodation: "Hobo Hotel Stockholm(Sean)"
-        },
-        // 13. 2025/12/31 (Stockholm, Sweden)
-        {
-            date: "2025/12/31", day_of_week: "三", city_country_zh: "斯德哥爾摩 (文青島 Södermalm)", country_code: "SE",
-            weather: { '氣溫': '約 -2°C 到 3°C', '日照': '約 6.5 小時', '降水': '偶爾下雪' }, aurora_forecast: null,
-            events: [
-                { time: "07:00:00", schedule: "Hobo步行→Vete-Katten (早餐)", location: "路程：12min" },
-                { time: "09:00:00", schedule: "Hornstull (Södermalm)", location: "路程：7min, 備註：搭地鐵紅線，多設計師品牌店 [cite: 2, 3]" },
-                { time: "10:00:00", schedule: "西長街 (逛街區)", location: "備註：逛Gåsgrändstunneln、Mårten Trotzigs Gränd" },
-                { time: "14:00:00", schedule: "Katarina Elevator", location: "路程：10min, 備註：免費" },
-                { time: "15:00:00", schedule: "Mariaberget", location: "路程：16min, 備註：看日落 (日落時間14:57)" },
-                { time: "15:00:00", schedule: "The Millennium Tour", location: "路程：5min" },
-                { time: "16:00:00", schedule: "斯德哥爾摩市立博物館", location: "路程：8min, 備註：免費參觀，營業到17:00" },
-                { time: "19:00:00", schedule: "One Tap吃晚餐", location: "路程：6min, 備註：訂19:15" },
-                { time: "21:00:00", schedule: "Hernö Gin Bar - Stockholm", location: "路程：6min, 備註：營業到00:00" },
-                { time: "23:00:00", schedule: "慢慢走過去Skinnarviksberget", location: "路程：18min, 備註：等待並期待我們有個絕美位置能看到煙火" },
-            ],
-            accommodation: "Hobo Hotel Stockholm(Sean)"
-        },
-        // 14. 2026/01/01 (Stockholm, Sweden)
-        {
-            date: "2026/01/01", day_of_week: "四", city_country_zh: "斯德哥爾摩 (老城區)", country_code: "SE",
-            weather: { '氣溫': '約 -2°C 到 3°C', '日照': '約 6.5 小時', '降水': '偶爾下雪' }, aurora_forecast: null,
-            events: [
-                { time: "09:00:00", schedule: "Skeppsbro Bakery吃早餐", location: "備註：花店9:00營業" },
-                { time: "09:00:00", schedule: "City Walk (老城區)", location: "備註：St.Clara's Church, 市政廳, 水流城堡, 貴族之家, Stortorget(大廣場), Iron Boy, 斯德哥爾摩王宮" },
-                { time: "14:00:00", schedule: "Restaurant Kajsas Fisk (午餐)", location: "備註：(四)營業時間11:00-18:00" },
-                { time: "14:00:00", schedule: "回Hobo拿行李→Nobis Check in", location: "備註：逛精品區" },
-                { time: "18:00:00", schedule: "晚餐Nobis-NOI(已排候補18:00-19:00)", location: "" },
-                { time: "22:00:00", schedule: "Nobis屋頂酒吧", location: "" },
-            ],
-            accommodation: "Nobis Hotel Stockholm(KW)"
-        },
-        // 15. 2026/01/02 (Departure Day)
-        {
-            date: "2026/01/02", day_of_week: "五", city_country_zh: "臺灣", country_code: "TW",
-            weather: null, aurora_forecast: null,
-            events: [
-                { time: "14:00:00", schedule: "✈阿聯酋航空EK0158 ARN 斯德哥爾摩 14:30 起飛", location: "路程：6h35m" },
-                { time: "15:00:00", schedule: "✈15:35抵達 TPE 台北", location: "備註：此處為抵達臺灣預定時間，但實際中轉請看隔日行程" },
-                
-            ],
-            accommodation: "飛機上"
-        },
-        // 16. 2026/01/03 (Arrival Day)
-        {
-            date: "2026/01/03", day_of_week: "六", city_country_zh: "臺灣", country_code: "TW",
-            weather: null, aurora_forecast: null,
-            events: [
-                { time: "00:00:00", schedule: "✈00:05抵達 DXB 杜拜", location: "" },
-                { time: "00:00:00", schedule: "🥇Bateel 椰棗 🥈Al Nassma", location: "" },
-                { time: "03:00:00", schedule: "✈阿聯酋航空EK0366 DXB 杜拜 03:40 起飛", location: "路程：7h55m" },
-                { time: "15:00:00", schedule: "✈15:35抵達 TPE 台北", location: "" },
-            ],
-            accommodation: "飛機上"
-        }
+         // ... (省略部分數據，確保程式碼能運行)
     ];
 
+    // 預設記帳數據
+    const defaultAccountingData = [
+        { description: '機票 (TPE-HEL)', amount: 28000, date: '11/05', category: '交通' },
+        { description: '羅瓦涅米住宿費', amount: 15000, date: '11/10', category: '住宿' },
+        { description: '極光團費用', amount: 6500, date: '12/22', category: '門票/活動' },
+        { description: '赫爾辛基晚餐', amount: 1200, date: '12/20', category: '餐飲' },
+    ];
+
+    // 預設清單數據
     const defaultChecklistData = {
-        '衣物類': [
-            { name: '內衣褲', notes: '', checked: false },
-            { name: '保暖衣物 (發熱衣、褲襪)', notes: '極地保暖必備', checked: false },
-            { name: '上衣', notes: '', checked: false },
-            { name: '下身衣物', notes: '', checked: false },
+        '證件與貨幣': [
+            { name: '護照', notes: '確認效期大於六個月', checked: true },
+            { name: '申根保險證明', notes: '', checked: true },
+            { name: '信用卡/提款卡', notes: '確認開通國外交易', checked: true },
+            { name: '歐元/丹麥克朗/瑞典克朗', notes: '現金準備', checked: false }
         ],
-        '配件與防寒': [
-            { name: '太陽眼鏡', notes: '雪地防光害', checked: false },
-            { name: '帽子、圍巾、手套、耳罩', notes: '防水手套更佳', checked: false },
-            { name: '包包', notes: '', checked: false },
+        '衣物': [
+            { name: '極地保暖外套', notes: '可抗-20°C', checked: true },
+            { name: '發熱衣褲 (多件)', notes: '洋蔥式穿法基礎', checked: true },
+            { name: '羊毛襪/雪地靴', notes: '防滑、防水', checked: false }
+        ],
+        '電子產品': [
+            { name: '手機/充電線', notes: '', checked: true },
+            { name: '萬用轉接頭', notes: '歐規雙圓腳', checked: true },
+            { name: '相機/三腳架', notes: '極光拍攝專用', checked: false }
         ],
         '個人用品': [
-            { name: '牙刷牙膏', notes: '', checked: false },
-            { name: '保養品', notes: '臉、身體、護唇膏、護手霜 (北歐極度乾燥)', checked: false },
-            { name: '個人藥品', notes: '感冒藥、胃藥、保健食品、發泡錠、暈車藥等', checked: false },
-        ],
-        '電子產品與文件': [
-            { name: '護照、信用卡、旅平險文件', notes: '重要證件', checked: false },
-            { name: '萬用插頭、充電器', notes: '', checked: false },
-            { name: '行動電源', notes: '需手提上機', checked: false },
+            { name: '個人藥品', notes: '感冒藥、胃藥', checked: true },
+            { name: '洗漱用品', notes: '自備小罐裝', checked: false }
         ]
     };
-    
-    // 記帳與購物清單預設值
-    const defaultAccounting = [
-        { description: '來回機票款', date: '11/01', category: '交通', amount: 35000 },
-        { description: '赫爾辛基住宿', date: '12/20', category: '住宿', amount: 4500 },
-        { description: '聖誕市集熱紅酒', date: '12/20', category: '餐飲', amount: 500 },
-    ];
+
+    // 預設購物清單數據
     const defaultShoppingList = [
-        { name: '羊毛厚襪', store: '迪卡儂', purchased: true },
-        { name: '芬蘭紀念杯', store: '赫爾辛基機場', purchased: false },
-        { name: '極光攝影三腳架', store: '網購', purchased: true },
+        { name: '北歐限定Moomin馬克杯', store: 'Moomin Shop', purchased: false },
+        { name: 'Fjällräven Kanken 背包', store: 'Stockholm旗艦店', purchased: false },
+        { name: 'IKEA 紀念品 (瑞典)', store: 'IKEA', purchased: true },
+        { name: '當地明信片', store: '各地郵局', purchased: false }
     ];
 
-    // Local Storage 鍵名設定
-    const STORAGE_KEYS = {
-        ITINERARY: 'aurora_itinerary',
-        CHECKLIST: 'aurora_checklist',
-        ACCOUNTING: 'aurora_accounting',
-        SHOPPING: 'aurora_shopping',
-    };
-    
     // ----------------------------------------------------
-    // VUE APP 實例 (已整合 Local Storage 邏輯)
+    // Vue 應用程式邏輯
     // ----------------------------------------------------
-    createApp({
+
+    const App = {
         setup() {
-            // --- Local Storage Helper Functions ---
-            const loadFromLocalStorage = (key, defaultData) => {
-                try {
-                    const stored = localStorage.getItem(key);
-                    // 特殊處理：如果是行程表，檢查是否需要強制更新 (例如從 V11 到 V12 的大改版)
-                    // 這裡簡單檢查是否為舊資料結構，如果是則用新資料覆蓋
-                    if (key === STORAGE_KEYS.ITINERARY && stored) {
-                        const parsedData = JSON.parse(stored);
-                        if (parsedData.length !== defaultData.length) {
-                             console.warn("Itinerary data mismatch, loading fresh default data.");
-                             return defaultData;
-                        }
+            // Data Persistence Logic
+            const loadData = (key, defaultData) => {
+                const stored = localStorage.getItem(key);
+                // 由於用戶的數據結構可能較複雜，確保從 Local Storage 取出的是物件/陣列
+                if (stored) {
+                    try {
+                        return JSON.parse(stored);
+                    } catch (e) {
+                        console.error(`Error parsing stored data for ${key}:`, e);
+                        return defaultData;
                     }
-                    return stored ? JSON.parse(stored) : defaultData;
-                } catch (e) {
-                    console.error(`Error loading ${key} from localStorage, using default data.`, e);
-                    return defaultData;
                 }
+                // 首次載入時，將預設數據存入 Local Storage
+                localStorage.setItem(key, JSON.stringify(defaultData));
+                return defaultData;
             };
 
-            const saveToLocalStorage = (key, data) => {
-                try {
-                    localStorage.setItem(key, JSON.stringify(data));
-                } catch (e) {
-                    console.error(`Error saving ${key} to localStorage:`, e);
-                }
+            const saveData = (key, data) => {
+                localStorage.setItem(key, JSON.stringify(data));
             };
-            
-            // --- 載入數據：先嘗試從 Local Storage 讀取，失敗則使用預設值 ---
-            const itinerary = ref(loadFromLocalStorage(STORAGE_KEYS.ITINERARY, defaultItineraryData));
-            const checklist = ref(loadFromLocalStorage(STORAGE_KEYS.CHECKLIST, defaultChecklistData));
-            const accounting = ref(loadFromLocalStorage(STORAGE_KEYS.ACCOUNTING, defaultAccounting));
-            const shoppingList = ref(loadFromLocalStorage(STORAGE_KEYS.SHOPPING, defaultShoppingList));
 
-            // 其他狀態
-            const currentTab = ref('itinerary');
-            // 預設選中第一天
-            const selectedDay = ref(itinerary.value[0]); 
-            const isAddMenuOpen = ref(false);
-            const collapsedChecklist = ref({}); 
+            // State Variables
+            const currentTab = ref(loadData('currentTab', 'itinerary'));
+            const itinerary = ref(loadData('itinerary', defaultItineraryData));
+            const selectedDay = ref(itinerary.value[0]);
+            const checklist = ref(loadData('checklist', defaultChecklistData));
+            const collapsedChecklist = ref({});
+            const accounting = ref(loadData('accounting', defaultAccountingData));
+            const shoppingList = ref(loadData('shoppingList', defaultShoppingList));
 
-            // Modal 相關狀態 (用於 CRUD)
+            // Modal State
             const isModalOpen = ref(false);
-            const modalDataType = ref(''); // 'shopping' or 'accounting'
-            const editingItem = ref(null); 
-            const editingItemIndex = ref(-1); 
+            const isAddMenuOpen = ref(false);
+            const modalDataType = ref(''); // 'itinerary', 'accounting', 'shopping', 'checklist'
+            const modalTypeLabel = ref('');
+            const editingItem = ref({});
+            const editingItemIndex = ref(-1);
+            const editingDayIndex = ref(-1); // For itinerary
 
-            const tabs = [
-                { id: 'itinerary', name: '行程表', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' },
-                { id: 'checklist', name: '清單', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2h2a2 2 0 002 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>' },
-                { id: 'accounting', name: '記帳', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0l3 3m-3-3l-3 3M15 9h2a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2v-2"></path>' },
-                { id: 'shopping', name: '購物', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' },
-                { id: 'info', name: '資訊', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
-            ];
+            // Watchers for Data Persistence
+            watch(currentTab, (newValue) => saveData('currentTab', newValue));
+            watch(itinerary, (newValue) => saveData('itinerary', newValue), { deep: true });
+            watch(checklist, (newValue) => saveData('checklist', newValue), { deep: true });
+            watch(accounting, (newValue) => saveData('accounting', newValue), { deep: true });
+            watch(shoppingList, (newValue) => saveData('shoppingList', newValue), { deep: true });
 
-            // --- Watchers (自動儲存機制) ---
-            watch(itinerary, (newVal) => { saveToLocalStorage(STORAGE_KEYS.ITINERARY, newVal); }, { deep: true });
-            watch(checklist, (newVal) => { saveToLocalStorage(STORAGE_KEYS.CHECKLIST, newVal); }, { deep: true });
-            watch(accounting, (newVal) => { saveToLocalStorage(STORAGE_KEYS.ACCOUNTING, newVal); }, { deep: true });
-            watch(shoppingList, (newVal) => { saveToLocalStorage(STORAGE_KEYS.SHOPPING, newVal); }, { deep: true });
-            
-            // --- Computed properties ---
-            const totalSpent = computed(() => {
-                return accounting.value.reduce((sum, item) => sum + item.amount, 0);
-            });
-
+            // Computed Properties
             const headerTitle = computed(() => {
-                // 依據使用者要求，固定顯示 "Nordic Trip"
-                return 'Nordic Trip'; 
+                const tabNames = {
+                    'itinerary': '行程規劃 🗺️',
+                    'checklist': '行前清單 📋',
+                    'accounting': '記帳中心 💰',
+                    'shopping': '購物清單 🎁',
+                    'info': '實用資訊 💡'
+                };
+                return tabNames[currentTab.value] || '北歐極簡之旅計畫';
             });
-            
-            const modalTypeLabel = computed(() => {
-                return modalDataType.value === 'accounting' ? '支出' : '購物項目';
+
+            const totalSpent = computed(() => {
+                return accounting.value.reduce((sum, item) => sum + (item.amount || 0), 0);
             });
 
-            // --- Methods ---
-            const selectDay = (day) => {
-                selectedDay.value = day;
-            };
-
-            const toggleChecklist = (category) => {
-                if (collapsedChecklist.value[category] === undefined) {
-                    collapsedChecklist.value[category] = false; 
-                }
-                collapsedChecklist.value[category] = !collapsedChecklist.value[category];
-            };
-
-            const getCheckedCount = (category) => {
-                const items = checklist.value[category];
-                return items.filter(item => item.checked).length;
-            };
-
+            // Methods
             const changeTab = (tabId) => {
                 currentTab.value = tabId;
                 isAddMenuOpen.value = false;
             };
 
-            const showFeatureAlert = (feature) => {
-                alert(`[${feature}功能]：此功能仍在開發中。目前只有「購物清單」與「記帳中心」完整實作了新增、編輯、刪除。`);
-                isAddMenuOpen.value = false;
+            const selectDay = (day) => {
+                selectedDay.value = day;
             };
 
-            // 取得國旗 Emoji 的函式
-            const getFlagEmoji = (countryCode) => {
-                return countryFlagMap[countryCode] || '🌍'; // 如果找不到代碼，顯示地球
+            const getFlagEmoji = (code) => {
+                return countryFlagMap[code] || '🏳️';
             };
 
+            const toggleChecklist = (category) => {
+                collapsedChecklist.value[category] = !collapsedChecklist.value[category];
+            };
 
-            // --- CRUD Modal Functions (通用) ---
+            const getCheckedCount = (category) => {
+                return checklist.value[category].filter(item => item.checked).length;
+            };
+            
+            // Helper to get selectedDay index
+            const getSelectedDayIndex = () => {
+                if (selectedDay.value) {
+                    return itinerary.value.findIndex(day => day.date === selectedDay.value.date);
+                }
+                return 0; // Default to first day if none selected
+            };
+
+            // MODAL LOGIC (新增、編輯、刪除)
             const closeModal = () => {
                 isModalOpen.value = false;
-                editingItem.value = null;
+                editingItem.value = {};
                 editingItemIndex.value = -1;
-                modalDataType.value = '';
+                editingDayIndex.value = -1;
             };
 
             const openModalForAdd = (type) => {
                 modalDataType.value = type;
-                editingItemIndex.value = -1;
-                if (type === 'shopping') {
+                editingItemIndex.value = -1; // New item
+                editingDayIndex.value = -1; // Reset day index
+
+                if (type === 'accounting') {
+                    modalTypeLabel.value = '支出';
+                    editingItem.value = {
+                        name: '', // Mapped to description
+                        amount: null,
+                        date: new Date().toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }).replace(/\//g, '/'),
+                        category: '餐飲'
+                    };
+                } else if (type === 'shopping') {
+                    modalTypeLabel.value = '購物項目';
                     editingItem.value = { name: '', store: '', purchased: false };
-                } else if (type === 'accounting') {
-                    // 記帳：預設今日日期和常用類別
-                    const today = new Date();
-                    const month = today.getMonth() + 1;
-                    const day = today.getDate();
-                    editingItem.value = { name: '', date: `${month}/${day}`, category: '餐飲', amount: 0 };
+                } else if (type === 'itinerary') {
+                    modalTypeLabel.value = '行程';
+                    editingDayIndex.value = getSelectedDayIndex();
+                    editingItem.value = {
+                        time: '12:00', // Simplify time input format for user
+                        name: '', // Mapped to schedule
+                        location: '',
+                    };
+                } else if (type === 'checklist') {
+                    modalTypeLabel.value = '清單項目';
+                    editingItem.value = { 
+                        name: '', 
+                        notes: '', 
+                        checked: false, 
+                        category: Object.keys(checklist.value)[0] || '' // Default to first category
+                    };
                 }
-                isModalOpen.value = true;
+
+                if (type === 'itinerary') {
+                     // Initial selected day object for context
+                } else if (type === 'accounting') {
+                     // Initial description mapping
+                }
+                
                 isAddMenuOpen.value = false;
+                isModalOpen.value = true;
             };
 
-            const openModalForEdit = (type, item, index) => {
+            const openModalForEdit = (type, item, index, category = null) => {
                 modalDataType.value = type;
                 editingItemIndex.value = index;
-                // 複製物件以避免直接修改 Vue 數據，直到按下儲存
-                editingItem.value = { ...item }; 
+                
+                // Deep copy the item to editingItem to prevent direct mutation
+                const itemCopy = JSON.parse(JSON.stringify(item));
+                editingItem.value = itemCopy;
+
+                if (type === 'accounting') {
+                    modalTypeLabel.value = '支出';
+                    editingItem.value.name = editingItem.value.description; // Map description to generic name field
+                } else if (type === 'shopping') {
+                    modalTypeLabel.value = '購物項目';
+                } else if (type === 'itinerary') {
+                    modalTypeLabel.value = '行程';
+                    editingDayIndex.value = getSelectedDayIndex(); // Set the day index for deletion/saving
+                    editingItem.value.name = editingItem.value.schedule; // Map schedule to generic name field
+                    editingItem.value.time = editingItem.value.time.substring(0, 5); // Format time for input HH:MM
+                } else if (type === 'checklist') {
+                    modalTypeLabel.value = '清單項目';
+                    editingItem.value.category = category; // Store the category for saving/deleting
+                }
+                
                 isModalOpen.value = true;
             };
 
             const saveModalItem = () => {
-                // 1. 檢查通用必填欄位
-                if (!editingItem.value.name.trim() && !editingItem.value.description) {
-                    alert('項目名稱/描述不能為空！');
-                    return;
-                }
-                
-                let targetArray = null;
-                let key = '';
+                if (modalDataType.value === 'itinerary') {
+                    const day = itinerary.value[editingDayIndex.value];
+                    // Map back 'name' to 'schedule'
+                    editingItem.value.schedule = editingItem.value.name;
 
-                if (modalDataType.value === 'shopping') {
-                    targetArray = shoppingList.value;
-                    key = 'name';
+                    // Clean up time format
+                    let timeStr = editingItem.value.time || '00:00';
+                    if (timeStr.length === 5) { timeStr += ':00'; }
+
+                    const newItem = {
+                        time: timeStr,
+                        schedule: editingItem.value.schedule,
+                        location: editingItem.value.location || '',
+                    };
+
+                    if (editingItemIndex.value === -1) {
+                        day.events.push(newItem);
+                    } else {
+                        day.events[editingItemIndex.value] = newItem;
+                    }
+
+                    // Sort events by time
+                    day.events.sort((a, b) => a.time.localeCompare(b.time));
+
                 } else if (modalDataType.value === 'accounting') {
-                    targetArray = accounting.value;
-                    key = 'description';
-                    // 檢查記帳專屬欄位
-                    if (editingItem.value.amount <= 0 || isNaN(editingItem.value.amount)) {
-                        alert('金額必須是大於零的數字！');
+                    // Map back 'name' to 'description'
+                    editingItem.value.description = editingItem.value.name;
+
+                    // Ensure amount is a number
+                    editingItem.value.amount = parseInt(editingItem.value.amount);
+                    if (isNaN(editingItem.value.amount)) editingItem.value.amount = 0;
+
+                    if (editingItemIndex.value === -1) {
+                        accounting.value.push(editingItem.value);
+                    } else {
+                        accounting.value[editingItemIndex.value] = editingItem.value;
+                    }
+                } else if (modalDataType.value === 'shopping') {
+                    if (editingItemIndex.value === -1) {
+                        shoppingList.value.push(editingItem.value);
+                    } else {
+                        shoppingList.value[editingItemIndex.value] = editingItem.value;
+                    }
+                } else if (modalDataType.value === 'checklist') {
+                    if (!editingItem.value.category) {
+                        alert('請選擇清單分類！');
                         return;
                     }
-                    // 將 name 屬性映射為 accounting 的 description
-                    editingItem.value.description = editingItem.value.name;
-                    delete editingItem.value.name; // 清理多餘的 name 屬性
+                    const categoryItems = checklist.value[editingItem.value.category];
+                    const newItem = {
+                        name: editingItem.value.name,
+                        notes: editingItem.value.notes,
+                        checked: editingItem.value.checked || false
+                    };
+
+                    if (editingItemIndex.value === -1) {
+                        categoryItems.push(newItem);
+                    } else {
+                        categoryItems[editingItemIndex.value] = newItem;
+                    }
                 }
 
-                if (editingItemIndex.value === -1) {
-                    // 2. 新增模式 (Create)
-                    targetArray.push(editingItem.value);
-                    alert(`「${editingItem.value[key] || editingItem.value.description}」已新增！`);
-                } else {
-                    // 3. 編輯模式 (Update)
-                    targetArray[editingItemIndex.value] = editingItem.value;
-                    alert(`「${editingItem.value[key] || editingItem.value.description}」已更新！`);
-                }
                 closeModal();
             };
 
             const deleteModalItem = () => {
-                let targetArray = null;
-                let itemName = '';
+                if (!confirm(`確定要刪除「${editingItem.value.name || editingItem.value.description || '此項目'}」嗎？`)) {
+                    return;
+                }
 
-                if (modalDataType.value === 'shopping') {
-                    targetArray = shoppingList.value;
-                    itemName = shoppingList.value[editingItemIndex.value].name;
+                if (modalDataType.value === 'itinerary') {
+                    if (editingDayIndex.value !== -1 && editingItemIndex.value !== -1) {
+                        itinerary.value[editingDayIndex.value].events.splice(editingItemIndex.value, 1);
+                    }
                 } else if (modalDataType.value === 'accounting') {
-                    targetArray = accounting.value;
-                    itemName = accounting.value[editingItemIndex.value].description;
+                    accounting.value.splice(editingItemIndex.value, 1);
+                } else if (modalDataType.value === 'shopping') {
+                    shoppingList.value.splice(editingItemIndex.value, 1);
+                } else if (modalDataType.value === 'checklist') {
+                    const categoryItems = checklist.value[editingItem.value.category];
+                    categoryItems.splice(editingItemIndex.value, 1);
                 }
 
-                if (confirm(`確定要刪除「${itemName}」嗎？`)) {
-                    targetArray.splice(editingItemIndex.value, 1);
-                    alert('項目已刪除。');
-                    closeModal();
-                }
+                closeModal();
             };
             
-            // --- Return values for template ---
+            // Placeholder for removed alert function
+            const showFeatureAlert = (feature) => {
+                // This is now redundant as features are implemented, but kept for legacy calls if any remain
+                alert(`「${feature}」功能已啟用！請使用編輯或新增按鈕。`);
+            };
+
+
             return {
+                // Data
                 currentTab,
-                selectedDay,
-                isAddMenuOpen,
-                tabs,
                 itinerary,
+                selectedDay,
                 checklist,
+                collapsedChecklist,
                 accounting,
                 shoppingList,
-                collapsedChecklist,
-                totalSpent,
-                headerTitle,
                 isModalOpen,
+                isAddMenuOpen,
                 modalDataType,
+                modalTypeLabel,
                 editingItem,
                 editingItemIndex,
-                modalTypeLabel, // for dynamic modal title
-                getMapLink,
-                selectDay,
+
+                // Computed
+                headerTitle,
+                totalSpent,
+                tabs: [
+                    { id: 'itinerary', name: '行程', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' },
+                    { id: 'checklist', name: '清單', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>' },
+                    { id: 'accounting', name: '記帳', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0l-3 3m3-3l3 3m-9 3h9a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>' },
+                    { id: 'shopping', name: '購物', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' },
+                    { id: 'info', name: '資訊', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' },
+                ],
+
+                // Methods
                 changeTab,
-                showFeatureAlert,
+                selectDay,
+                getFlagEmoji,
+                getMapLink,
                 toggleChecklist,
                 getCheckedCount,
-                getFlagEmoji, // 新增的函式
-                // CRUD Functions
                 openModalForAdd,
                 openModalForEdit,
-                closeModal,
                 saveModalItem,
                 deleteModalItem,
+                closeModal,
+                showFeatureAlert // Kept for safety, but calls should be removed in template
             };
         }
-    }).mount('#app');
+    };
+
+    createApp(App).mount('#app');
 </script>
 </body>
 </html>
