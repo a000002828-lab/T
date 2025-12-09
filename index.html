@@ -10,6 +10,14 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
     
     <style>
+        /* ================================== */
+        /* 💡 閃跳修正：使用 v-cloak 隱藏初始狀態 */
+        /* ================================== */
+        /* 應用程式根元素在 Vue 處理完畢前，保持隱藏 */
+        [v-cloak] {
+            display: none !important; 
+        }
+
         /* 北歐/下雪風格的客製化樣式 */
         :root {
             --nordic-blue: #A9D6E5;
@@ -60,7 +68,7 @@
         .date-scroll-container::-webkit-scrollbar {
             display: none;
         }
-        /* 確保地圖容器隱藏時不會佔用空間，解決閃爍問題 */
+        /* 確保地圖容器隱藏時不會佔用空間，解決頁籤切換時的閃爍問題 */
         .map-container {
             height: 320px; /* card h-80 */
             width: 100%;
@@ -75,7 +83,7 @@
 </head>
 <body>
 
-<div id="app" class="app-container">
+<div id="app" class="app-container" v-cloak> 
     
     <div class="header-bg relative mb-[-2rem]">
         <h1 class="text-2xl font-bold mb-1">北歐極光之旅</h1>
@@ -272,15 +280,13 @@
 <script>
 const { createApp, ref, computed, nextTick, watch } = Vue
 
-// --- Google Maps 載入與 Vue 掛載邏輯 ---
 let appInstance = null;
 let googleMapsLoaded = ref(false); 
-let mapInitialized = false; // 新增變數追蹤地圖是否已初始化
+let mapInitialized = false; 
 
 window.initApp = function() {
     googleMapsLoaded.value = true;
     if (appInstance) {
-        // 如果地圖庫在 Vue 掛載後才載入，則手動觸發初始化
         if (appInstance.activeTab === 'map' && !mapInitialized) {
              nextTick(() => appInstance.initMap());
         }
@@ -291,26 +297,12 @@ window.initApp = function() {
 
 function initMap() {
     if (!googleMapsLoaded.value) {
-        console.warn("Google Maps 尚未載入。");
         return;
     }
     
-    // 檢查地圖容器
     const mapElement = document.getElementById('googleMap');
     if (typeof google === 'undefined' || !mapElement) return;
 
-    // 避免重複初始化
-    if (mapInitialized && activeTab.value !== 'map') {
-        // 如果地圖已經初始化，但現在不在地圖頁籤，則不重新繪製
-        // 否則，如果地圖已經初始化且正在地圖頁籤，只需要更新中心點和標記
-        // (此處簡化處理：在地圖頁籤時，每次切換日期都會重新呼叫 initMap)
-        // 為了避免閃跳，Google Maps 官方推薦在容器可見時呼叫 map.setCenter() 來觸發重新繪製
-        if (mapInitialized && typeof google.maps.event !== 'undefined') {
-             // 確保地圖尺寸正確 (這是閃爍的常見原因)
-             google.maps.event.trigger(mapElement, 'resize');
-        }
-    }
-    
     const locations = appInstance.currentItinerary.filter(item => item.lat && item.lng);
     let center = { lat: 60.12816, lng: 18.6435 }; 
     let zoom = 5;
@@ -322,7 +314,6 @@ function initMap() {
     
     // 如果是第一次初始化
     if (!mapInitialized) {
-        // 修正: 第一次初始化地圖實例
         appInstance.map = new google.maps.Map(mapElement, {
             zoom: zoom,
             center: center,
@@ -330,12 +321,12 @@ function initMap() {
         });
         mapInitialized = true;
     } else {
-        // 如果已經初始化，只需設定中心點
+        // 如果已經初始化，只需設定中心點和縮放級別
         appInstance.map.setCenter(center);
         appInstance.map.setZoom(zoom);
     }
     
-    // 清除舊的標記 (如果有)
+    // 清除舊的標記
     if (appInstance.markers) {
         appInstance.markers.forEach(marker => marker.setMap(null));
     }
@@ -357,7 +348,6 @@ function initMap() {
     });
 
     if (navigator.geolocation) {
-        // ... (保持定位邏輯不變) ...
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const pos = {
@@ -365,7 +355,6 @@ function initMap() {
                     lng: position.coords.longitude,
                 };
                 
-                // 為了簡化，如果已經有用戶位置標記，這裡可以選擇更新它而不是創建新的。
                 new google.maps.Marker({
                     position: pos,
                     map: appInstance.map,
@@ -391,11 +380,10 @@ function initMap() {
         );
     }
     
-     // 確保地圖尺寸正確 (這是閃爍的常見原因)
+    // 解決地圖容器在隱藏狀態下初始化，導致尺寸錯誤的問題
     google.maps.event.trigger(mapElement, 'resize');
 }
 
-// 生成旅行日期列表
 function getTravelDates() {
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
@@ -422,7 +410,6 @@ function mountVueApp() {
             const travelDates = getTravelDates();
             const activeDate = ref(travelDates[0]);
             
-            // ... (行程、費用、購物數據和函式保持不變) ...
             const itinerary = ref({
                 '2025-12-19': [
                     { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
@@ -453,7 +440,6 @@ function mountVueApp() {
             function setActiveDate(date) {
                 activeDate.value = date;
                 if (activeTab.value === 'map') {
-                    // 切換日期時，如果在地圖頁，觸發地圖更新
                     nextTick(() => initMap());
                 }
             }
@@ -500,10 +486,9 @@ function mountVueApp() {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
                 if (locations.length === 0) return `http://googleusercontent.com/maps.google.com/4`;
                 const firstLoc = locations[0];
-                return `https://www.google.com/maps/dir/?api=1&destination=${firstLoc.lat},${firstLoc.lng}`;
+                return `https://www.google.com/maps/dir/?api=1&destination=$${firstLoc.lat},${firstLoc.lng}`;
             });
 
-            // 關鍵監聽：當頁籤切換到地圖時，觸發初始化或更新
             watch(activeTab, (newTab) => {
                 if (newTab === 'map' && googleMapsLoaded.value) {
                     nextTick(() => initMap());
@@ -512,7 +497,6 @@ function mountVueApp() {
             
             appInstance = { activeTab, initMap, currentItinerary, map: null, markers: [] };
             
-            // 首次載入時，如果地圖已載入且在地圖頁籤，則初始化
             if (activeTab.value === 'map' && googleMapsLoaded.value) {
                  nextTick(() => initMap());
             }
