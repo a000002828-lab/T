@@ -10,14 +10,6 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initApp"></script>
     
     <style>
-        /* ================================== */
-        /* 💡 閃跳修正：使用 v-cloak 隱藏初始狀態 */
-        /* ================================== */
-        /* 應用程式根元素在 Vue 處理完畢前，保持隱藏 */
-        [v-cloak] {
-            display: none !important; 
-        }
-
         /* 北歐/下雪風格的客製化樣式 */
         :root {
             --nordic-blue: #A9D6E5;
@@ -83,7 +75,7 @@
 </head>
 <body>
 
-<div id="app" class="app-container" v-cloak> 
+<div id="app" class="app-container hidden"> 
     
     <div class="header-bg relative mb-[-2rem]">
         <h1 class="text-2xl font-bold mb-1">北歐極光之旅</h1>
@@ -284,6 +276,9 @@ let appInstance = null;
 let googleMapsLoaded = ref(false); 
 let mapInitialized = false; 
 
+// 💡 關鍵修正：應用程式是否已準備好顯示
+let appReadyToDisplay = false; 
+
 window.initApp = function() {
     googleMapsLoaded.value = true;
     if (appInstance) {
@@ -296,6 +291,7 @@ window.initApp = function() {
 }
 
 function initMap() {
+    // ... (initMap 函式保持不變) ...
     if (!googleMapsLoaded.value) {
         return;
     }
@@ -312,7 +308,6 @@ function initMap() {
         zoom = 12;
     }
     
-    // 如果是第一次初始化
     if (!mapInitialized) {
         appInstance.map = new google.maps.Map(mapElement, {
             zoom: zoom,
@@ -321,18 +316,15 @@ function initMap() {
         });
         mapInitialized = true;
     } else {
-        // 如果已經初始化，只需設定中心點和縮放級別
         appInstance.map.setCenter(center);
         appInstance.map.setZoom(zoom);
     }
     
-    // 清除舊的標記
     if (appInstance.markers) {
         appInstance.markers.forEach(marker => marker.setMap(null));
     }
     appInstance.markers = [];
 
-    // 標記新的地點
     locations.forEach((item, index) => {
         const marker = new google.maps.Marker({
             position: { lat: item.lat, lng: item.lng },
@@ -380,11 +372,11 @@ function initMap() {
         );
     }
     
-    // 解決地圖容器在隱藏狀態下初始化，導致尺寸錯誤的問題
     google.maps.event.trigger(mapElement, 'resize');
 }
 
 function getTravelDates() {
+    // ... (getTravelDates 函式保持不變) ...
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
     const dates = [];
@@ -396,9 +388,22 @@ function getTravelDates() {
     return dates;
 }
 
+function showApp() {
+    if (appReadyToDisplay) return;
+
+    // 💡 關鍵：移除隱藏 class，讓應用程式顯示
+    const appElement = document.getElementById('app');
+    if (appElement) {
+        appElement.classList.remove('hidden');
+    }
+    appReadyToDisplay = true;
+}
+
+
 function mountVueApp() {
     const app = createApp({
         setup() {
+            // ... (Vue Setup 邏輯保持不變) ...
             const tabs = [
                 { id: 'itinerary', name: '行程', icon: '🗺️' },
                 { id: 'map', name: '地圖', icon: '📍' },
@@ -406,7 +411,6 @@ function mountVueApp() {
                 { id: 'shopping', name: '購物', icon: '🛍️' },
             ];
             const activeTab = ref('itinerary');
-            
             const travelDates = getTravelDates();
             const activeDate = ref(travelDates[0]);
             
@@ -484,7 +488,7 @@ function mountVueApp() {
 
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return `http://googleusercontent.com/maps.google.com/4`;
+                if (locations.length === 0) return `https://www.google.com/maps/dir/?api=1&destination=$$`;
                 const firstLoc = locations[0];
                 return `https://www.google.com/maps/dir/?api=1&destination=$${firstLoc.lat},${firstLoc.lng}`;
             });
@@ -527,11 +531,15 @@ function mountVueApp() {
     });
 
     app.mount('#app');
+    
+    // 💡 關鍵：Vue 掛載後，顯示應用程式
+    showApp();
 }
 
+// 備用機制：如果 Google Maps API 載入失敗或超時，應用程式仍會顯示
 if (typeof google === 'undefined') {
     setTimeout(() => {
-        if (!window.initApp.isCalled) { 
+        if (!appReadyToDisplay) { 
              googleMapsLoaded.value = false;
              mountVueApp();
         }
