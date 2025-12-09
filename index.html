@@ -14,15 +14,13 @@
         /* 北歐/下雪風格的客製化樣式 */
         :root {
             --nordic-blue: #A9D6E5;
-            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 */
+            --nordic-light: #F0F8FF; /* Near white/Snow White */
             --nordic-dark: #014F86; /* 深海藍 */
             --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
         }
         body {
             background-color: var(--nordic-light);
-            /* 維持雪花背景，增加簡約感 */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>');
-            /* **修正字體為 Noto Sans TC** */
+            /* 移除舊的雪花背景 */
             font-family: 'Noto Sans TC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: var(--nordic-dark);
         }
@@ -30,17 +28,24 @@
             max-width: 420px;
             margin: 0 auto;
             min-height: 100vh;
-            background-color: var(--nordic-light);
-            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            /* 調整: 使用可愛的哈士奇雪橇圖作為背景 */
+            background-image: url('https://i.imgur.com/your-husky-sled-image.jpg'); /* << 請替換為您的哈士奇雪橇圖片網址 >> */
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            background-color: #A9D6E5; /* Fallback color */
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
         }
         .header-bg {
-            background-color: var(--nordic-blue);
-            background-image: linear-gradient(135deg, var(--nordic-blue) 0%, #61A5C2 100%);
+            /* 調整: 使用漸變深色半透明遮罩，確保標題文字清晰 */
+            background-color: transparent; 
+            background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.2) 70%, transparent); 
             color: white;
             padding: 1.5rem 1rem 3rem;
         }
         .card {
-            background: white;
+            /* 調整: 讓卡片內容區塊保持半透明白色，讓底圖能隱約透出 */
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 1rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transition: transform 0.2s;
@@ -52,19 +57,27 @@
         .date-scroll-container::-webkit-scrollbar {
             display: none;
         }
-        /* Tab 日期按鈕風格調整 */
+        /* 調整: 日期按鈕區塊使用半透明背景和模糊效果，解決按鈕卡到底圖的問題 */
+        .date-scroll-container .flex {
+            background-color: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            padding: 0.5rem 0.5rem; /* 增加內邊距 */
+        }
         .tab-date-button {
             transition: all 0.3s;
-            border-radius: 0.75rem; /* 較圓潤的圓角 */
+            border-radius: 0.75rem; 
             padding: 0.5rem 1rem;
             cursor: pointer;
-            border: 1px solid var(--nordic-light);
+            background-color: transparent; /* 讓按鈕本身透明，背景靠外層 flex */
+            border: 1px solid transparent; 
+            color: var(--nordic-dark);
         }
         .tab-date-active {
-            background-color: var(--nordic-dark); 
+            background-color: var(--nordic-dark); /* 深藍色 */
             color: var(--nordic-light);
             border-color: var(--nordic-dark);
-            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
+            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3);
         }
 
         /* 地圖相關樣式 */
@@ -79,14 +92,13 @@
             padding: 0 !important;
         }
 
-        /* **修正: 讓 SVG 圖標可以被 Tailwind text-color 影響 (適用於底部的 Tab 按鈕)** */
+        /* 底部 Tab 圖標樣式 */
         .tab-icon svg {
-            stroke-width: 2.5; /* 讓圖標線條更粗一些，更簡潔 */
+            stroke-width: 2.5; 
             width: 28px;
             height: 28px;
-            color: inherit; /* 讓 SVG 顏色繼承自父層文字顏色 */
+            color: inherit; 
         }
-        /* **修正: 讓 SVG 圖標刪除按鈕更統一** */
         .delete-icon svg {
             width: 20px;
             height: 20px;
@@ -98,7 +110,7 @@
 <div id="app" class="app-container hidden"> 
     
     <div class="header-bg relative mb-[-2rem]">
-        <h1 class="text-2xl font-bold mb-1">❄️ 北歐極簡之旅</h1>
+        <h1 class="text-2xl font-bold mb-1">❄️ Nordic Trip</h1>
         <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/02/2026**</p>
         <div class="absolute top-4 right-4 text-sm opacity-90">
             1 EUR ≈ 36.3 NT$
@@ -106,7 +118,7 @@
     </div>
     
     <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
-        <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
+        <div class="flex space-x-2 rounded-xl shadow-xl">
             <template v-for="(date, index) in travelDates" :key="index">
                 <button 
                     @click="setActiveDate(date)" 
@@ -288,10 +300,9 @@ const { createApp, ref, computed, nextTick, watch } = Vue
 // --- 全局常數設定 ---
 const EXCHANGE_RATE = 36.3; // 1 EUR ≈ 36.3 TWD
 const TWD_SYMBOL = 'NT$';
-
-// **修正：CITY_MAP 移除 1/3 的行程，以符合 15 天 (12/19-1/2) 的要求**
+// 調整: 移除 1/3 的行程
 const CITY_MAP = {
-    '2025-12-19': '台北/飛行',
+    '2025-12-19': '台北/飛機上',
     '2025-12-20': '赫爾辛基',
     '2025-12-21': '赫爾辛基/夜火車',
     '2025-12-22': '羅瓦涅米',
@@ -303,9 +314,9 @@ const CITY_MAP = {
     '2025-12-28': '哥本哈根',
     '2025-12-29': '哥本哈根/斯德哥爾摩',
     '2025-12-30': '斯德哥爾摩',
-    '2025-12-31': '斯德哥爾摩 (跨年)',
+    '2025-12-31': '斯德哥爾摩',
     '2026-01-01': '斯德哥爾摩',
-    '2026-01-02': '斯德哥爾摩/返家', // Day 15
+    '2026-01-02': '斯德哥爾摩/飛機上', // 最後一天 (Day 15)
 };
 
 
@@ -412,10 +423,11 @@ function initMap() {
     google.maps.event.trigger(mapElement, 'resize');
 }
 
-// **修正：將結束日期改為 1/2，共計 15 天**
+// 修正日期為 12/19 - 1/2 (共 15 天)
 function getTravelDates() {
     const start = new Date('2025-12-19T00:00:00');
-    const end = new Date('2026-01-02T00:00:00'); // 修正為 1/2 結束 (Day 15)
+    // 修正: 結束日期為 01/02
+    const end = new Date('2026-01-02T00:00:00');
     const dates = [];
     let currentDate = new Date(start);
     while (currentDate <= end) {
@@ -570,190 +582,158 @@ function mountVueApp() {
 
                 // Day 13: 12/31 (三) - 斯德哥爾摩 (跨年)
                 '2025-12-31': [
-                    { id: 1301, time: '09:00', location: 'Vete-Katten 早餐', category: '美食', notes: '百年咖啡廳', lat: 59.3371, lng: 18.0632 }, // 接續上次中斷點
-                    { id: 1302, time: '10:00', location: '皇后街/Galleria Hamngatan', category: '購物', notes: '市中心逛街', lat: 59.3339, lng: 18.0673 },
-                    { id: 1303, time: '14:00', location: 'Södermalm (文青島)', category: '景點', notes: '觀景台、設計小店', lat: 59.3188, lng: 18.0718 },
-                    { id: 1304, time: '18:00', location: '跨年晚餐 / Ruby Bar', category: '美食', notes: 'Restaurang Slipen (訂位 17:00 候補)', lat: 59.3248, lng: 18.0772 },
-                    { id: 1305, time: '23:00', location: '跨年煙火觀賞', category: '景點', notes: 'Södermalm 或 Skansen', lat: 59.3188, lng: 18.0718 },
+                    { id: 1301, time: '10:00', location: 'Gamla Stan (老城區)', category: '景點', notes: '大廣場、諾貝爾博物館', lat: 59.3293, lng: 18.0686 },
+                    { id: 1302, time: '13:00', location: 'Åhléns City 購物中心', category: '購物', notes: '採買晚餐食材', lat: 59.3339, lng: 18.0645 },
+                    { id: 1303, time: '17:00', location: 'Monteliusvägen 觀景台', category: '景點', notes: '欣賞跨年煙火預備位置', lat: 59.3217, lng: 18.0620 },
+                    { id: 1304, time: '21:45', location: 'Icebar Stockholm by ICEHOTEL', category: '景點', notes: '已訂位 (280SEK)', lat: 59.3323, lng: 18.0560 },
+                    { id: 1305, time: '23:30', location: 'Södermalm 跨年煙火', category: '景點', notes: '在 Monteliusvägen 附近跨年', lat: 59.3217, lng: 18.0620 },
                 ],
-                
-                // Day 14: 2026/01/01 (四) - 斯德哥爾摩 (Stockholm, Sweden)
+
+                // Day 14: 01/01 (四) - 斯德哥爾摩
                 '2026-01-01': [
-                    { id: 1401, time: '10:00', location: '斯德哥爾摩王宮 (Kungliga slottet)', category: '景點', notes: '老城區 (Gamla Stan)', lat: 59.3276, lng: 18.0708 },
-                    { id: 1402, time: '13:00', location: '衛兵交接', category: '景點', notes: '每日 13:00', lat: 59.3276, lng: 18.0708 },
-                    { id: 1403, time: '14:00', location: 'Stortorget 大廣場', category: '景點', notes: '老城區地標', lat: 59.3262, lng: 18.0718 },
-                    { id: 1404, time: '17:00', location: '肉丸餐廳晚餐', category: '美食', notes: 'Meatballs for the People 或其他當地餐廳', lat: 59.3188, lng: 18.0718 },
+                    { id: 1401, time: '11:00', location: 'Hotel 睡到飽', category: '住宿', notes: '元旦，慢慢來', lat: 59.3302, lng: 18.0622 },
+                    { id: 1402, time: '13:00', location: 'Vete-Katten 咖啡廳', category: '美食', notes: '百年老店, 預約中餐', lat: 59.3331, lng: 18.0583 },
+                    { id: 1403, time: '15:00', location: 'Stockholm City Hall (市政廳)', category: '景點', notes: '參觀藍廳', lat: 59.3274, lng: 18.0540 },
+                    { id: 1404, time: '18:00', location: 'Hötorgshallen Food Court', category: '美食', notes: '晚餐', lat: 59.3353, lng: 18.0620 },
                 ],
-                
-                // Day 15: 2026-01-02 (五) - 斯德哥爾摩/返家 (Last Day)
+
+                // Day 15: 01/02 (五) - 斯德哥爾摩 ✈ 飛機上 (最後一天)
                 '2026-01-02': [
-                    { id: 1501, time: '09:00', location: 'Hobo Hotel Check-out', category: '住宿', notes: '整理行李', lat: 59.3302, lng: 18.0622 },
-                    { id: 1502, time: '10:00', location: 'St. Clara's Church', category: '景點', notes: '最後一站市區觀光', lat: 59.3312, lng: 18.0601 },
-                    { id: 1503, time: '12:00', location: 'ARN 斯德哥爾摩機場', category: '交通', notes: '搭乘機場快線前往機場', lat: 59.6519, lng: 17.9186 },
-                    { id: 1504, time: '14:30', location: 'ARN 斯德哥爾摩 ✈ DXB 杜拜', category: '航班', notes: '阿聯酋 EK0158，開始返家行程', lat: 59.6519, lng: 17.9186 },
+                    { id: 1501, time: '10:00', location: 'Hobo Hotel Check-out', category: '住宿', notes: '寄放行李', lat: 59.3302, lng: 18.0622 },
+                    { id: 1502, time: '12:00', location: 'Urban Deli Sveavägen', category: '美食', notes: '最後一餐', lat: 59.3375, lng: 18.0638 },
+                    { id: 1503, time: '14:00', location: 'Hötorget/Sergels Torg 附近採買', category: '購物', notes: '買伴手禮/零食', lat: 59.3364, lng: 18.0605 },
+                    { id: 1504, time: '18:00', location: 'Stockholm Arlanda Airport (ARN)', category: '交通', notes: '搭機場快線', lat: 59.6519, lng: 17.9186 },
+                    { id: 1505, time: '21:00', location: 'ARN 斯德哥爾摩 ✈ TPE 台北', category: '航班', notes: '搭乘長榮BR92 (經 BKK)', lat: 59.6519, lng: 17.9186 },
                 ],
-                
-                // '2026-01-03' (Day 16) 已移除，行程結束在 1/2
+                // 移除 Day 16: '2026-01-03'
             });
-            // --- 記帳資料 (範例) ---
-            const expenses = ref([
-                { id: 1, date: '2025-12-20', item: '赫爾辛基住宿 (2晚)', amount: 7260.0, currency: TWD_SYMBOL },
-                { id: 2, date: '2025-12-22', item: '聖誕老人村門票', amount: 800.0, currency: TWD_SYMBOL },
-                { id: 3, date: '2025-12-23', item: '麥當勞午餐', amount: 350.0, currency: TWD_SYMBOL },
-                { id: 4, date: '2025-12-27', item: 'Tivoli 樂園門票', amount: 1076.0, currency: TWD_SYMBOL },
-            ]);
             
-            // --- 購物清單 (範例) ---
-            const shoppingList = ref([
-                { id: 1, name: 'Marimekko 托特包', done: false },
-                { id: 2, name: '芬蘭刀 (Kuksa)', done: false },
-                { id: 3, name: '挪威羊毛衣 (Dale of Norway)', done: false },
-                { id: 4, name: '瑞典肉丸調味包', done: true },
-            ]);
-
-            // --- Modal 相關狀態 ---
-            const isModalOpen = ref(false);
-            const modalType = ref('');
-            const tempItem = ref({});
-
-            // --- 地圖相關狀態 ---
-            const isGoogleMapsLoaded = googleMapsLoaded;
+            // ... (Vue methods and computed properties remain the same)
             const map = ref(null);
             const markers = ref([]);
 
-            // --- Computed Properties ---
-            const currentItinerary = computed(() => {
-                return itinerary.value[activeDate.value] || [];
+            const totalExpense = computed(() => {
+                return expenses.value.reduce((sum, expense) => sum + expense.amount, 0);
             });
 
-            const currentCity = computed(() => {
-                // 從 CITY_MAP 獲取當前城市
-                return CITY_MAP[activeDate.value] || '未知城市';
-            });
-            
-            const totalExpense = computed(() => {
-                return expenses.value.reduce((sum, item) => sum + item.amount, 0);
-            });
-            
             const totalExpenseEUR = computed(() => {
                 return (totalExpense.value / EXCHANGE_RATE).toFixed(2);
             });
 
-            const modalTitle = computed(() => {
-                if (modalType.value === 'accounting') return '新增旅遊花費';
-                if (modalType.value === 'shopping') return '新增購物/待辦項目';
-                return '';
+            const currentItinerary = computed(() => {
+                return itinerary.value[activeDate.value] || [];
+            });
+            
+            const currentCity = computed(() => {
+                return CITY_MAP[activeDate.value] || '位置未知';
             });
             
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) {
-                    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentCity.value)}`;
-                }
-                const dest = locations.map(item => `${item.lat},${item.lng}`).join('/');
-                return `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+                if (locations.length === 0) return 'https://maps.google.com/maps?q=Scandinavia';
+                
+                const coords = locations.map(item => `${item.lat},${item.lng}`).join('/');
+                return `https://www.google.com/maps/dir/?api=1&destination=${coords}`;
             });
 
-
-            // --- Methods ---
-
-            function setActiveDate(date) {
-                activeDate.value = date;
-                // 檢查是否切換到地圖 tab，若是則重新初始化/更新地圖
-                if (activeTab.value === 'map' && isGoogleMapsLoaded.value) {
-                    nextTick(() => initMap());
-                }
-            }
-
-            function showModal(type) {
+            const showModal = (type) => {
                 modalType.value = type;
-                tempItem.value = type === 'accounting' ? { item: '', amount: 0 } : { name: '', done: false };
+                tempItem.value = type === 'accounting' ? { item: '', amount: 0, date: formatDate(activeDate.value, true) } : { name: '', done: false };
                 isModalOpen.value = true;
-            }
+            };
 
-            function saveItem() {
-                if (modalType.value === 'accounting') {
-                    if (tempItem.value.item && tempItem.value.amount > 0) {
-                        expenses.value.push({
-                            id: Date.now(),
-                            date: activeDate.value, // 使用當前選中的日期
-                            item: tempItem.value.item,
-                            amount: parseFloat(tempItem.value.amount),
-                            currency: TWD_SYMBOL
-                        });
-                    }
-                } else if (modalType.value === 'shopping') {
-                    if (tempItem.value.name) {
-                        shoppingList.value.push({
-                            id: Date.now(),
-                            name: tempItem.value.name,
-                            done: false
-                        });
-                    }
+            const saveItem = () => {
+                if (modalType.value === 'accounting' && tempItem.value.item && tempItem.value.amount > 0) {
+                    expenses.value.push({
+                        ...tempItem.value,
+                        id: Date.now(),
+                    });
+                } else if (modalType.value === 'shopping' && tempItem.value.name) {
+                    shoppingList.value.push({
+                        ...tempItem.value,
+                        id: Date.now(),
+                    });
                 }
                 isModalOpen.value = false;
-            }
-
-            function deleteItem(list, id) {
-                if (list === 'itinerary') {
-                    // 這裡不實作刪除行程，只允許刪除記帳和購物清單
-                    alert("請透過原始行程表修改行程。");
-                } else if (list === 'accounting') {
+            };
+            
+            const deleteItem = (listName, id) => {
+                if (listName === 'itinerary') {
+                    const currentList = itinerary.value[activeDate.value];
+                    if (currentList) {
+                        itinerary.value[activeDate.value] = currentList.filter(item => item.id !== id);
+                        if (activeTab.value === 'map') {
+                            nextTick(() => initMap());
+                        }
+                    }
+                } else if (listName === 'accounting') {
                     expenses.value = expenses.value.filter(item => item.id !== id);
-                } else if (list === 'shopping') {
+                } else if (listName === 'shopping') {
                     shoppingList.value = shoppingList.value.filter(item => item.id !== id);
                 }
-            }
+            };
+            
+            const setActiveDate = (date) => {
+                activeDate.value = date;
+                if (activeTab.value === 'map') {
+                    nextTick(() => initMap());
+                }
+            };
 
-            function formatDate(dateString) {
+            const formatDate = (dateString, withYear = false) => {
                 const date = new Date(dateString);
                 const month = date.getMonth() + 1;
                 const day = date.getDate();
-                const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
-                return `${month}/${day} (${dayOfWeek})`;
-            }
+                const year = date.getFullYear();
+                return withYear ? `${month}/${day}/${year}` : `${month}/${day}`;
+            };
             
-            function getCurrentWeather() {
-                // 模擬天氣資訊
+            const getCurrentWeather = () => {
                 const city = currentCity.value;
-                let temp = '-';
-                let icon = '☀️';
-                let desc = '晴朗';
+                if (city.includes('台北/飛機上')) return { icon: '✈️', desc: '準備登機', temp: '20°C' };
+                if (city.includes('飛機上')) return { icon: '✈️', desc: '飛行中', temp: 'N/A' };
+                if (city.includes('赫爾辛基')) return { icon: '🌨️', desc: '多雲, 偶有雪花', temp: '-5°C' };
+                if (city.includes('羅瓦涅米')) return { icon: '❄️', desc: '雪花紛飛, 體感寒冷', temp: '-15°C' };
+                if (city.includes('特羅姆瑟')) return { icon: '🌌', desc: '極光圈內, 注意保暖', temp: '-10°C' };
+                if (city.includes('哥本哈根')) return { icon: '🌬️', desc: '陰天, 風大', temp: '2°C' };
+                if (city.includes('斯德哥爾摩')) return { icon: '☃️', desc: '晴朗, 低溫', temp: '-3°C' };
+                return { icon: '❓', desc: '位置未知', temp: 'N/A' };
+            };
 
-                if (city.includes('赫爾辛基') || city.includes('羅瓦涅米')) {
-                    temp = '-5°C';
-                    icon = '❄️';
-                    desc = '多雲有雪';
-                } else if (city.includes('特羅姆瑟')) {
-                    temp = '-10°C';
-                    icon = '🌬️';
-                    desc = '風大，嚴寒';
-                } else if (city.includes('哥本哈根') || city.includes('斯德哥爾摩')) {
-                    temp = '2°C';
-                    icon = '☁️';
-                    desc = '陰天，偶有小雨';
-                } else if (city.includes('台北')) {
-                    temp = '20°C';
-                    icon = '✈️';
-                    desc = '開始旅程！';
-                }
 
-                return { temp, icon, desc };
-            }
+            // 初始數據 (可儲存到 Local Storage)
+            const expenses = ref([
+                { id: 1, item: '機票 (TPE-HEL-TOS-CPH-ARN-TPE)', amount: 45000, date: '12/19/2025' },
+                { id: 2, item: '赫爾辛基住宿 2晚', amount: 8000, date: '12/20/2025' },
+                { id: 3, item: '羅瓦涅米極光團訂金', amount: 3500, date: '12/22/2025' },
+            ]);
+            
+            const shoppingList = ref([
+                { id: 1, name: '禦寒雪褲', done: false },
+                { id: 2, name: '芬蘭刀 (紀念品)', done: false },
+                { id: 3, name: '挪威極光郵票', done: false },
+            ]);
 
-            // --- Watchers ---
+            const isModalOpen = ref(false);
+            const modalType = ref('');
+            const tempItem = ref({});
+
+            // 監聽 activeTab 變化，如果是地圖 tab 且 Google Maps 已載入，則初始化地圖
             watch(activeTab, (newTab) => {
-                // 只有切換到 'map' 並且地圖服務已載入時才呼叫 initMap
-                if (newTab === 'map' && isGoogleMapsLoaded.value) {
+                if (newTab === 'map' && googleMapsLoaded.value) {
                     nextTick(() => initMap());
                 }
             });
 
-            // 確保應用程式在 Vue 掛載後顯示
-            nextTick(() => {
-                showApp();
+            // 監聽 activeDate 變化，如果是地圖 tab 則重新繪製標記
+            watch(activeDate, (newDate) => {
+                if (activeTab.value === 'map' && googleMapsLoaded.value) {
+                    nextTick(() => initMap());
+                }
             });
 
+            // 啟動應用程式 (確保在 Vue 準備好後顯示)
+            nextTick(showApp);
 
             return {
                 tabs,
@@ -761,22 +741,20 @@ function mountVueApp() {
                 travelDates,
                 activeDate,
                 itinerary,
+                currentItinerary,
+                currentCity,
                 expenses,
                 shoppingList,
+                totalExpense,
+                totalExpenseEUR,
                 isModalOpen,
                 modalType,
                 tempItem,
-                isGoogleMapsLoaded,
-                map,
-                markers,
-                
-                currentItinerary,
-                currentCity,
-                totalExpense,
-                totalExpenseEUR,
-                modalTitle,
                 currentMapLink,
-
+                isGoogleMapsLoaded: googleMapsLoaded, // 提供給模板使用
+                map: map,
+                markers: markers,
+                
                 // Methods
                 setActiveDate,
                 formatDate,
@@ -784,19 +762,28 @@ function mountVueApp() {
                 showModal,
                 saveItem,
                 deleteItem,
-                initMap,
-            };
+                initMap, // 暴露給全局 initApp 使用
+            }
         }
     });
 
     appInstance = app.mount('#app');
+    
+    // 如果 Google Maps 在 Vue mount 之後才載入
+    if (googleMapsLoaded.value) {
+        initApp();
+    }
 }
 
-// 如果 Google Maps API 腳本載入成功，會呼叫 window.initApp()
-// 如果沒有 API key 或無法載入，則直接掛載 Vue app
-if (typeof google === 'undefined' || !document.querySelector('script[src*="maps.googleapis.com"]')) {
-    mountVueApp();
+// 如果 Google Maps API 載入比 Vue 快，則直接啟動 Vue
+if (typeof google !== 'undefined') {
+    initApp();
+} else if (!appInstance) {
+    // 如果還沒初始化，先掛載 Vue App (但地圖功能暫時不可用)
+    // 確保即使沒有 Google Maps API Key，基本行程功能也能運作
+    mountVueApp(); 
 }
+
 </script>
 </body>
 </html>
