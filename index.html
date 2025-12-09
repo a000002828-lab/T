@@ -1,626 +1,409 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐極簡行旅 - 16日計畫</title>
+    <title>2026 北歐行總行程與裝備清單</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
     <style>
-        /* 北歐極簡風格與淡黃色系配色 */
-        :root {
-            --color-primary: #4C5A67; /* 深灰藍 (主要文字) */
-            --color-secondary: #8B8878; /* 淺灰 (輔助文字) */
-            --color-background: #FAF5E4; /* 奶油淡黃色 (背景) */
-            --color-card: #FFFFFF; /* 卡片背景 */
-            --color-accent: #C3B59A; /* 柔和黃褐色 (重點色) */
-            --color-accent-dark: #A89B84;
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': 'var(--color-primary)',
-                        'secondary': 'var(--color-secondary)',
-                        'background': 'var(--color-background)',
-                        'card': 'var(--color-card)',
-                        'accent': 'var(--color-accent)',
-                        'accent-dark': 'var(--color-accent-dark)',
-                    }
-                }
-            }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
-        /* 模擬手機 App 介面 */
-        #app {
-            max-width: 480px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background-color: var(--color-background);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-            padding-bottom: 70px; /* 為底部導航留空間 */
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 4px;
         }
-        /* 橫向滑動樣式 */
-        .date-slider {
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* 隱藏 Firefox 滾動條 */
-        }
-        .date-slider::-webkit-scrollbar {
-            display: none; /* 隱藏 Chrome/Safari 滾動條 */
-        }
-        /* 拖曳樣式 (簡化拖曳提示) */
-        .schedule-item:hover {
-            cursor: grab;
-            background-color: #fcfcfc;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 font-sans">
 
-<div id="app">
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <h1 class="text-4xl font-extrabold text-blue-800 mb-8 border-b-4 border-blue-200 pb-3">
+            ✈️ 2026 北歐行 - 行程與裝備清單
+        </h1>
 
-    <header class="p-4 bg-card shadow-md sticky top-0 z-10 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-primary">✈️ 北歐行旅計畫</h1>
-        <button @click="changePage('shopping')" class="text-primary hover:text-accent transition-colors relative">
-            <i class="fas fa-shopping-basket text-xl"></i>
-            <span v-if="pendingShopping > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">{{ pendingShopping }}</span>
-        </button>
-    </header>
-    
-    <h2 class="text-lg font-semibold text-primary px-4 pt-4 pb-2">{{ pageTitle }}</h2>
-
-    <div v-if="currentPage === 'schedule' || currentPage === 'account'" class="overflow-x-auto date-slider px-4 pb-4 sticky top-[60px] bg-background z-10">
-        <div class="flex space-x-2">
-            <button @click="currentDay = 0" :class="{'bg-accent-dark text-white': currentDay === 0, 'bg-card text-primary border border-secondary': currentDay !== 0}" class="flex-shrink-0 p-3 rounded-xl shadow-md transition-colors text-sm font-semibold">
-                📝 TODO
-            </button>
-            <button v-for="day in tripDuration" :key="day" @click="currentDay = day" :class="{'bg-accent-dark text-white': currentDay === day, 'bg-card text-primary border border-secondary': currentDay !== day}" class="flex-shrink-0 p-3 rounded-xl shadow-md transition-colors text-sm font-semibold">
-                Day {{ day }}
-            </button>
-        </div>
-    </div>
-
-
-    <main class="px-4 pb-4">
-
-        <section v-if="currentDay === 0 && currentPage === 'schedule'" class="space-y-4">
-            <h3 class="text-md font-bold text-primary">出發前準備清單</h3>
-            <div class="bg-card p-4 rounded-xl shadow-md space-y-3">
-                <div class="flex space-x-2">
-                    <input type="text" v-model="newTodoText" @keyup.enter="addTodo" placeholder="新增代辦事項..." class="flex-grow p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent">
-                    <button @click="addTodo" class="bg-accent text-white p-2 rounded-lg hover:bg-accent-dark transition-colors"><i class="fas fa-plus"></i></button>
-                </div>
-                <div v-for="(item, index) in todoList" :key="index" class="flex items-center justify-between p-2 rounded-lg hover:bg-background transition-colors">
-                    <label class="flex items-center space-x-3 cursor-pointer flex-grow">
-                        <input type="checkbox" v-model="item.completed" class="form-checkbox h-5 w-5 text-accent rounded border-secondary focus:ring-accent">
-                        <span class="text-primary" :class="{'line-through text-secondary': item.completed}">{{ item.text }}</span>
-                    </label>
-                    <button @click="removeTodo(index)" class="text-secondary hover:text-red-500 transition-colors"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-        </section>
-
-        <section v-if="currentPage === 'schedule' && currentDay > 0" class="space-y-4">
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold text-gray-700 mb-6 flex items-center">
+                🗓️ 前 10 天詳細行程 (12/19 ~ 12/28)
+            </h2>
             
-            <button @click="showScheduleModal = true; editingIndex = -1" class="w-full bg-accent text-white py-3 rounded-xl shadow-md hover:bg-accent-dark transition-colors">
-                <i class="fas fa-plus mr-2"></i>新增 Day {{ currentDay }} 行程
-            </button>
-
-            <div class="space-y-3">
-                <div v-for="(item, index) in currentDaySchedule" :key="index" class="schedule-item bg-card p-4 rounded-xl shadow-md transition-shadow border-l-4" :class="item.isAttraction ? 'border-accent' : 'border-primary'">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-grow space-y-1">
-                            <div class="flex items-center text-sm text-primary font-medium">
-                                <i class="mr-2" :class="item.weather.icon" :style="{ color: item.weather.color }"></i>
-                                <span>{{ item.weather.temp }}°C，{{ item.weather.condition }}</span>
-                            </div>
-
-                            <p class="text-xs text-secondary font-medium">{{ item.time }} | {{ item.category }}</p>
-                            <p class="text-primary font-bold text-lg">{{ item.location }}</p>
-                            <p class="text-sm text-secondary">{{ item.title }}</p>
-
-                            <div v-if="item.isAttraction" class="mt-2 p-2 bg-background rounded-lg border border-secondary border-opacity-30 space-y-2">
-                                <label class="flex items-center space-x-2 text-sm text-primary">
-                                    <input type="checkbox" v-model="item.isDone" class="form-checkbox h-4 w-4 text-accent rounded border-secondary focus:ring-accent">
-                                    <span>已完成/造訪</span>
-                                </label>
-                                <p class="text-sm text-secondary break-words">備註：{{ item.notes || '無' }}</p>
-                            </div>
+            <div class="grid gap-8" :class="{'md:grid-cols-2 lg:grid-cols-3': itinerary.length > 3}">
+                
+                <div v-for="(day, index) in itinerary" :key="index" 
+                     class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden border-t-8"
+                     :class="day.country_code ? 'border-sky-600' : 'border-gray-500'">
+                    
+                    <div class="p-6">
+                        <h3 class="text-2xl font-extrabold mb-1 text-gray-900 flex justify-between items-center">
+                            <span>{{ day.date }} ({{ day.day_of_week }})</span>
+                            <span v-if="day.country_code" :class="{'text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium': true}">
+                                {{ day.city_country }}
+                            </span>
+                            <span v-else class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
+                                {{ day.city_country }}
+                            </span>
+                        </h3>
+                        
+                        <div v-if="day.weather" class="mb-4 p-3 bg-{{ day.country_code ? 'sky' : 'slate' }}-50 border-l-4 border-{{ day.country_code ? 'sky' : 'slate' }}-400 text-sm text-gray-700">
+                            <p class="font-semibold text-gray-800 mb-1">🌡️ 冬季平均天氣參考：</p>
+                            <p class="pl-2" v-for="(detail, key) in day.weather" :key="key">
+                                <span class="font-medium text-xs">{{ key }}：</span> {{ detail }}
+                            </p>
                         </div>
                         
-                        <div class="flex flex-col space-y-2 ml-4 flex-shrink-0">
-                            <button @click="navigateTo(item.location)" class="bg-primary text-white p-2 rounded-full hover:opacity-90 transition-colors" title="Google 導航">
-                                <i class="fas fa-route"></i>
-                            </button>
-                            <button @click="editScheduleItem(index)" class="bg-accent text-white p-2 rounded-full hover:opacity-90 transition-colors" title="編輯">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button v-if="index > 0" @click="moveScheduleItem(index, index - 1)" class="text-secondary hover:text-primary transition-colors" title="上移"><i class="fas fa-arrow-up"></i></button>
-                            <button v-if="index < currentDaySchedule.length - 1" @click="moveScheduleItem(index, index + 1)" class="text-secondary hover:text-primary transition-colors" title="下移"><i class="fas fa-arrow-down"></i></button>
-                        </div>
+                        <h4 class="text-lg font-semibold text-gray-600 border-b pb-2 mb-3 mt-4">每日計畫</h4>
+                        <ul class="space-y-3 text-sm text-gray-700">
+                            <li v-for="(item, itemIndex) in day.events" :key="itemIndex" class="flex items-start">
+                                <span class="text-blue-500 font-bold w-12 flex-shrink-0">{{ item.time }}:</span>
+                                <div class="flex-grow">
+                                    <p class="font-medium">{{ item.schedule }}</p>
+                                    <div class="text-xs text-gray-500 mt-0.5 ml-1">
+                                        <span v-if="item.duration" class="mr-2">🕒 {{ item.duration }}</span>
+                                        <span v-if="item.notes" class="block text-wrap">📝 {{ item.notes }}</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="pt-2 border-t mt-4 text-xs font-semibold text-red-500">
+                                🏠 住宿：{{ day.accommodation }}
+                            </li>
+                        </ul>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <section v-if="currentPage === 'account'" class="space-y-4">
-            <h3 class="text-md font-bold text-primary">💰 Day {{ currentDay }} 財務記錄</h3>
-
-            <div class="bg-card p-4 rounded-xl shadow-md border-l-4 border-accent-dark">
-                <p class="text-sm text-secondary">北歐行累計總支出 (TWD)</p>
-                <p class="text-3xl font-bold text-primary mt-1">NT$ {{ totalTripExpenseTWD.toLocaleString() }}</p>
-                <p class="text-sm text-secondary mt-2">Day {{ currentDay }} 支出：NT$ {{ currentDayExpenseTWD.toLocaleString() }}</p>
-            </div>
-
-            <div class="bg-card p-4 rounded-xl shadow-md space-y-3">
-                <h4 class="font-bold text-primary">記錄新支出</h4>
-                <div class="flex space-x-3">
-                    <select v-model="newExpense.category" class="w-1/3 p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent">
-                        <option value="" disabled>類別</option>
-                        <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
-                    </select>
-                    <select v-model="newExpense.currency" class="w-1/4 p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent">
-                        <option v-for="curr in Object.keys(exchangeRates)" :key="curr" :value="curr">{{ curr }}</option>
-                    </select>
-                    <input type="number" v-model.number="newExpense.amount" class="w-1/2 p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent" placeholder="金額">
-                </div>
-                
-                <p v-if="newExpense.amount > 0 && newExpense.currency" class="text-xs text-secondary text-right">
-                    預計換算：NT$ {{(newExpense.amount * exchangeRates[newExpense.currency]).toFixed(0).toLocaleString()}}
-                </p>
-
-                <button @click="addExpense" class="w-full bg-accent text-white py-2 rounded-lg hover:bg-accent-dark transition-colors">
-                    <i class="fas fa-save mr-2"></i>新增記錄
-                </button>
-            </div>
-            
-            <div class="space-y-2 pt-2">
-                <div v-for="(exp, index) in currentDayExpenses" :key="index" class="flex justify-between items-center bg-card p-3 rounded-lg shadow-sm">
-                    <div class="flex items-center">
-                        <i class="text-xl mr-3" :class="categoryIcon(exp.category)"></i>
-                        <div>
-                            <p class="font-medium text-primary">{{ exp.category }}</p>
-                            <p class="text-xs text-secondary">{{ exp.amount }} {{ exp.currency }}</p>
-                        </div>
-                    </div>
-                    <p class="font-bold text-red-500">- NT$ {{ exp.amountTWD.toLocaleString() }}</p>
-                </div>
-            </div>
-        </section>
-        
-        <section v-if="currentPage === 'info'" class="space-y-4">
-            <h3 class="text-md font-bold text-primary">ℹ️ 資訊整理站</h3>
-            
-            <button @click="showInfoModal = true; editingInfoIndex = -1" class="w-full bg-primary text-white py-2 rounded-lg hover:opacity-90 transition-colors">
-                <i class="fas fa-plus mr-2"></i>新增資訊卡
-            </button>
-            
-            <div v-for="(info, index) in infoData" :key="index" class="bg-card p-4 rounded-xl shadow-md space-y-2 border-l-4 border-accent">
-                <div class="flex justify-between items-center">
-                    <h4 class="font-bold text-primary">{{ info.title }}</h4>
-                    <div class="flex space-x-2">
-                        <button @click="editInfoItem(index)" class="text-secondary hover:text-accent"><i class="fas fa-pencil-alt"></i></button>
-                        <button @click="removeInfoItem(index)" class="text-secondary hover:text-red-500"><i class="fas fa-times"></i></button>
-                    </div>
-                </div>
-                <p class="text-sm text-secondary whitespace-pre-wrap">{{ info.content }}</p>
-            </div>
-        </section>
-
-        <section v-if="currentPage === 'shopping'" class="space-y-4">
-            <h3 class="text-md font-bold text-primary">🛒 待採買清單</h3>
-
-            <div class="flex space-x-2">
-                <input type="text" v-model="newItemText" @keyup.enter="addItem" placeholder="輸入待買項目..." class="flex-grow p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent">
-                <button @click="addItem" class="bg-accent text-white p-2 rounded-lg hover:bg-accent-dark transition-colors"><i class="fas fa-plus"></i></button>
-            </div>
-
-            <div class="space-y-2 pt-2">
-                <div v-for="(item, index) in shoppingList" :key="index" class="bg-card p-3 rounded-lg shadow-sm flex justify-between items-center transition-all" :class="{'opacity-60': item.completed}">
-                    <label class="flex items-center space-x-3 cursor-pointer flex-grow">
-                        <input type="checkbox" v-model="item.completed" class="form-checkbox h-5 w-5 text-accent rounded border-secondary focus:ring-accent transition-colors">
-                        <span class="text-primary" :class="{'line-through text-secondary': item.completed}">{{ item.text }}</span>
-                    </label>
-                    <button @click="removeItem(index)" class="text-secondary hover:text-red-500 transition-colors"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-        </section>
-        
-        <section v-if="currentPage === 'map'" class="space-y-4">
-            <h3 class="text-md font-bold text-primary">🗺️ Day {{ currentDay }} 地圖概覽</h3>
-
-            <div class="bg-card p-4 rounded-xl shadow-md h-96 flex flex-col justify-center items-center text-center">
-                <p class="text-secondary mb-2">Google 地圖預覽</p>
-                <iframe 
-                    :src="googleMapsUrl" 
-                    width="100%" 
-                    height="100%" 
-                    style="border:0;" 
-                    allowfullscreen="" 
-                    loading="lazy" 
-                    referrerpolicy="no-referrer-when-downgrade"
-                    class="rounded-lg shadow-inner"
-                ></iframe>
-                
-                <p class="text-xs text-secondary mt-3">地圖已讀取 Day {{ currentDay }} 行程地點。</p>
-            </div>
-        </section>
-
-    </main>
-
-    <nav class="fixed bottom-0 left-0 right-0 max-w-sm mx-auto bg-card border-t border-secondary shadow-lg flex justify-around p-2 z-20 rounded-t-xl">
-        <button @click="changePage('schedule')" :class="{'text-accent-dark': currentPage === 'schedule', 'text-secondary': currentPage !== 'schedule'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
-            <i class="fas fa-calendar-alt text-xl"></i>
-            <span class="text-xs mt-1">行程</span>
-        </button>
-        <button @click="changePage('account')" :class="{'text-accent-dark': currentPage === 'account', 'text-secondary': currentPage !== 'account'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
-            <i class="fas fa-wallet text-xl"></i>
-            <span class="text-xs mt-1">記帳</span>
-        </button>
-        <button @click="changePage('map')" :class="{'text-accent-dark': currentPage === 'map', 'text-secondary': currentPage !== 'map'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
-            <i class="fas fa-map-marked-alt text-xl"></i>
-            <span class="text-xs mt-1">地圖</span>
-        </button>
-        <button @click="changePage('info')" :class="{'text-accent-dark': currentPage === 'info', 'text-secondary': currentPage !== 'info'}" class="flex flex-col items-center p-2 rounded-lg hover:bg-background transition-colors">
-            <i class="fas fa-info-circle text-xl"></i>
-            <span class="text-xs mt-1">資訊站</span>
-        </button>
-    </nav>
-
-    <div v-if="showScheduleModal" @click.self="showScheduleModal = false" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-        <div class="bg-card p-6 rounded-xl shadow-2xl w-full max-w-sm space-y-4">
-            <h3 class="text-xl font-bold text-primary">{{ editingIndex === -1 ? '新增' : '編輯' }} Day {{ currentDay }} 行程</h3>
-            <select v-model="newScheduleItem.category" class="w-full p-2 border border-secondary rounded-lg">
-                <option value="" disabled>選擇分類...</option>
-                <option v-for="cat in scheduleCategories" :key="cat" :value="cat">{{ cat }}</option>
-            </select>
-            <input type="time" v-model="newScheduleItem.time" class="w-full p-2 border border-secondary rounded-lg">
-            <input type="text" v-model="newScheduleItem.location" placeholder="地點/城市" class="w-full p-2 border border-secondary rounded-lg">
-            <input type="text" v-model="newScheduleItem.title" placeholder="活動標題/細節說明" class="w-full p-2 border border-secondary rounded-lg">
-            
-            <div v-if="newScheduleItem.category === '景點'" class="p-3 border border-dashed border-secondary rounded-lg space-y-2">
-                <label class="flex items-center space-x-2 text-sm text-primary">
-                    <input type="checkbox" v-model="newScheduleItem.isDone" class="form-checkbox h-4 w-4 text-accent rounded border-secondary focus:ring-accent">
-                    <span>已規劃為主要景點</span>
-                </label>
-                <textarea v-model="newScheduleItem.notes" placeholder="景點備註/開放時間等" class="w-full p-2 border border-secondary rounded-lg text-sm"></textarea>
-            </div>
-
-            <div class="flex justify-end space-x-3">
-                <button v-if="editingIndex !== -1" @click="removeScheduleItem" class="px-4 py-2 text-red-500 rounded-lg hover:bg-background">刪除</button>
-                <button @click="showScheduleModal = false; newScheduleItem = { category: '', time: '', title: '', location: '', notes: '', isDone: false, isAttraction: false }" class="px-4 py-2 text-primary rounded-lg hover:bg-background">取消</button>
-                <button @click="saveScheduleItem" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-dark">儲存</button>
             </div>
         </div>
-    </div>
-    
-    <div v-if="showInfoModal" @click.self="showInfoModal = false" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-        <div class="bg-card p-6 rounded-xl shadow-2xl w-full max-w-sm space-y-4">
-            <h3 class="text-xl font-bold text-primary">{{ editingInfoIndex === -1 ? '新增' : '編輯' }}資訊</h3>
-            <input type="text" v-model="newInfoItem.title" placeholder="標題 (e.g. 緊急醫療)" class="w-full p-2 border border-secondary rounded-lg">
-            <textarea v-model="newInfoItem.content" placeholder="詳細內容" class="w-full p-2 border border-secondary rounded-lg text-sm"></textarea>
+
+        <hr class="my-12 border-t-2 border-dashed border-gray-300">
+
+        <div>
+            <h2 class="text-3xl font-bold text-gray-700 mb-6 flex items-center">
+                🎒 旅行裝備清單
+            </h2>
             
-            <div class="flex justify-end space-x-3">
-                <button @click="showInfoModal = false; newInfoItem = { title: '', content: '' }" class="px-4 py-2 text-primary rounded-lg hover:bg-background">取消</button>
-                <button @click="saveInfoItem" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-dark">儲存</button>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <div v-for="(category, catName) in checklist" :key="catName" class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-extrabold mb-4 pb-2 border-b-2 text-yellow-600 border-yellow-100">
+                        {{ catName }}
+                    </h3>
+                    <ul class="space-y-3 text-gray-700 text-sm">
+                        <li v-for="(item, itemIndex) in category" :key="itemIndex" class="flex items-start">
+                            <div class="w-full">
+                                <span class="font-semibold text-gray-800 mr-2">{{ item.name }}</span>
+                                <span v-if="item.notes" class="text-xs text-gray-500">({{ item.notes }})</span>
+                                <div v-if="item.app_link" class="text-xs mt-0.5 pl-2">
+                                    🔗 參考：<a :href="item.app_link.includes('http') ? item.app_link : '#'" target="_blank" class="text-blue-500 hover:text-blue-700 underline">{{ item.app_link_text || item.app_link }}</a>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
             </div>
         </div>
+
     </div>
 
+    <script>
+        const { createApp } = Vue
 
-</div>
-
-<script>
-    const { createApp, ref, computed } = Vue
-
-    // 隨機生成天氣假資料 (功能 5.2)
-    function generateMockWeather() {
-        const conditions = [
-            { cond: '晴朗', icon: 'fas fa-sun', color: '#FFD700', temp: 16 },
-            { cond: '多雲', icon: 'fas fa-cloud-sun', color: '#A9A9A9', temp: 13 },
-            { cond: '小雨', icon: 'fas fa-cloud-rain', color: '#6495ED', temp: 10 },
-            { cond: '陰天', icon: 'fas fa-cloud', color: '#B0C4DE', temp: 11 },
+        // =========================================================
+        // 1. 行程數據 (前 10 天)
+        // =========================================================
+        const itineraryData = [
+            {
+                date: "2025/12/19",
+                day_of_week: "五",
+                city_country: "臺灣 (Taiwan)",
+                country_code: "",
+                weather: null,
+                events: [
+                    { time: "19:00", schedule: "板橋車站集合 (約20:30前到桃機一航)", duration: "90min", notes: "" },
+                    { time: "23:05", schedule: "✈華航CI073 TPE 台北 起飛", duration: "15h45m", notes: "" },
+                ],
+                accommodation: "飛機上"
+            },
+            {
+                date: "2025/12/20",
+                day_of_week: "六",
+                city_country: "赫爾辛基 (Helsinki, Finland)",
+                country_code: "FI",
+                weather: {
+                    '氣溫': '約 -6°C 到 0°C',
+                    '日照': '非常短，約 6 小時',
+                    '降水': '常有降雪或雨夾雪'
+                },
+                events: [
+                    { time: "07:50", schedule: "✈抵達 AMS阿姆斯特丹", duration: "", notes: "" },
+                    { time: "11:20", schedule: "✈芬蘭航空AY1302 AMS阿姆斯特丹 起飛", duration: "2h25m", notes: "" },
+                    { time: "14:45", schedule: "✈抵達 HEL赫爾辛基", duration: "", notes: "" },
+                    { time: "16:00", schedule: "🧳放行李, leave to sanua", duration: "", notes: "" },
+                    { time: "17:00", schedule: "🎄Chrismas market", duration: "", notes: "https://tuomaanmarkkinat.fi/en/" },
+                    { time: "19:00", schedule: "🥣Sea horse resturant", duration: "", notes: "" },
+                    { time: "21:00", schedule: "Bar Kallio or center", duration: "", notes: "Beer or cocktail? Karaoke or club?" },
+                ],
+                accommodation: "老人家"
+            },
+            {
+                date: "2025/12/21",
+                day_of_week: "日",
+                city_country: "赫爾辛基 / 羅瓦涅米 (Rovaniemi, FI)",
+                country_code: "FI",
+                weather: {
+                    '氣溫': '約 -15°C 到 -7°C (羅瓦涅米)',
+                    '日照': '進入極夜 (Kaamos) 階段，但仍有數小時微光',
+                    '備註': '注意保暖，準備專業極地禦寒衣物'
+                },
+                events: [
+                    { time: "10:00", schedule: "☕️Cafe Regatta", duration: "", notes: "肉桂小屋、海邊" },
+                    { time: "11:00", schedule: "Temppeliaukio Church", duration: "", notes: "" },
+                    { time: "12:00", schedule: "📚Oodi (圖書館)", duration: "", notes: "" },
+                    { time: "13:00", schedule: "🛍️Moomin Shop", duration: "", notes: "" },
+                    { time: "14:00", schedule: "Helsinki Cathedral", duration: "", notes: "https://helsingintuomiokirkko.fi/en/index/uusipaataso.html" },
+                    { time: "18:00", schedule: "♨️Sauna (2 hr)", duration: "", notes: "Löyly Helsinki" },
+                    { time: "22:00", schedule: "Heading to train station", duration: "", notes: "" },
+                    { time: "23:13", schedule: "🚂前往羅瓦涅米 (夜鋪火車)", duration: "", notes: "" },
+                ],
+                accommodation: "火車上"
+            },
+            {
+                date: "2025/12/22",
+                day_of_week: "一",
+                city_country: "羅瓦涅米 (Rovaniemi, Finland)",
+                country_code: "FI",
+                 weather: {
+                    '氣溫': '約 -15°C 到 -7°C',
+                    '日照': '極夜微光',
+                    '降水': '穩定積雪'
+                },
+                events: [
+                    { time: "10:59", schedule: "🚂抵達 羅瓦涅米", duration: "", notes: "" },
+                    { time: "12:00", schedule: "🚕前往市區", duration: "10m", notes: "" },
+                    { time: "13:00", schedule: "🎅🏼逛聖誕老人村", duration: "", notes: "可先抽號碼牌看聖誕老人" },
+                    { time: "14:00", schedule: "🥣吃鮭魚 (Santa's Salmon Place)", duration: "", notes: "" },
+                    { time: "17:00", schedule: "🫎🛷馴鹿雪橇 (要搭的人搭)", duration: "", notes: "" },
+                    { time: "19:00", schedule: "🚕搭車回民宿等極光團", duration: "10m", notes: "" },
+                    { time: "19:00", schedule: "☀19:00 極光團", duration: "", notes: "Get Your Guide by KW(會派車來民宿接人)" },
+                ],
+                accommodation: "Villa Muru(KW)"
+            },
+            {
+                date: "2025/12/23",
+                day_of_week: "二",
+                city_country: "羅瓦涅米 / 特羅姆瑟 (Tromsø, Norway)",
+                country_code: "NO",
+                weather: {
+                    '氣溫': '約 -5°C 到 2°C (特羅姆瑟)',
+                    '日照': '處於極夜，有數小時藍色曙光',
+                    '降水': '常有降雪或雨夾雪'
+                },
+                events: [
+                    { time: "07:00", schedule: "🥣7:00起來煮早餐", duration: "", notes: "" },
+                    { time: "08:30", schedule: "🛷狗拉雪橇", duration: "4h", notes: "Get Your Guide by KW" },
+                    { time: "09:00", schedule: "🚕09:00 叫車出門", duration: "6m", notes: "怕前一天極光搞太晚" },
+                    { time: "11:55", schedule: "✈北歐航空SK4451 (假設 RVN → TOS)", duration: "2h40m", notes: "CSV原始數據有誤，依邏輯推斷應為前往TOS" },
+                    { time: "16:00", schedule: "Check-in 住宿", duration: "", notes: "Tromsø Airbnb" },
+                    { time: "17:00", schedule: "🛍️超市買晚餐跟隔天的早餐、消夜", duration: "", notes: "KIWI 超市" },
+                ],
+                accommodation: "Tromsø Airbnb(KW)"
+            },
+            {
+                date: "2025/12/24",
+                day_of_week: "三",
+                city_country: "特羅姆瑟 (Tromsø, Norway)",
+                country_code: "NO",
+                weather: {
+                    '氣溫': '約 -5°C 到 2°C',
+                    '日照': '極夜藍色曙光',
+                    '備註': '「北極之門」，觀測北極光地點'
+                },
+                events: [
+                    { time: "10:00", schedule: "🥣早午餐 Koseverden&KoseligCafe", duration: "", notes: "怕前一天極光搞太晚" },
+                    { time: "11:00", schedule: "🚕前往纜車", duration: "8m", notes: "" },
+                    { time: "12:00", schedule: "🚠纜車(Kyle)", duration: "", notes: "9:00~16:00(12/24)" },
+                    { time: "13:00", schedule: "🥣最北麥當勞", duration: "", notes: "" },
+                    { time: "17:00", schedule: "17:15麵包店前往集合地", duration: "走路7m", notes: "" },
+                    { time: "18:00", schedule: "☀18:00 極光團", duration: "", notes: "Get Your Guide by Kyle" },
+                ],
+                accommodation: "Tromsø Airbnb(KW)"
+            },
+            {
+                date: "2025/12/25",
+                day_of_week: "四",
+                city_country: "特羅姆瑟 (Tromsø, Norway)",
+                country_code: "NO",
+                weather: {
+                    '氣溫': '約 -5°C 到 2°C',
+                    '日照': '極夜藍色曙光',
+                    '降水': '常有降雪或雨夾雪'
+                },
+                events: [
+                    { time: "10:00", schedule: "👟回到市區City Walk", duration: "", notes: "" },
+                    { time: "12:00", schedule: "北極之門", duration: "", notes: "玩雪(帶雪夾)" },
+                    { time: "13:00", schedule: "港口走走", duration: "", notes: "" },
+                    { time: "14:00", schedule: "回民宿午睡", duration: "5m", notes: "" },
+                    { time: "17:00", schedule: "👟逛逛市區、圖書館、熱狗堡店(自由時間)", duration: "", notes: "羊毛氈禮品店" },
+                    { time: "19:00", schedule: "☀19:00 極光團", duration: "", notes: "Get Your Guide by KW(會派車來民宿接人)" },
+                ],
+                accommodation: "Tromsø Airbnb(KW)"
+            },
+            {
+                date: "2025/12/26",
+                day_of_week: "五",
+                city_country: "特羅姆瑟 / 哥本哈根 (Copenhagen, DK)",
+                country_code: "DK",
+                weather: {
+                    '氣溫': '約 -1°C 到 4°C (哥本哈根)',
+                    '日照': '約 7.5 小時',
+                    '降水': '較常出現雨水或雨夾雪'
+                },
+                events: [
+                    { time: "07:00", schedule: "🚕前往機場 (假設TOS→CPH)", duration: "8m", notes: "" },
+                    { time: "14:40", schedule: "✈抵達 CPH 哥本哈根", duration: "", notes: "" },
+                    { time: "16:00", schedule: "🧳airbnb Check-in", duration: "", notes: "Løvstræde 5" },
+                    { time: "18:00", schedule: "👷The LEGO® Store Tivoli Gardens", duration: "8min", notes: "客製化樂高紀念品 10:00~22:00" },
+                    { time: "19:00", schedule: "🛍️føtex (超市)", duration: "3min", notes: "買回去煮晚餐/隔日早餐" },
+                    { time: "21:00", schedule: "🌷tivoli (蒂沃利花園)", duration: "0min", notes: "已訂 220 DKK" },
+                    { time: "23:00", schedule: "🎆tivoli 聖誕煙火", duration: "", notes: "23:00~00:00" },
+                ],
+                accommodation: "Sander Leaves-Pleasant 4(Kyle)"
+            },
+            {
+                date: "2025/12/27",
+                day_of_week: "六",
+                city_country: "哥本哈根 (Copenhagen, Denmark)",
+                country_code: "DK",
+                weather: {
+                    '氣溫': '約 -1°C 到 4°C',
+                    '日照': '約 7.5 小時',
+                    '降水': '較常出現雨水或雨夾雪'
+                },
+                events: [
+                    { time: "08:00", schedule: "4 Coffee", duration: "3min", notes: "手沖咖啡(內用/外帶) 或去新港路上早午餐店" },
+                    { time: "09:00", schedule: "👟Nyhavn (新港)", duration: "15min", notes: "" },
+                    { time: "12:00", schedule: "⛪️Frederiks Kirke", duration: "12min", notes: "20分鐘可拍照+參觀完" },
+                    { time: "13:00", schedule: "💂🏼Amalienborg (衛兵交接)", duration: "5min", notes: "11:45卡前排 11:55~12:15" },
+                    { time: "14:00", schedule: "🍔Gasoline Grill (買漢堡當午餐)", duration: "7min", notes: "" },
+                    { time: "17:00", schedule: "🧜🏻‍♀️Den Lille Havfrue (小美人魚)", duration: "18min", notes: "" },
+                    { time: "19:00", schedule: "📚The Royal Library (空中走廊拍照)", duration: "15min", notes: "08:00~20:00" },
+                    { time: "21:00", schedule: "🍸Ruby (酒吧)", duration: "8min", notes: "訂位最晚21:00 或不訂22:00後直接去" },
+                ],
+                accommodation: "Sander Leaves-Pleasant 4(Kyle)"
+            },
+            {
+                date: "2025/12/28",
+                day_of_week: "日",
+                city_country: "哥本哈根 / 斯德哥爾摩 (Stockholm, SE)",
+                country_code: "SE",
+                weather: {
+                    '氣溫': '約 -4°C 到 1°C (斯德哥爾摩)',
+                    '日照': '約 6 小時',
+                    '降水': '常有降雪或雨夾雪'
+                },
+                events: [
+                    { time: "11:00", schedule: "🚤goboat (運河船)", duration: "25min", notes: "預計訂12:30-13:30" },
+                    { time: "14:00", schedule: "🏰Rosenborg Slot (玫瑰堡)", duration: "30min", notes: "10:00~16:00 (140 DKK)" },
+                    { time: "15:00", schedule: "🏰Christiansborg Slot (克里斯蒂安堡)", duration: "10min", notes: "周一公休 外面拍照" },
+                    { time: "16:00", schedule: "🛍️Strøget (逛街)", duration: "5min", notes: "自由逛街" },
+                    { time: "21:00", schedule: "🧳Nørreport Station 寄放行李", duration: "15min", notes: "" },
+                    { time: "22:00", schedule: "Heading to train station / 取行李", duration: "", notes: "準備搭乘夜間交通工具/飛機前往斯德哥爾摩" },
+                    { time: "23:00", schedule: "🛫Københavns Lufthavn (去機場)", duration: "20min", notes: "" },
+                ],
+                accommodation: "夜間交通工具 / 飛機上" // 推測
+            }
         ];
-        const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
-        return {
-            temp: randomCondition.temp + Math.floor(Math.random() * 5),
-            condition: randomCondition.cond,
-            icon: randomCondition.icon,
-            color: randomCondition.color
+
+        // =========================================================
+        // 2. 裝備清單數據
+        // =========================================================
+        const checklistData = {
+            '衣物': [
+                { name: '內衣褲', notes: '', app_link: 'Flush', app_link_text: '待載app (找廁所)' },
+                { name: '保暖衣物', notes: '發熱衣、褲襪', app_link: 'My Aurora Forecast', app_link_text: '極光 app' },
+                { name: '上衣', notes: '', app_link: 'Norway lights', app_link_text: '挪威極光 app' },
+                { name: '下身衣物', notes: '', app_link: 'https://www.norway-lights.com/destinations/tromso', app_link_text: '挪威極光資訊網頁' },
+                { name: '睡衣' },
+                { name: '外套' },
+                { name: '襪子' },
+                { name: '鞋子' },
+                { name: '泳衣' },
+            ],
+            '配件': [
+                { name: '太陽眼鏡' },
+                { name: '帽子、圍巾、手套、耳罩' },
+                { name: '包包' },
+                { name: '飾品' },
+            ],
+            '個人用品': [
+                { name: '牙刷牙膏' },
+                { name: '盥洗用品', notes: '洗髮精、沐浴乳、護髮等' },
+                { name: '臉部洗卸用品', notes: '卸妝乳、洗面乳' },
+                { name: '保養品', notes: '臉部、身體、護唇膏、護手霜、防曬乳' },
+                { name: '化妝品' },
+                { name: '梳子/面膜' },
+                { name: '隱形眼鏡/近視眼鏡' },
+                { name: '刮鬍用品' },
+                { name: '個人藥品', notes: '感冒藥、胃藥、保健食品、發泡錠、暈車藥' },
+                { name: '吹風機' },
+                { name: '衛生棉/護墊' },
+                { name: '指甲剪' },
+            ],
+            '證件': [
+                { name: '護照' },
+                { name: '錢' },
+                { name: '旅平險' },
+                { name: '信用卡' },
+                { name: '駕照？' },
+                { name: '兩吋照片*2' },
+            ],
+            '電子產品': [
+                { name: '充電器' },
+                { name: '行動電源', notes: '夾鏈袋' },
+                { name: '相機充電線' },
+                { name: '三腳架' },
+                { name: '耳機' },
+                { name: '網卡' },
+                { name: '萬用插頭' },
+            ],
+            '其他 & 食物': [
+                { name: '保溫瓶' },
+                { name: '面紙、濕紙巾' },
+                { name: '雨傘' },
+                { name: '筆' },
+                { name: '雪夾', notes: '允孟要帶' },
+                { name: '痠痛貼布/休足時間' },
+                { name: '熱敷眼罩' },
+                { name: '洗衣精' },
+                { name: '暖暖包' },
+                { name: '泡麵', notes: '老人要吃' },
+                { name: '酒', notes: '老人要喝' },
+                { name: '筷子' },
+            ]
         };
-    }
-    
-    // 初始化 16 天空的行程資料
-    const initialSchedule = (days) => {
-        const data = {};
-        for (let i = 1; i <= days; i++) {
-            data[`Day ${i}`] = [];
-        }
-        // 範例資料 Day 1
-        data['Day 1'] = [
-            { category: '航班', time: '09:00', title: '長榮航空 BR78', location: '桃園國際機場 (TPE)', notes: '提早兩小時報到', isDone: false, isAttraction: false, weather: generateMockWeather() },
-            { category: '景點', time: '18:00', title: '斯德哥爾摩市政廳', location: 'Stockholms stadshus', notes: '開放到17:00，只能看夜景了', isDone: false, isAttraction: true, weather: generateMockWeather() },
-            { category: '美食', time: '20:00', title: '晚餐：傳統瑞典肉丸', location: 'Meatballs for the People', notes: '', isDone: false, isAttraction: false, weather: generateMockWeather() },
-        ];
-        // 範例資料 Day 2
-        data['Day 2'] = [
-            { category: '景點', time: '10:00', title: '瓦薩沉船博物館', location: 'Vasa Museum, Stockholm', notes: '必看！建議早點到避開人潮', isDone: false, isAttraction: true, weather: generateMockWeather() },
-            { category: '交通', time: '14:00', title: '搭乘渡輪前往老城區', location: 'Slussen Ferry Terminal', notes: '班次密集', isDone: false, isAttraction: false, weather: generateMockWeather() },
-        ];
-        return data;
-    };
-    
-    // 初始化 16 天空的記帳資料
-    const initialExpenses = (days) => {
-        const data = {};
-        for (let i = 1; i <= days; i++) {
-            data[`Day ${i}`] = [];
-        }
-        // 範例資料 Day 1
-        data['Day 1'] = [
-            { category: '機票', amount: 35000, currency: 'TWD', amountTWD: 35000, date: new Date().toLocaleDateString() },
-            { category: '餐飲', amount: 250, currency: 'SEK', amountTWD: 750, date: new Date().toLocaleDateString() } // 250 SEK * 3
-        ];
-        return data;
-    };
 
-
-    createApp({
-        data() {
-            return {
-                // 核心控制
-                currentPage: 'schedule', 
-                currentDay: 1, // 0 = TODO, 1-16 = Day 1-16
-                tripDuration: 16,
-
-                // 標題
-                pageTitles: {
-                    schedule: '北歐 16 日詳細行程',
-                    account: '分天記帳與匯率管理',
-                    map: '每日景點地圖定位',
-                    info: '行程資訊與緊急備忘',
-                    shopping: '待採買購物清單'
-                },
-
-                // 匯率 (功能 6) - 假資料，約略值
-                exchangeRates: {
-                    'TWD': 1,
-                    'EUR': 34.5, // 歐元 (芬蘭/德國等)
-                    'SEK': 3.0,  // 瑞典克朗
-                    'NOK': 2.9,  // 挪威克朗
-                    'DKK': 4.6   // 丹麥克朗
-                },
-
-                // --- 行程表 (功能 1, 2, 3) ---
-                scheduleData: initialSchedule(16),
-                scheduleCategories: ['景點', '交通', '航班', '美食', '購物', '其他'],
-                showScheduleModal: false,
-                editingIndex: -1,
-                newScheduleItem: { 
-                    category: '', time: '', title: '', location: '', notes: '', isDone: false, isAttraction: false 
-                },
-
-                // --- 記帳 (功能 5) ---
-                expenseCategories: ['住宿', '交通', '餐飲', '門票/活動', '購物', '雜項', '機票'],
-                expenseData: initialExpenses(16),
-                newExpense: {
-                    category: '',
-                    amount: null,
-                    currency: 'TWD'
-                },
-
-                // --- TODO (功能 4) ---
-                newTodoText: '',
-                todoList: [
-                    { text: '確認護照效期超過六個月', completed: true },
-                    { text: '通知信用卡銀行出國日期', completed: false },
-                    { text: '兌換歐元及瑞典克朗', completed: false },
-                ],
-                
-                // --- 購物清單 (功能 4) ---
-                newItemText: '',
-                shoppingList: [
-                    { text: '羊毛保暖襪', completed: false },
-                    { text: '旅行用延長線', completed: true },
-                ],
-
-                // --- 資訊站 (功能 6) ---
-                showInfoModal: false,
-                editingInfoIndex: -1,
-                newInfoItem: { title: '', content: '' },
-                infoData: [
-                    { title: '備用參考景點', content: '挪威：惡魔之舌 (若時間許可)\n芬蘭：羅瓦涅米聖誕老人村 (備用)' },
-                    { title: '緊急醫療資訊', content: '台灣駐瑞典代表處：+46-8-XXXXXXX\n緊急電話：112' },
-                ]
+        // =========================================================
+        // 3. Vue 應用程式
+        // =========================================================
+        createApp({
+            data() {
+                return {
+                    itinerary: itineraryData,
+                    checklist: checklistData
+                }
+            },
+            mounted() {
+                // 應用程式掛載後可以執行的初始化動作
+                console.log('Vue App Mounted. Data loaded.');
             }
-        },
-        computed: {
-            pageTitle() {
-                return this.pageTitles[this.currentPage] || '北歐極簡生活助手';
-            },
-            pendingShopping() {
-                return this.shoppingList.filter(item => !item.completed).length;
-            },
-            // 行程表相關
-            currentDayKey() {
-                return `Day ${this.currentDay}`;
-            },
-            currentDaySchedule() {
-                return this.scheduleData[this.currentDayKey] || [];
-            },
-            scheduleLocations() {
-                return this.currentDaySchedule
-                    .map(item => item.location)
-                    .filter(location => location && location !== '無地點');
-            },
-            googleMapsUrl() {
-                // 整合地圖功能 (功能 5.3) - 讀取當天所有地點並釘選
-                if (this.scheduleLocations.length === 0) {
-                    // 預設北歐中心位置 (丹麥-瑞典邊界)
-                    return "https://maps.google.com/maps?q=56.00,12.00&output=embed";
-                }
-                const query = this.scheduleLocations.join(' or ');
-                // Google Maps 查詢網址 (嵌入格式)
-                return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=10&output=embed`;
-            },
-            // 記帳相關
-            currentDayExpenses() {
-                return this.expenseData[this.currentDayKey] || [];
-            },
-            currentDayExpenseTWD() {
-                return this.currentDayExpenses.reduce((sum, exp) => sum + exp.amountTWD, 0);
-            },
-            totalTripExpenseTWD() {
-                let total = 0;
-                for (const day in this.expenseData) {
-                    total += this.expenseData[day].reduce((sum, exp) => sum + exp.amountTWD, 0);
-                }
-                return total;
-            }
-        },
-        methods: {
-            changePage(page) {
-                this.currentPage = page;
-                if (page === 'account' && this.currentDay === 0) {
-                    this.currentDay = 1; // 記帳必須從 Day 1 開始
-                }
-            },
-            navigateTo(location) {
-                // Google Maps 導航 (功能 5.1)
-                const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(location)}`;
-                window.open(url, '_blank');
-            },
-            // --- 行程表方法 ---
-            editScheduleItem(index) {
-                this.editingIndex = index;
-                const item = this.currentDaySchedule[index];
-                // 使用 JSON 深度複製，避免直接修改原始資料
-                this.newScheduleItem = JSON.parse(JSON.stringify(item));
-                this.newScheduleItem.isAttraction = item.category === '景點'; // 確保狀態同步
-                this.showScheduleModal = true;
-            },
-            saveScheduleItem() {
-                if (!this.newScheduleItem.category || !this.newScheduleItem.location) {
-                    alert('分類和地點為必填項目！');
-                    return;
-                }
-                
-                // 檢查是否為景點，同步 isAttraction 狀態
-                this.newScheduleItem.isAttraction = this.newScheduleItem.category === '景點';
-                
-                // 確保添加天氣 (編輯時也更新天氣)
-                if (!this.newScheduleItem.weather) {
-                    this.newScheduleItem.weather = generateMockWeather();
-                }
-
-                if (this.editingIndex === -1) {
-                    // 新增
-                    this.scheduleData[this.currentDayKey].push(this.newScheduleItem);
-                } else {
-                    // 編輯
-                    this.scheduleData[this.currentDayKey][this.editingIndex] = this.newScheduleItem;
-                }
-
-                // 重設並關閉
-                this.showScheduleModal = false;
-                this.newScheduleItem = { category: '', time: '', title: '', location: '', notes: '', isDone: false, isAttraction: false };
-                this.editingIndex = -1;
-            },
-            removeScheduleItem() {
-                if (confirm('確定要刪除此行程嗎？')) {
-                    this.scheduleData[this.currentDayKey].splice(this.editingIndex, 1);
-                    this.showScheduleModal = false;
-                    this.newScheduleItem = { category: '', time: '', title: '', location: '', notes: '', isDone: false, isAttraction: false };
-                    this.editingIndex = -1;
-                }
-            },
-            moveScheduleItem(fromIndex, toIndex) {
-                const arr = this.scheduleData[this.currentDayKey];
-                const item = arr.splice(fromIndex, 1)[0];
-                arr.splice(toIndex, 0, item);
-            },
-            // --- 記帳方法 ---
-            categoryIcon(category) {
-                switch (category) {
-                    case '住宿': return 'fas fa-hotel text-blue-500';
-                    case '交通': return 'fas fa-bus text-indigo-500';
-                    case '餐飲': return 'fas fa-utensils text-orange-500';
-                    case '門票/活動': return 'fas fa-ticket-alt text-purple-500';
-                    case '購物': return 'fas fa-shopping-bag text-green-500';
-                    case '機票': return 'fas fa-plane text-cyan-500';
-                    default: return 'fas fa-tag text-gray-400';
-                }
-            },
-            addExpense() {
-                const { category, amount, currency } = this.newExpense;
-
-                if (category && amount > 0) {
-                    const rate = this.exchangeRates[currency] || 1;
-                    const amountTWD = amount * rate;
-                    
-                    this.expenseData[this.currentDayKey].unshift({
-                        category,
-                        amount: amount,
-                        currency: currency,
-                        amountTWD: parseFloat(amountTWD.toFixed(0)), // 換算後取整
-                        date: new Date().toLocaleDateString()
-                    });
-                    
-                    // 重設表單
-                    this.newExpense = { category: '', amount: null, currency: 'TWD' };
-                } else {
-                    alert('請選擇類別並輸入有效金額！');
-                }
-            },
-            // --- TODO 方法 ---
-            addTodo() {
-                if (this.newTodoText.trim() !== '') {
-                    this.todoList.unshift({ text: this.newTodoText.trim(), completed: false });
-                    this.newTodoText = '';
-                }
-            },
-            removeTodo(index) {
-                this.todoList.splice(index, 1);
-            },
-            // --- 購物清單方法 ---
-            addItem() {
-                if (this.newItemText.trim() !== '') {
-                    this.shoppingList.unshift({ text: this.newItemText.trim(), completed: false });
-                    this.newItemText = '';
-                }
-            },
-            removeItem(index) {
-                this.shoppingList.splice(index, 1);
-            },
-            // --- 資訊站方法 ---
-            editInfoItem(index) {
-                this.editingInfoIndex = index;
-                this.newInfoItem = JSON.parse(JSON.stringify(this.infoData[index]));
-                this.showInfoModal = true;
-            },
-            saveInfoItem() {
-                if (!this.newInfoItem.title || !this.newInfoItem.content) {
-                    alert('標題與內容皆為必填！');
-                    return;
-                }
-                if (this.editingInfoIndex === -1) {
-                    this.infoData.push(this.newInfoItem);
-                } else {
-                    this.infoData[this.editingInfoIndex] = this.newInfoItem;
-                }
-                this.showInfoModal = false;
-                this.newInfoItem = { title: '', content: '' };
-                this.editingInfoIndex = -1;
-            },
-            removeInfoItem(index) {
-                if (confirm('確定要刪除此資訊卡嗎？')) {
-                    this.infoData.splice(index, 1);
-                }
-            }
-        }
-    }).mount('#app')
-</script>
-
+        }).mount('#app');
+    </script>
 </body>
 </html>
