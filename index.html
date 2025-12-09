@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐旅行計畫 - Nordic Bliss App V4</title>
+    <title>北歐旅行計畫 - Nordic Bliss App V5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -81,9 +81,9 @@
                         <svg class="w-7 h-7 text-purple-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
                         <div class="text-sm">
                             <p class="font-bold text-gray-700">🌌 極光預報 (建議)</p>
-                            <p class="text-gray-600">KP 指數：<span class="font-semibold text-purple-700">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
-                            <p class="text-gray-600">最佳時間：{{ selectedDay.aurora_forecast['time_range'] }}</p>
-                            <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-purple-500 mt-1">{{ selectedDay.aurora_forecast['notes'] }}</p>
+                            <p class="text-gray-600">**KP 指數：**<span class="font-semibold text-purple-700">{{ selectedDay.aurora_forecast['kp_index'] }}</span></p>
+                            <p class="text-gray-600">**最佳時間：**{{ selectedDay.aurora_forecast['time_range'] }}</p>
+                            <p v-if="selectedDay.aurora_forecast['notes']" class="text-xs text-purple-500 mt-1">💡 {{ selectedDay.aurora_forecast['notes'] }}</p>
                         </div>
                     </div>
 
@@ -143,7 +143,7 @@
                 
                 <h3 class="text-xl font-bold text-gray-700 mb-3">支出紀錄</h3>
                 <div v-if="accounting.length === 0" class="bg-yellow-50 text-yellow-800 p-4 rounded-xl shadow-md text-center">
-                    <p>目前沒有支出紀錄。請點擊右下角按鈕新增。</p>
+                    <p>目前沒有支出紀錄。請點擊右下角按鈕 **+ 新增支出**。</p>
                 </div>
                 <div v-for="(transaction, index) in accounting" :key="index" class="bg-white rounded-xl shadow-md p-4 mb-3 flex justify-between items-center">
                     <div>
@@ -159,7 +159,7 @@
             <div v-else-if="currentTab === 'shopping'" key="shopping" class="p-4">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">購物清單 🎁</h2>
                 <div v-if="shoppingList.length === 0" class="bg-yellow-50 text-yellow-800 p-4 rounded-xl shadow-md text-center mb-4">
-                    <p>目前沒有購物清單項目。請點擊右下角按鈕新增。</p>
+                    <p>目前沒有購物清單項目。請點擊右下角按鈕 **+ 購物項目**。</p>
                 </div>
                 <div v-for="(item, index) in shoppingList" :key="index" class="bg-white rounded-xl shadow-md p-4 mb-3 flex items-center">
                     <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-green-500 rounded-sm mr-3">
@@ -176,14 +176,6 @@
             <div v-else-if="currentTab === 'info'" key="info" class="p-4">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">實用資訊 💡</h2>
                 <div class="space-y-4">
-                    <div class="bg-white rounded-xl shadow-lg p-4">
-                        <h3 class="text-xl font-bold text-gray-700 mb-2">重要聯絡方式</h3>
-                        <ul class="text-gray-600 space-y-1 text-sm">
-                            <li>📞 臺灣緊急聯絡人：(09XX) XXX-XXX</li>
-                            <li>📞 外交部緊急聯絡中心：+886-X-XXXX-XXXX</li>
-                            <li>🚨 歐洲緊急電話：112</li>
-                        </ul>
-                    </div>
                     <div class="bg-white rounded-xl shadow-lg p-4">
                         <h3 class="text-xl font-bold text-gray-700 mb-2">編輯功能說明 (重要)</h3>
                         <p class="text-sm text-red-500">
@@ -239,19 +231,20 @@
 <script>
     const { createApp, computed, ref } = Vue;
 
-    // Google Maps 導航連結生成器
+    // **修正後的 Google Maps 導航連結生成器 (解決潛在亂碼問題)**
     const getMapLink = (query) => {
+        // 使用 Google Maps 的標準搜尋 API 網址，並正確使用模板字串語法
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     };
 
     // ----------------------------------------------------
-    // VUE APP 數據 (行程已包含 12/19~1/3 共 16 天, 並加入極光預報建議)
+    // VUE APP 數據 (已包含 16 天行程與極光預報建議)
     // ----------------------------------------------------
     const itineraryData = [
         {
             date: "2025/12/19", day_of_week: "五", city_country: "臺灣 (Taiwan)", country_code: "", weather: null, aurora_forecast: null,
             events: [
-                { time: "23:05", schedule: "✈華航CI073 TPE 台北 起飛", duration: "15h45m", location: "桃園國際機場" },
+                { time: "23:05", schedule: "✈華航CI073 TPE 台北 起飛", location: "桃園國際機場" },
             ],
             accommodation: "飛機上"
         },
@@ -261,7 +254,7 @@
             events: [
                 { time: "14:45", schedule: "✈抵達 HEL赫爾辛基", location: "Helsinki Airport" },
                 { time: "17:00", schedule: "🎄聖誕市集", location: "Tuomaan Markkinat" },
-                { time: "19:00", schedule: "🥣Sea horse resturant", location: "Sea Horse Restaurant" },
+                { time: "19:00", schedule: "🥣Sea horse resturant (晚餐)", location: "Sea Horse Restaurant" },
             ],
             accommodation: "老人家 (Airbnb/飯店)"
         },
@@ -270,7 +263,7 @@
             weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '備註': '極地寒冷，需注意保暖' }, aurora_forecast: null,
             events: [
                 { time: "10:00", schedule: "☕️Cafe Regatta (肉桂小屋)", location: "Cafe Regatta" },
-                { time: "11:00", schedule: "Temppeliaukio Church", location: "Temppeliaukio Church" },
+                { time: "11:00", schedule: "Temppeliaukio Church (岩石教堂)", location: "Temppeliaukio Church" },
                 { time: "18:00", schedule: "♨️Löyly Sauna", location: "Löyly Helsinki" },
                 { time: "23:13", schedule: "🚂前往羅瓦涅米 (夜鋪火車)", location: "Helsinki Central Railway Station" },
             ],
@@ -279,20 +272,20 @@
         {
             date: "2025/12/22", day_of_week: "一", city_country: "羅瓦涅米 (Rovaniemi, FI)", country_code: "FI",
             weather: { '氣溫': '約 -15°C 到 -7°C', '日照': '極夜微光', '降水': '穩定積雪' }, 
-            aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' }, // 加入極光預報建議
+            aurora_forecast: { 'kp_index': 'Kp 3 (中等)', 'time_range': '22:00 - 02:00', 'notes': '極光熱門點：歐納斯山 (Ounasvaara)' }, 
             events: [
                 { time: "10:59", schedule: "🚂抵達 羅瓦涅米", location: "Rovaniemi Railway Station" },
                 { time: "13:00", schedule: "🎅🏼聖誕老人村", location: "Santa Claus Village" },
                 { time: "14:00", schedule: "🥣Santa's Salmon Place (鮭魚餐)", location: "Santa's Salmon Place" },
                 { time: "17:00", schedule: "🫎🛷馴鹿雪橇 (自選活動)" },
-                { time: "19:00", schedule: "☀ 極光團集合 (返回民宿準備)" },
+                { time: "19:00", schedule: "極光團集合 (返回民宿準備)" },
             ],
             accommodation: "Villa Muru (KW)"
         },
         {
             date: "2025/12/23", day_of_week: "二", city_country: "羅瓦涅米 / 特羅姆瑟 (Tromsø, NO)", country_code: "NO",
             weather: { '氣溫': '約 -5°C 到 2°C', '日照': '極夜，有數小時藍色曙光', '備註': '特羅姆瑟靠海較羅瓦涅米暖和' },
-            aurora_forecast: { 'kp_index': 'Kp 4 (良好)', 'time_range': '20:30 - 01:00', 'notes': '移動日，建議在特羅姆瑟市區或住宿點嘗試' }, // 加入極光預報建議
+            aurora_forecast: { 'kp_index': 'Kp 4 (良好)', 'time_range': '20:30 - 01:00', 'notes': '移動日，建議在特羅姆瑟市區或住宿點嘗試' }, 
             events: [
                 { time: "08:30", schedule: "🛷狗拉雪橇 (Get Your Guide)", location: "Rovaniemi Area" },
                 { time: "11:55", schedule: "✈飛往 TOS特羅姆瑟", location: "Rovaniemi Airport" },
@@ -304,7 +297,7 @@
         {
             date: "2025/12/24", day_of_week: "三", city_country: "特羅姆瑟 (Tromsø, Norway)", country_code: "NO",
             weather: { '氣溫': '約 -5°C 到 2°C', '日照': '極夜藍色曙光', '備註': '聖誕夜，多數商家會提早關門' },
-            aurora_forecast: { 'kp_index': 'Kp 3-4 (中等)', 'time_range': '21:00 - 03:00', 'notes': '可搭乘纜車上山，避開光害更佳' }, // 加入極光預報建議
+            aurora_forecast: { 'kp_index': 'Kp 3-4 (中等)', 'time_range': '21:00 - 03:00', 'notes': '可搭乘纜車上山，避開光害更佳' }, 
             events: [
                 { time: "10:00", schedule: "🥣早午餐 Koseverden&KoseligCafe", location: "Koseverden" },
                 { time: "12:00", schedule: "🚠Fjellheisen 纜車", location: "Fjellheisen" },
@@ -316,7 +309,7 @@
         {
             date: "2025/12/25", day_of_week: "四", city_country: "特羅姆瑟 (Tromsø, Norway)", country_code: "NO",
             weather: { '氣溫': '約 -5°C 到 2°C', '日照': '極夜藍色曙光', '降水': '常有降雪或雨夾雪' },
-            aurora_forecast: { 'kp_index': 'Kp 5 (高)', 'time_range': '20:00 - 00:00', 'notes': '極光爆發潛力高，保持關注！' }, // 加入極光預報建議
+            aurora_forecast: { 'kp_index': 'Kp 5 (高)', 'time_range': '20:00 - 00:00', 'notes': '極光爆發潛力高，保持關注！' }, 
             events: [
                 { time: "10:00", schedule: "👟市區 City Walk (北極之門、港口)" },
                 { time: "16:00", schedule: "⛪️北極大教堂 (Tromsdalen Church)", location: "Ishavskatedralen" },
@@ -342,11 +335,11 @@
             weather: { '氣溫': '約 -1°C 到 4°C', '日照': '約 7.5 小時', '降水': '較常出現雨水或雨夾雪' }, aurora_forecast: null,
             events: [
                 { time: "09:00", schedule: "👟Nyhavn (新港)", location: "Nyhavn" },
-                { time: "12:00", schedule: "⛪️Frederiks Kirke", location: "Frederiks Kirke" },
+                { time: "12:00", schedule: "⛪️Frederiks Kirke (大理石教堂)", location: "Frederiks Kirke" },
                 { time: "13:00", schedule: "💂🏼Amalienborg (衛兵交接)", location: "Amalienborg" },
                 { time: "14:00", schedule: "🍔Gasoline Grill (午餐)", location: "Gasoline Grill" },
                 { time: "17:00", schedule: "🧜🏻‍♀️Den Lille Havfrue (小美人魚)", location: "The Little Mermaid" },
-                { time: "21:00", schedule: "🍸Ruby Bar", location: "Ruby (Cocktail Bar)" },
+                { time: "21:00", schedule: "🍸Ruby Bar (酒吧)", location: "Ruby (Cocktail Bar)" },
             ],
             accommodation: "Sander Leaves-Pleasant 4(Kyle)"
         },
@@ -376,7 +369,7 @@
             date: "2025/12/30", day_of_week: "二", city_country: "斯德哥爾摩", country_code: "SE",
             weather: { '氣溫': '約 -4°C 到 1°C', '日照': '約 6 小時', '降水': '常有降雪或雨夾雪' }, aurora_forecast: null,
             events: [
-                { time: "上午", schedule: "動物園島 (Djurgården)", location: "Djurgården" },
+                { time: "上午", schedule: "動物園島 (Djurgården)" },
                 { time: "下午", schedule: "瓦薩沉船博物館 (Vasa Museum)", location: "Vasa Museum" },
             ],
             accommodation: "斯德哥爾摩飯店/Airbnb"
@@ -435,7 +428,7 @@
         
         itinerary: itineraryData,
 
-        // 2. 行前清單 (數據與 V3 相同，已是完整列出)
+        // 2. 行前清單 (完整列出)
         checklist: {
             '衣物類': [
                 { name: '內衣褲', notes: '', checked: false },
@@ -480,10 +473,10 @@
             ]
         },
 
-        // 3. 記帳功能 (清空數據，讓使用者未來自己增加)
+        // 3. 記帳功能 (已清空數據)
         accounting: [],
 
-        // 4. 購物清單 (清空數據，讓使用者未來自己增加)
+        // 4. 購物清單 (已清空數據)
         shoppingList: [],
     };
 
@@ -497,7 +490,6 @@
 
             // Computed properties
             const totalSpent = computed(() => {
-                // 處理空陣列時總和為 0
                 return accounting.reduce((sum, item) => sum + item.amount, 0);
             });
 
@@ -509,10 +501,9 @@
             // Methods
             const selectDay = (day) => {
                 selectedDay.value = day;
-                //             };
+            };
 
             const toggleChecklist = (category) => {
-                // 如果是第一次點擊，確保狀態存在
                 if (collapsedChecklist.value[category] === undefined) {
                     collapsedChecklist.value[category] = false; 
                 }
