@@ -129,7 +129,7 @@
                 <div class="flex items-center">
                     <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
                     <div>
-                        <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p>
+                        <p class="font-semibold text-gray-800">{{ currentCity }} - {{ formatDate(activeDate) }}</p>
                         <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
                     </div>
                 </div>
@@ -139,7 +139,7 @@
             <div class="space-y-4">
                 <div v-for="element in currentItinerary" :key="element.id" 
                     class="card p-4 relative border-l-4" 
-                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通'}"
+                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通', 'border-pink-400': element.category === '住宿', 'border-purple-400': element.category === '購物'}"
                 >
                     <div class="flex justify-between items-start">
                         <div class="flex-grow">
@@ -288,6 +288,25 @@ const { createApp, ref, computed, nextTick, watch } = Vue
 // --- 全局常數設定 ---
 const EXCHANGE_RATE = 36.3; // 1 EUR ≈ 36.3 TWD
 const TWD_SYMBOL = 'NT$';
+const CITY_MAP = {
+    '2025-12-19': '台北/飛機上',
+    '2025-12-20': '赫爾辛基',
+    '2025-12-21': '赫爾辛基/夜火車',
+    '2025-12-22': '羅瓦涅米',
+    '2025-12-23': '羅瓦涅米',
+    '2025-12-24': '特羅姆瑟',
+    '2025-12-25': '特羅姆瑟',
+    '2025-12-26': '特羅姆瑟',
+    '2025-12-27': '哥本哈根',
+    '2025-12-28': '哥本哈根',
+    '2025-12-29': '哥本哈根/斯德哥爾摩',
+    '2025-12-30': '斯德哥爾摩',
+    '2025-12-31': '斯德哥爾摩',
+    '2026-01-01': '斯德哥爾摩',
+    '2026-01-02': '斯德哥爾摩/飛機上',
+    '2026-01-03': '杜拜/飛機上',
+};
+
 
 let appInstance = null;
 let googleMapsLoaded = ref(false); 
@@ -392,7 +411,7 @@ function initMap() {
     google.maps.event.trigger(mapElement, 'resize');
 }
 
-// 修正日期為 12/19 - 1/3 (已是正確範圍)
+// 修正日期為 12/19 - 1/3
 function getTravelDates() {
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
@@ -445,54 +464,171 @@ function mountVueApp() {
             const travelDates = getTravelDates();
             const activeDate = ref(travelDates[0]); // 12/19
             
+            // --- 行程資料 (已更新為您的 16 天北歐行程) ---
             const itinerary = ref({
-                '2025-12-19': [ // Day 1
-                    { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
-                    { id: 2, time: '18:00', location: '抵達奧斯陸機場 (OSL)', category: '航班', notes: '搭乘機場快線 Flytoget', lat: 60.1939, lng: 11.1004 },
+                // Day 1: 12/19 (五) - 台北 ✈ 飛機上
+                '2025-12-19': [
+                    { id: 101, time: '19:00', location: '板橋車站集合', category: '交通', notes: '約20:30前到桃機一航', lat: 25.0135, lng: 121.4654 },
+                    { id: 102, time: '23:05', location: 'TPE台北 ✈ AMS阿姆斯特丹', category: '航班', notes: '華航CI073', lat: 25.0777, lng: 121.2298 },
                 ],
-                '2025-12-20': [ // Day 2
-                    { id: 3, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂拍照', lat: 59.9079, lng: 10.7511 },
-                    { id: 4, time: '13:00', location: 'Kaffistova 傳統午餐', category: '美食', notes: '試試挪威肉丸', lat: 59.9138, lng: 10.7390 },
-                    { id: 5, time: '15:00', location: '維格朗雕塑公園', category: '景點', notes: '巨大的生命之柱', lat: 59.9270, lng: 10.7029 },
+
+                // Day 2: 12/20 (六) - 赫爾辛基 (Helsinki, Finland)
+                '2025-12-20': [
+                    { id: 201, time: '07:50', location: '抵達AMS阿姆斯特丹', category: '航班', notes: '轉機 (11:20AMS-14:45HEL)', lat: 52.3086, lng: 4.7643 },
+                    { id: 202, time: '14:45', location: '抵達HEL赫爾辛基機場', category: '航班', notes: '前往住宿 (老人家)', lat: 60.3172, lng: 24.9633 },
+                    { id: 203, time: '16:00', location: '前往住宿 & Check-in', category: '住宿', notes: '老人家住宿、放行李', lat: 60.1741, lng: 24.9442 },
+                    { id: 204, time: '18:30', location: '赫爾辛基聖誕市集', category: '景點', notes: '晚餐與逛街', lat: 60.1685, lng: 24.9525 },
+                    { id: 205, time: '20:30', location: 'Löyly Helsinki 桑拿', category: '景點', notes: '芬蘭浴體驗', lat: 60.1581, lng: 24.9392 },
                 ],
-                // 12/21 - 01/02 留空或自行填寫
-                '2025-12-21': [],
-                '2025-12-22': [],
-                '2025-12-23': [],
-                '2025-12-24': [],
-                '2025-12-25': [],
-                '2025-12-26': [],
-                '2025-12-27': [],
-                '2025-12-28': [],
-                '2025-12-29': [],
-                '2025-12-30': [],
-                '2025-12-31': [],
-                '2026-01-01': [],
-                '2026-01-02': [],
-                '2026-01-03': [ // Day 16
-                    { id: 6, time: '14:00', location: '哥本哈根機場 (CPH) 返程', category: '航班', notes: '預留充足時間退稅', lat: 55.6268, lng: 12.6558 },
-                ]
+
+                // Day 3: 12/21 (日) - 赫爾辛基 🚄 夜舖火車
+                '2025-12-21': [
+                    { id: 301, time: '10:00', location: 'Temppeliaukio Church (岩石教堂)', category: '景點', notes: '早午餐後參觀', lat: 60.1729, lng: 24.9329 },
+                    { id: 302, time: '13:00', location: 'Oodi Central Library', category: '景點', notes: '現代圖書館設計', lat: 60.1741, lng: 24.9382 },
+                    { id: 303, time: '15:00', location: 'Marimekko Outlet Herttoniemi', category: '購物', notes: '芬蘭設計品牌', lat: 60.2001, lng: 25.0210 },
+                    { id: 304, time: '22:00', location: 'Helsinki Central Station', category: '交通', notes: '準備搭乘夜舖火車', lat: 60.1717, lng: 24.9415 },
+                    { id: 305, time: '23:13', location: '夜舖火車前往羅瓦涅米', category: '交通', notes: '在火車上過夜', lat: 60.1717, lng: 24.9415 },
+                ],
+
+                // Day 4: 12/22 (一) - 羅瓦涅米 (Rovaniemi, Finland)
+                '2025-12-22': [
+                    { id: 401, time: '10:59', location: '抵達羅瓦涅米火車站', category: '交通', notes: '火車抵達', lat: 66.5055, lng: 25.7335 },
+                    { id: 402, time: '12:00', location: 'Villa Muru Check-in/寄放行李', category: '住宿', notes: 'KW 訂的住宿', lat: 66.5020, lng: 25.7250 },
+                    { id: 403, time: '14:00', location: '聖誕老人村 (Santa Claus Village)', category: '景點', notes: '跨越北極圈線、找聖誕老人', lat: 66.5434, lng: 25.8491 },
+                    { id: 404, time: '17:00', location: '馴鹿雪橇體驗', category: '景點', notes: '要搭的人搭', lat: 66.5434, lng: 25.8491 },
+                    { id: 405, time: '20:00', location: '極光團 (Get your guide)', category: '景點', notes: '已預訂', lat: 66.5000, lng: 25.7500 },
+                ],
+
+                // Day 5: 12/23 (二) - 羅瓦涅米
+                '2025-12-23': [
+                    { id: 501, time: '09:00', location: 'Villa Muru 住宿', category: '住宿', notes: '早餐自己煮、玩雪、港口走走', lat: 66.5020, lng: 25.7250 },
+                    { id: 502, time: '13:00', location: '最北麥當勞', category: '美食', notes: '打卡紀念', lat: 66.4950, lng: 25.7340 },
+                    { id: 503, time: '21:00', location: '極光團 (Get Your Guide by KW)', category: '景點', notes: '會派車來民宿接人', lat: 66.5020, lng: 25.7250 },
+                ],
+
+                // Day 6: 12/24 (三) - 特羅姆瑟 (Tromsø, Norway)
+                '2025-12-24': [
+                    { id: 601, time: '07:00', location: '羅瓦涅米機場 (RVN)', category: '交通', notes: '準備搭機', lat: 66.5615, lng: 25.8304 },
+                    { id: 602, time: '09:30', location: '抵達TOS特羅姆瑟機場', category: '航班', notes: '09:10 RVN-09:30 TOS (AY541)', lat: 69.6917, lng: 18.9189 },
+                    { id: 603, time: '11:00', location: 'Airbnb (Tromsø) Check-in', category: '住宿', notes: 'Kyle 訂的住宿', lat: 69.6500, lng: 18.9500 },
+                    { id: 604, time: '13:00', location: 'Kaffebønna 買麵包', category: '美食', notes: '午餐', lat: 69.6510, lng: 18.9510 },
+                    { id: 605, time: '14:30', location: 'Fjellheisen 纜車', category: '景點', notes: '可俯瞰市區', lat: 69.6738, lng: 18.9953 },
+                    { id: 606, time: '17:00', location: 'Prestvannet Lake / Strøget', category: '景點', notes: '市區自由逛街', lat: 69.6558, lng: 18.9546 },
+                ],
+
+                // Day 7: 12/25 (四) - 特羅姆瑟
+                '2025-12-25': [
+                    { id: 701, time: '10:00', location: '狗拉雪橇體驗', category: '景點', notes: '已訂-Get your guide', lat: 69.6500, lng: 18.9500 },
+                    { id: 702, time: '16:00', location: 'Tøllefsenhjørnet 咖啡廳休息', category: '美食', notes: '聖誕節氣氛', lat: 69.6517, lng: 18.9555 },
+                    { id: 703, time: '21:00', location: '極光團', category: '景點', notes: '已訂-Get your guide', lat: 69.6500, lng: 18.9500 },
+                ],
+
+                // Day 8: 12/26 (五) - 特羅姆瑟
+                '2025-12-26': [
+                    { id: 801, time: '11:00', location: 'Koseverden&KoseligCafe 早午餐', category: '美食', notes: '怕前一天極光搞太晚', lat: 69.6505, lng: 18.9520 },
+                    { id: 802, time: '13:00', location: '特羅姆瑟圖書館', category: '景點', notes: '市區走走', lat: 69.6486, lng: 18.9575 },
+                    { id: 803, time: '16:00', location: '熱狗堡店 / 羊毛氈禮品店', category: '購物', notes: '購買紀念品', lat: 69.6500, lng: 18.9530 },
+                ],
+
+                // Day 9: 12/27 (六) - 哥本哈根 (Copenhagen, Denmark)
+                '2025-12-27': [
+                    { id: 901, time: '10:00', location: '特羅姆瑟機場 (TOS)', category: '交通', notes: '前往機場', lat: 69.6917, lng: 18.9189 },
+                    { id: 902, time: '14:40', location: '抵達CPH哥本哈根機場', category: '航班', notes: '12:05 TOS-14:40 CPH (SK4451)', lat: 55.6268, lng: 12.6558 },
+                    { id: 903, time: '16:00', location: 'Nørreport Station 寄放行李', category: '交通', notes: '在 TorvehallerneKBH 市場買午餐', lat: 55.6830, lng: 12.5684 },
+                    { id: 904, time: '17:00', location: 'Tivoli Gardens (聖誕樂園)', category: '景點', notes: '已訂門票', lat: 55.6736, lng: 12.5675 },
+                    { id: 905, time: '23:00', location: 'Tivoli 聖誕煙火', category: '景點', notes: '23:00~00:00', lat: 55.6736, lng: 12.5675 },
+                ],
+
+                // Day 10: 12/28 (日) - 哥本哈根
+                '2025-12-28': [
+                    { id: 1001, time: '10:00', location: 'Nyhavn 新港', category: '景點', notes: 'La cabra 外帶咖啡', lat: 55.6816, lng: 12.5878 },
+                    { id: 1002, time: '11:45', location: 'Amalienborg Palace 衛兵交接', category: '景點', notes: '卡前排觀看', lat: 55.6837, lng: 12.5973 },
+                    { id: 1003, time: '13:00', location: 'Den Lille Havfrue (小美人魚)', category: '景點', notes: '丹麥標誌', lat: 55.6942, lng: 12.5992 },
+                    { id: 1004, time: '14:30', location: 'The Royal Library (黑鑽石)', category: '景點', notes: '5F空中走廊拍照', lat: 55.6729, lng: 12.5843 },
+                    { id: 1005, time: '16:00', location: 'Goboat 租船體驗', category: '景點', notes: '預計訂 12:30-13:30 (確認時間)', lat: 55.6728, lng: 12.5866 },
+                    { id: 1006, time: '18:30', location: 'Gasoline Grill 漢堡', category: '美食', notes: '晚餐', lat: 55.6811, lng: 12.5828 },
+                ],
+
+                // Day 11: 12/29 (一) - 哥本哈根 ✈ 斯德哥爾摩
+                '2025-12-29': [
+                    { id: 1101, time: '09:00', location: 'hart / Andersen Bakery', category: '美食', notes: '早餐', lat: 55.6816, lng: 12.5846 },
+                    { id: 1102, time: '11:00', location: 'ILLUM / ILLUMS Bolighus 購物', category: '購物', notes: '逛街', lat: 55.6784, lng: 12.5786 },
+                    { id: 1103, time: '16:00', location: 'Københavns Lufthavn (CPH)', category: '交通', notes: '前往機場', lat: 55.6268, lng: 12.6558 },
+                    { id: 1104, time: '20:15', location: '抵達ARN斯德哥爾摩機場', category: '航班', notes: '19:00 CPH-20:15 ARN (SK1430)', lat: 59.6519, lng: 17.9186 },
+                    { id: 1105, time: '21:30', location: 'Stockholm C & Hobo Hotel Check-in', category: '住宿', notes: '搭機場快線', lat: 59.3302, lng: 18.0622 },
+                ],
+
+                // Day 12: 12/30 (二) - 斯德哥爾摩 (Stockholm, Sweden)
+                '2025-12-30': [
+                    { id: 1201, time: '09:00', location: 'Skeppsbro Bakery 早餐', category: '美食', notes: '渡輪碼頭附近', lat: 59.3248, lng: 18.0772 },
+                    { id: 1202, time: '10:30', location: 'Slussen 搭 82號渡輪', category: '交通', notes: '前往動物園島 (Djurgården)', lat: 59.3197, lng: 18.0718 },
+                    { id: 1203, time: '11:30', location: 'Skansen 戶外博物館', category: '景點', notes: '已訂門票', lat: 59.3274, lng: 18.1065 },
+                    { id: 1204, time: '14:30', location: '瓦薩沈船博物館 (Vasa Museum)', category: '景點', notes: '必看景點', lat: 59.3281, lng: 18.0903 },
+                    { id: 1205, time: '18:00', location: 'Nobis-NOI 晚餐', category: '美食', notes: '已排候補 18:00-19:00', lat: 59.3338, lng: 18.0683 },
+                ],
+
+                // Day 13: 12/31 (三) - 斯德哥爾摩 (跨年)
+                '2025-12-31': [
+                    { id: 1301, time: '09:00', location: 'Vete-Katten 早餐', category: '美食', notes: '百年咖啡廳', lat: 59.3347, lng: 18.0583 },
+                    { id: 1302, time: '11:00', location: 'Södermalm (文青島) 走走', category: '景點', notes: '教堂、設計師品牌', lat: 59.3190, lng: 18.0640 },
+                    { id: 1303, time: '16:00', location: 'Mariaberget 看日落/藍調時刻', category: '景點', notes: '俯瞰老城區', lat: 59.3204, lng: 18.0543 },
+                    { id: 1304, time: '19:15', location: 'One Tap 晚餐', category: '美食', notes: '已訂位', lat: 59.3262, lng: 18.0620 },
+                    { id: 1305, time: '23:30', location: 'Skinnarviksberget 跨年煙火', category: '景點', notes: '最佳觀賞點', lat: 59.3175, lng: 18.0402 },
+                ],
+
+                // Day 14: 2026-01-01 (四) - 斯德哥爾摩
+                '2026-01-01': [
+                    { id: 1401, time: '10:00', location: 'Nobis Hotel Stockholm Check in', category: '住宿', notes: '從 Hobo 換飯店', lat: 59.3338, lng: 18.0683 },
+                    { id: 1402, time: '12:00', location: 'Gamla Stan (老城區) 踩點', category: '景點', notes: '大廣場、斯德哥爾摩王宮', lat: 59.3275, lng: 18.0700 },
+                    { id: 1403, time: '15:00', location: '市政廳 (Stadshuset)', category: '景點', notes: '諾貝爾獎晚宴地點', lat: 59.3275, lng: 18.0544 },
+                    { id: 1404, time: '17:00', location: '精品區逛街 (NK百貨)', category: '購物', notes: 'Celine, LV, Chanel', lat: 59.3323, lng: 18.0652 },
+                    { id: 1405, time: '20:00', location: 'Nobis Hotel 酒吧', category: '美食', notes: '飯店內休憩', lat: 59.3338, lng: 18.0683 },
+                ],
+
+                // Day 15: 2026-01-02 (五) - 斯德哥爾摩 ✈ 杜拜
+                '2026-01-02': [
+                    { id: 1501, time: '07:00', location: '前往斯德哥爾摩機場 (ARN)', category: '交通', notes: '搭計程車/機場快線', lat: 59.3338, lng: 18.0683 },
+                    { id: 1502, time: '14:30', location: 'ARN斯德哥爾摩 ✈ DXB杜拜', category: '航班', notes: '阿聯酋航空EK0158', lat: 59.6519, lng: 17.9186 },
+                ],
+
+                // Day 16: 2026-01-03 (六) - 杜拜 ✈ 台北 (Taiwan)
+                '2026-01-03': [
+                    { id: 1601, time: '00:05', location: '抵達DXB杜拜', category: '航班', notes: '轉機、逛免稅店', lat: 25.2532, lng: 55.3656 },
+                    { id: 1602, time: '03:40', location: 'DXB杜拜 ✈ TPE台北', category: '航班', notes: '阿聯酋航空EK0366', lat: 25.2532, lng: 55.3656 },
+                    { id: 1603, time: '15:35', location: '抵達TPE桃園國際機場', category: '航班', notes: '旅程結束', lat: 25.0777, lng: 121.2298 },
+                ],
             });
+            // --- 行程資料結束 ---
 
             const currentItinerary = computed(() => itinerary.value[activeDate.value] || []);
-            const getCurrentWeather = () => ({ temp: '-5°C', desc: '多雲，偶有雪花', icon: '🌨️' });
+            const currentCity = computed(() => CITY_MAP[activeDate.value] || '位置未知');
             
-            // 修正: 假設初始金額為 TWD，並刪除 method
+            // 簡化天氣顯示，因為沒有即時 API
+            const getCurrentWeather = () => {
+                const city = currentCity.value;
+                if (city.includes('赫爾辛基')) return { temp: '-1°C', desc: '多雲，偶有雪花', icon: '🌨️' };
+                if (city.includes('羅瓦涅米')) return { temp: '-15°C', desc: '大雪，注意保暖', icon: '❄️' };
+                if (city.includes('特羅姆瑟')) return { temp: '-3°C', desc: '晴朗，夜晚極光可期', icon: '✨' };
+                if (city.includes('哥本哈根')) return { temp: '2°C', desc: '多雲，有雨', icon: '🌧️' };
+                if (city.includes('斯德哥爾摩')) return { temp: '-7°C', desc: '晴朗，微風', icon: '☀️' };
+                return { temp: '-5°C', desc: '多雲，偶有雪花', icon: '🌨️' };
+            };
+            
+            // 修正: 假設初始金額為 TWD
             const expenses = ref([
-                { id: 101, date: '2025-12-19', item: '機場快線車票', amount: 1270, currency: 'TWD' }, 
-                { id: 102, date: '2025-12-19', item: '晚餐 (便利商店)', amount: 310, currency: 'TWD' }
+                { id: 10001, date: '2025-12-19', item: '機票與簽證費用', amount: 85000, currency: 'TWD' }, 
+                { id: 10002, date: '2025-12-19', item: '極光/雪橇活動預訂', amount: 12700, currency: 'TWD' }
             ]);
             
             // 計算總 TWD 支出
             const totalExpense = computed(() => expenses.value.reduce((sum, item) => {
-                 // 這裡假設所有新舊費用都已是 TWD
                  return sum + item.amount
             }, 0));
             
             // 計算總 EUR 支出 (用於參考顯示)
             const totalExpenseEUR = computed(() => (totalExpense.value / EXCHANGE_RATE).toFixed(2));
 
-            const shoppingList = ref([{ id: 201, name: '極光專用三腳架', done: false }, { id: 202, name: '芬蘭毛帽', done: false }, { id: 203, name: '旅遊保險', done: true }]);
+            const shoppingList = ref([{ id: 20001, name: '極光專用三腳架', done: false }, { id: 20002, name: '芬蘭毛帽', done: false }, { id: 20003, name: '旅遊保險', done: true }]);
             const isModalOpen = ref(false);
             const modalType = ref('');
             const modalTitle = computed(() => modalType.value === 'accounting' ? '新增花費紀錄' : '新增購物項目');
@@ -509,7 +645,6 @@ function mountVueApp() {
                 if (type === 'itinerary') return;
                 modalType.value = type;
                 
-                // 修正: 刪除 tempItem 中的 method 屬性
                 tempItem.value = type === 'accounting' 
                     ? { item: '', amount: null, date: activeDate.value } 
                     : { name: '', done: false };
@@ -520,7 +655,7 @@ function mountVueApp() {
             function saveItem() {
                 if (modalType.value === 'accounting') {
                     if (!tempItem.value.item || !tempItem.value.amount) return alert('請填寫項目和金額');
-                    // 修正: 新增費用預設為 TWD
+                    
                     expenses.value.push({ 
                         ...tempItem.value, 
                         id: Date.now(), 
@@ -551,16 +686,22 @@ function mountVueApp() {
             
             function formatDate(dateString) {
                 const date = new Date(dateString);
-                // 修正：修正月份取得方式，確保跨年顯示正確 (例如 12/31 -> 1/1)
                 return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`; 
             }
 
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return `https://www.google.com/maps/@60.12816,18.6435,5z`; // 北歐中心點
-                const destinationMarkers = locations.map(loc => `${loc.location}`).join(' to ');
-                // 創建一個包含所有地點的 Google Maps 連結，使用 q 參數查找多個地點
-                return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locations[locations.length - 1].location)}&waypoints=${encodeURIComponent(locations.slice(0, -1).map(l => l.location).join('|'))}`;
+                if (locations.length < 1) return `https://www.google.com/maps/@60.12816,18.6435,5z`; // 北歐中心點
+                
+                // 修正為標準的 Google Maps 導航 URL 格式
+                const destination = locations[locations.length - 1].location;
+                const waypoints = locations.slice(0, -1).map(l => l.location).join('|');
+
+                let url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+                if (waypoints) {
+                    url += `&waypoints=${encodeURIComponent(waypoints)}`;
+                }
+                return url;
             });
 
             watch(activeTab, (newTab) => {
@@ -587,7 +728,7 @@ function mountVueApp() {
                 currentMapLink,
                 expenses,
                 totalExpense,
-                totalExpenseEUR, // 新增的 computed 屬性
+                totalExpenseEUR,
                 shoppingList,
                 isModalOpen,
                 modalType,
@@ -596,7 +737,8 @@ function mountVueApp() {
                 showModal,
                 saveItem,
                 deleteItem,
-                isGoogleMapsLoaded: googleMapsLoaded
+                isGoogleMapsLoaded: googleMapsLoaded,
+                currentCity, // 傳遞城市名稱用於天氣卡片顯示
             };
         }
     });
@@ -620,8 +762,6 @@ if (typeof google === 'undefined') {
 // 確保頁面載入完成且 Google Maps 未載入時，也能開始 Vue 應用程式
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof google === 'undefined' && !appReadyToDisplay) {
-        // 如果 DOM 載入完成，但 Google 尚未載入，則立即啟動 Vue 應用程式
-        // 讓用戶至少能看到行程表和記帳等內容
         mountVueApp();
     }
 });
