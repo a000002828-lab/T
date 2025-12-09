@@ -13,12 +13,13 @@
         /* 北歐/下雪風格的客製化樣式 */
         :root {
             --nordic-blue: #A9D6E5;
-            --nordic-light: #E0F2F7;
-            --nordic-dark: #014F86;
-            --nordic-accent: #02B8D2;
+            --nordic-light: #E0F2F7; /* 淺灰色/雪白色 */
+            --nordic-dark: #014F86; /* 深海藍 */
+            --nordic-accent: #02B8D2; /* 湖水藍/點綴色 */
         }
         body {
             background-color: var(--nordic-light);
+            /* 維持雪花背景，增加簡約感 */
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="snow" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.8)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23snow)"/></svg>');
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: var(--nordic-dark);
@@ -42,17 +43,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transition: transform 0.2s;
         }
-        .tab-button {
-            transition: all 0.3s;
-            border-radius: 9999px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        .tab-active {
-            background-color: var(--nordic-accent);
-            color: white;
-            font-weight: bold;
-        }
         .date-scroll-container {
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
@@ -60,9 +50,24 @@
         .date-scroll-container::-webkit-scrollbar {
             display: none;
         }
-        /* 確保地圖容器隱藏時不會佔用空間，解決頁籤切換時的閃爍問題 */
+        /* Tab 日期按鈕風格調整 */
+        .tab-date-button {
+            transition: all 0.3s;
+            border-radius: 0.75rem; /* 較圓潤的圓角 */
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: 1px solid var(--nordic-light);
+        }
+        .tab-date-active {
+            background-color: var(--nordic-dark); 
+            color: var(--nordic-light);
+            border-color: var(--nordic-dark);
+            box-shadow: 0 2px 8px rgba(0, 79, 134, 0.3); 
+        }
+
+        /* 地圖相關樣式 */
         .map-container {
-            height: 320px; /* card h-80 */
+            height: 320px; 
             width: 100%;
         }
         .map-hidden {
@@ -78,23 +83,23 @@
 <div id="app" class="app-container hidden"> 
     
     <div class="header-bg relative mb-[-2rem]">
-        <h1 class="text-2xl font-bold mb-1">北歐極光之旅</h1>
-        <p class="text-sm opacity-90">旅行日期: 12/19/2025 - 01/03/2026</p>
+        <h1 class="text-2xl font-bold mb-1">❄️ 北歐極簡之旅</h1>
+        <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/03/2026**</p>
         <div class="absolute top-4 right-4 text-sm opacity-90">
             1 EUR ≈ 8.5 HKD
         </div>
     </div>
     
     <div class="relative z-10 mx-4 overflow-x-scroll date-scroll-container pb-2" v-if="travelDates.length">
-        <div class="flex space-x-2 p-1 bg-white rounded-full shadow-lg">
+        <div class="flex space-x-2 p-1 bg-white rounded-xl shadow-xl">
             <template v-for="(date, index) in travelDates" :key="index">
                 <button 
                     @click="setActiveDate(date)" 
-                    :class="{'bg-blue-600 text-white': activeDate === date, 'bg-gray-100 text-gray-700': activeDate !== date}"
-                    class="tab-button flex-shrink-0 text-xs font-semibold px-3 py-1.5 transition-all"
+                    :class="{'tab-date-active': activeDate === date, 'bg-gray-100 text-gray-700 hover:bg-gray-200': activeDate !== date}"
+                    class="tab-date-button flex-shrink-0 text-xs font-semibold px-3 py-1.5 transition-all"
                 >
-                    Day {{ index + 1 }}
-                    <span class="block text-xs font-normal opacity-80">{{ formatDate(date) }}</span>
+                    <span class="block text-sm font-bold">Day {{ index + 1 }}</span>
+                    <span class="block text-xs font-normal opacity-90 mt-0.5">{{ formatDate(date) }}</span>
                 </button>
             </template>
         </div>
@@ -102,42 +107,33 @@
 
     <div class="p-4 pt-6" v-if="travelDates.length">
         
-        <div class="flex justify-around bg-white p-2 rounded-full shadow-lg mb-6 sticky top-0 z-20">
-            <button 
-                v-for="tab in tabs" :key="tab.id"
-                @click="activeTab = tab.id"
-                :class="{'text-blue-600 font-bold': activeTab === tab.id, 'text-gray-600': activeTab !== tab.id}"
-                class="flex items-center space-x-1 text-sm font-medium transition-colors"
-            >
-                <span class="text-xl" v-html="tab.icon"></span>
-                <span>{{ tab.name }}</span>
-            </button>
-        </div>
-
         <div v-show="activeTab === 'itinerary'">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-700">🗓️ {{ formatDate(activeDate) }} 行程安排 (靜態)</h2>
-            </div>
+            <h2 class="text-xl font-bold text-gray-700 mb-4">🗓️ {{ formatDate(activeDate) }} 行程安排</h2>
             
-            <div class="card p-3 mb-4 flex items-center bg-white/80 backdrop-blur-sm border-l-4 border-blue-400">
-                <div class="text-4xl mr-3">🌨️</div>
-                <div>
-                    <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p>
-                    <p class="text-xl font-bold text-blue-600">{{ getCurrentWeather().temp }}</p>
-                    <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
+            <div class="card p-4 mb-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-l-4 border-nordic-accent">
+                <div class="flex items-center">
+                    <div class="text-4xl mr-4">{{ getCurrentWeather().icon }}</div>
+                    <div>
+                        <p class="font-semibold text-gray-800">奧斯陸 - {{ formatDate(activeDate) }}</p>
+                        <p class="text-sm text-gray-500">{{ getCurrentWeather().desc }}</p>
+                    </div>
                 </div>
+                <p class="text-3xl font-extrabold text-nordic-dark">{{ getCurrentWeather().temp }}</p>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-4">
                 <div v-for="element in currentItinerary" :key="element.id" 
                     class="card p-4 relative border-l-4" 
-                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-blue-400': element.category === '景點', 'border-yellow-400': element.category === '交通'}"
+                    :class="{'border-red-400': element.category === '航班', 'border-green-400': element.category === '美食', 'border-nordic-blue': element.category === '景點', 'border-yellow-400': element.category === '交通'}"
                 >
                     <div class="flex justify-between items-start">
                         <div class="flex-grow">
-                            <p class="text-sm font-medium text-gray-500 mb-1">{{ element.time }} <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-blue-100 text-blue-700': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span></p>
+                            <p class="text-sm font-medium text-gray-500 mb-1">
+                                {{ element.time }} 
+                                <span :class="{'bg-red-100 text-red-700': element.category === '航班', 'bg-nordic-light text-nordic-dark': element.category !== '航班'}" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold">{{ element.category }}</span>
+                            </p>
                             <h3 class="text-lg font-bold text-gray-800 mb-1">{{ element.location }}</h3>
-                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 pl-2 mt-1 italic">{{ element.notes }}</p>
+                            <p v-if="element.notes" class="text-sm text-gray-600 border-l-2 border-gray-200 pl-2 mt-2 italic">{{ element.notes }}</p>
                         </div>
                         <div class="flex space-x-1 ml-4">
                             <button @click="deleteItem('itinerary', element.id)" class="text-gray-400 hover:text-red-500 p-1">🗑️</button>
@@ -160,8 +156,8 @@
                 </div>
             </div>
             
-            <p class="text-sm text-gray-600 p-2 border-l-4 border-blue-500 bg-blue-50/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
-            <a :href="currentMapLink" target="_blank" class="block mt-4 text-center py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+            <p class="text-sm text-gray-600 p-2 border-l-4 border-nordic-dark bg-nordic-light/50">地圖會自動標記**當天所有行程地點**，並顯示您的**當前位置** (需開啟定位權限)。</p>
+            <a :href="currentMapLink" target="_blank" class="block mt-4 text-center py-3 bg-nordic-dark text-white rounded-xl font-semibold hover:bg-nordic-blue transition-colors hover:text-nordic-dark">
                 開啟 Google 地圖導航
             </a>
         </div>
@@ -169,18 +165,18 @@
         <div v-show="activeTab === 'accounting'">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-700">💰 旅費管理</h2>
-                <button @click="showModal('accounting')" class="flex items-center text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors">
+                <button @click="showModal('accounting')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
                     <span class="text-lg">+</span> 新增花費
                 </button>
             </div>
             
-            <div class="card p-4 mb-4 text-center bg-gray-50/80">
+            <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
                 <p class="text-sm text-gray-600">總支出 (HKD)</p>
                 <p class="text-4xl font-extrabold text-red-600">HK$ {{ totalExpense.toFixed(2) }}</p>
-                <p class="text-sm text-gray-500 mt-1">累積支出 ¥{{ (totalExpense * 8.5).toFixed(2) }} (以 1 EUR ≈ 8.5 HKD 估算)</p>
+                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ (totalExpense / 8.5).toFixed(2) }} (以 1 EUR ≈ 8.5 HKD 估算)</p>
             </div>
 
-            <div class="space-y-2">
+            <div class="space-y-3">
                 <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
                     <div>
                         <p class="font-semibold text-gray-800">{{ expense.item }}</p>
@@ -198,29 +194,29 @@
         <div v-show="activeTab === 'shopping'">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-700">🛍️ 待辦/購物清單</h2>
-                <button @click="showModal('shopping')" class="flex items-center text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors">
+                <button @click="showModal('shopping')" class="flex items-center text-sm font-semibold text-white bg-nordic-dark px-3 py-1 rounded-full hover:bg-nordic-blue hover:text-nordic-dark transition-colors">
                     <span class="text-lg">+</span> 新增
                 </button>
             </div>
             
             <div class="space-y-3">
-                <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity" :class="{'opacity-50 line-through bg-green-50/50': item.done}">
+                <div v-for="item in shoppingList" :key="item.id" class="card p-4 flex items-center justify-between transition-opacity border-l-4 border-nordic-accent" :class="{'opacity-50 line-through bg-green-50/50 border-green-400': item.done}">
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <input type="checkbox" v-model="item.done" class="h-5 w-5 text-nordic-dark rounded border-gray-300 focus:ring-nordic-accent">
                         <span class="ml-3 text-lg font-medium text-gray-800">{{ item.name }}</span>
                     </label>
                     <button @click="deleteItem('shopping', item.id)" class="text-gray-400 hover:text-red-500 p-2">🗑️</button>
                 </div>
             </div>
-            <p v-if="shoppingList.length === 0" class="text-center text-gray-500 p-6">購物清單已清空，可以開始血拼啦！</p>
+            <p v-if="shoppingList.length === 0" class="text-center text-gray-500 p-6">購物清單已清空！</p>
         </div>
         
     </div>
 
-    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8" v-if="travelDates.length">
+    <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm shadow-2xl p-3 mt-8 z-30" v-if="travelDates.length">
         <div class="flex justify-around text-gray-500">
             <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
-                :class="{'text-blue-600 font-bold': activeTab === tab.id}"
+                :class="{'text-nordic-dark font-bold': activeTab === tab.id, 'hover:text-nordic-blue': activeTab !== tab.id}"
                 class="flex flex-col items-center text-xs transition-colors p-1"
             >
                 <span class="text-2xl" v-html="tab.icon"></span>
@@ -231,22 +227,22 @@
 
     <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-gray-700">
+            <h3 class="text-xl font-bold mb-4 border-b pb-2 text-nordic-dark">
                 {{ modalTitle }}
             </h3>
             
             <div v-if="modalType === 'accounting'">
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700">項目</label>
-                    <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 晚餐費用">
+                    <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 晚餐費用">
                 </div>
                 <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700">金額 (HKD)</label>
-                    <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                    <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700">支付方式</label>
-                    <select v-model="tempItem.method" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5">
+                    <select v-model="tempItem.method" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
                         <option>現金</option>
                         <option>信用卡</option>
                         <option>行動支付</option>
@@ -257,13 +253,13 @@
             <div v-else-if="modalType === 'shopping'">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700">待買項目</label>
-                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5" placeholder="例如: 芬蘭刀">
+                    <input type="text" v-model="tempItem.name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 芬蘭刀">
                 </div>
             </div>
 
             <div class="flex justify-end space-x-3 mt-6">
                 <button @click="isModalOpen = false" class="px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">取消</button>
-                <button @click="saveItem" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">儲存</button>
+                <button @click="saveItem" class="px-4 py-2 bg-nordic-dark text-white rounded-lg hover:bg-nordic-blue hover:text-nordic-dark transition-colors font-semibold">儲存</button>
             </div>
         </div>
     </div>
@@ -275,8 +271,6 @@ const { createApp, ref, computed, nextTick, watch } = Vue
 let appInstance = null;
 let googleMapsLoaded = ref(false); 
 let mapInitialized = false; 
-
-// 💡 關鍵修正：應用程式是否已準備好顯示
 let appReadyToDisplay = false; 
 
 window.initApp = function() {
@@ -291,7 +285,6 @@ window.initApp = function() {
 }
 
 function initMap() {
-    // ... (initMap 函式保持不變) ...
     if (!googleMapsLoaded.value) {
         return;
     }
@@ -300,6 +293,7 @@ function initMap() {
     if (typeof google === 'undefined' || !mapElement) return;
 
     const locations = appInstance.currentItinerary.filter(item => item.lat && item.lng);
+    // 北歐中心點 (挪威/瑞典之間)
     let center = { lat: 60.12816, lng: 18.6435 }; 
     let zoom = 5;
 
@@ -308,6 +302,8 @@ function initMap() {
         zoom = 12;
     }
     
+    const markerColor = '#014F86'; // 使用 Nordic Dark 作為標記顏色
+
     if (!mapInitialized) {
         appInstance.map = new google.maps.Map(mapElement, {
             zoom: zoom,
@@ -332,7 +328,7 @@ function initMap() {
             title: `${index + 1}. ${item.location}`,
             label: (index + 1).toString(),
             icon: {
-                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent('<svg width="24" height="24" viewBox="0 0 24 24" fill="#02B8D2" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#02B8D2"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">' + (index + 1) + '</text></svg>'),
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg width="24" height="24" viewBox="0 0 24 24" fill="${markerColor}" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="${markerColor}"/><text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></svg>`),
                 scaledSize: new google.maps.Size(24, 24)
             }
         });
@@ -375,8 +371,8 @@ function initMap() {
     google.maps.event.trigger(mapElement, 'resize');
 }
 
+// 修正日期為 12/19 - 1/3
 function getTravelDates() {
-    // ... (getTravelDates 函式保持不變) ...
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
     const dates = [];
@@ -391,9 +387,9 @@ function getTravelDates() {
 function showApp() {
     if (appReadyToDisplay) return;
 
-    // 💡 關鍵：移除隱藏 class，讓應用程式顯示
     const appElement = document.getElementById('app');
     if (appElement) {
+        // 移除隱藏 class，讓應用程式顯示
         appElement.classList.remove('hidden');
     }
     appReadyToDisplay = true;
@@ -403,7 +399,6 @@ function showApp() {
 function mountVueApp() {
     const app = createApp({
         setup() {
-            // ... (Vue Setup 邏輯保持不變) ...
             const tabs = [
                 { id: 'itinerary', name: '行程', icon: '🗺️' },
                 { id: 'map', name: '地圖', icon: '📍' },
@@ -411,21 +406,35 @@ function mountVueApp() {
                 { id: 'shopping', name: '購物', icon: '🛍️' },
             ];
             const activeTab = ref('itinerary');
+            
             const travelDates = getTravelDates();
-            const activeDate = ref(travelDates[0]);
+            const activeDate = ref(travelDates[0]); // 12/19
             
             const itinerary = ref({
-                '2025-12-19': [
+                '2025-12-19': [ // Day 1
                     { id: 1, time: '09:00', location: '桃園國際機場 (TPE)', category: '航班', notes: '確認登機證與行李', lat: 25.0777, lng: 121.2298 },
                     { id: 2, time: '18:00', location: '抵達奧斯陸機場 (OSL)', category: '航班', notes: '搭乘機場快線 Flytoget', lat: 60.1939, lng: 11.1004 },
                 ],
-                '2025-12-20': [
+                '2025-12-20': [ // Day 2
                     { id: 3, time: '10:00', location: '奧斯陸歌劇院', category: '景點', notes: '爬上屋頂拍照', lat: 59.9079, lng: 10.7511 },
                     { id: 4, time: '13:00', location: 'Kaffistova 傳統午餐', category: '美食', notes: '試試挪威肉丸', lat: 59.9138, lng: 10.7390 },
                     { id: 5, time: '15:00', location: '維格朗雕塑公園', category: '景點', notes: '巨大的生命之柱', lat: 59.9270, lng: 10.7029 },
                 ],
+                // 12/21 - 01/02 留空或自行填寫
                 '2025-12-21': [],
-                '2026-01-03': [
+                '2025-12-22': [],
+                '2025-12-23': [],
+                '2025-12-24': [],
+                '2025-12-25': [],
+                '2025-12-26': [],
+                '2025-12-27': [],
+                '2025-12-28': [],
+                '2025-12-29': [],
+                '2025-12-30': [],
+                '2025-12-31': [],
+                '2026-01-01': [],
+                '2026-01-02': [],
+                '2026-01-03': [ // Day 16
                     { id: 6, time: '14:00', location: '哥本哈根機場 (CPH) 返程', category: '航班', notes: '預留充足時間退稅', lat: 55.6268, lng: 12.6558 },
                 ]
             });
@@ -488,9 +497,9 @@ function mountVueApp() {
 
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return `https://www.google.com/maps/dir/?api=1&destination=$$`;
+                if (locations.length === 0) return `https://www.google.com/maps/search/?api=1&query=Scandinavia`;
                 const firstLoc = locations[0];
-                return `https://www.google.com/maps/dir/?api=1&destination=$${firstLoc.lat},${firstLoc.lng}`;
+                return `https://www.google.com/maps/search/?api=1&query=${firstLoc.lat},${firstLoc.lng}`;
             });
 
             watch(activeTab, (newTab) => {
@@ -532,11 +541,11 @@ function mountVueApp() {
 
     app.mount('#app');
     
-    // 💡 關鍵：Vue 掛載後，顯示應用程式
+    // Vue 掛載後，顯示應用程式
     showApp();
 }
 
-// 備用機制：如果 Google Maps API 載入失敗或超時，應用程式仍會顯示
+// 備用機制：如果 Google Maps API 載入失敗或超時
 if (typeof google === 'undefined') {
     setTimeout(() => {
         if (!appReadyToDisplay) { 
@@ -545,6 +554,15 @@ if (typeof google === 'undefined') {
         }
     }, 500); 
 }
+
+// 確保頁面載入完成且 Google Maps 未載入時，也能開始 Vue 應用程式
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof google === 'undefined' && !appReadyToDisplay) {
+        // 如果 DOM 載入完成，但 Google 尚未載入，則立即啟動 Vue 應用程式
+        // 讓用戶至少能看到行程表和記帳等內容
+        mountVueApp();
+    }
+});
 </script>
 
 </body>
