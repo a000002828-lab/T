@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐極簡生活助手</title>
+    <title>北歐極簡生活助手 - 2026 行程</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
@@ -41,6 +41,14 @@
             background-color: var(--color-background);
             padding-bottom: 70px; /* 為底部導航留出空間 */
         }
+        /* 自定義滾動條 (北歐風格不喜歡突兀的元素) */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--color-secondary);
+            border-radius: 10px;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -49,40 +57,53 @@
 <div id="app">
 
     <header class="p-4 bg-card shadow-sm sticky top-0 z-10">
-        <h1 class="text-xl font-bold text-primary">北歐極簡生活</h1>
+        <h1 class="text-xl font-bold text-primary">🌲 北歐極簡生活</h1>
         <p class="text-sm text-secondary mt-1">{{ pageTitle }}</p>
     </header>
 
-    <main class="p-4">
+    <main class="p-4 overflow-y-auto" style="max-height: calc(100vh - 120px);">
 
-        <section v-if="currentPage === 'schedule'" class="space-y-4">
-            <h2 class="text-lg font-semibold text-primary mb-3">🧭 我的行程</h2>
-            <div v-for="(item, index) in schedule" :key="index" class="bg-card p-4 rounded-xl shadow-md border-l-4" :class="{'border-accent': item.completed, 'border-secondary': !item.completed}">
-                <div class="flex items-center text-sm mb-2 text-primary" v-if="item.weather">
-                    <i class="fas fa-sun mr-2 text-yellow-500"></i>
-                    <span>{{ item.weather.location }}：{{ item.weather.temp }}°C，{{ item.weather.condition }}</span>
-                </div>
-
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-primary font-bold">{{ item.time }} - {{ item.title }}</p>
-                        <p class="text-sm text-secondary mt-1">{{ item.location }}</p>
-                    </div>
-                    <button @click="navigateTo(item.location)" class="bg-accent text-white p-2 rounded-full hover:opacity-90 transition-opacity">
-                        <i class="fas fa-route"></i>
-                    </button>
-                </div>
-            </div>
-            <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-opacity-90 transition-colors mt-4">
+        <section v-if="currentPage === 'schedule'" class="space-y-6">
+            <h2 class="text-lg font-semibold text-primary mb-3">🧭 2026 北歐行</h2>
+            
+            <button @click="showAddSchedule = true" class="w-full bg-primary text-white py-3 rounded-lg hover:bg-opacity-90 transition-colors mt-4">
                 <i class="fas fa-plus mr-2"></i>新增行程
             </button>
+
+            <div v-for="(day, date) in groupedSchedule" :key="date" class="space-y-3">
+                <div class="flex items-center text-sm font-bold text-accent pt-4 border-t border-secondary border-opacity-30">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    <span>{{ date }}</span>
+                </div>
+
+                <div v-for="(item, index) in day" :key="index" class="bg-card p-4 rounded-xl shadow-md transition-shadow hover:shadow-lg border-l-4 border-accent space-y-2">
+                    
+                    <div class="flex items-center text-sm text-primary font-medium" v-if="item.weather">
+                        <i class="mr-2" :class="item.weather.icon" :style="{ color: item.weather.color }"></i>
+                        <span>{{ item.weather.temp }}°C，{{ item.weather.condition }}</span>
+                    </div>
+
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow">
+                            <p class="text-xs text-secondary">{{ item.time }}</p>
+                            <p class="text-primary font-bold mt-1">{{ item.title }}</p>
+                            <p class="text-sm text-secondary mt-1">{{ item.location }}</p>
+                        </div>
+                        
+                        <button @click="navigateTo(item.location)" class="bg-accent text-white p-2 ml-4 rounded-full hover:opacity-90 transition-colors flex-shrink-0">
+                            <i class="fas fa-route"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
         </section>
 
         <section v-if="currentPage === 'account'" class="space-y-4">
             <h2 class="text-lg font-semibold text-primary mb-3">💰 簡約記帳</h2>
 
-            <div class="bg-card p-4 rounded-xl shadow-md border-l-4 border-accent">
-                <p class="text-sm text-secondary">本月總支出</p>
+            <div class="bg-card p-4 rounded-xl shadow-md border-l-4 border-primary">
+                <p class="text-sm text-secondary">北歐行總支出預計</p>
                 <p class="text-3xl font-bold text-primary mt-1">NT$ {{ totalExpense.toLocaleString() }}</p>
             </div>
 
@@ -122,10 +143,10 @@
         </section>
 
         <section v-if="currentPage === 'list'" class="space-y-4">
-            <h2 class="text-lg font-semibold text-primary mb-3">🛒 極簡購物</h2>
+            <h2 class="text-lg font-semibold text-primary mb-3">🛒 極簡購物清單</h2>
 
             <div class="flex space-x-2">
-                <input type="text" v-model="newItemText" placeholder="輸入購物項目..." class="flex-grow p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent focus:ring focus:ring-accent focus:ring-opacity-50 transition-shadow">
+                <input type="text" v-model="newItemText" @keyup.enter="addItem" placeholder="輸入購物項目..." class="flex-grow p-2 border border-secondary rounded-lg bg-background text-primary focus:border-accent focus:ring focus:ring-accent focus:ring-opacity-50 transition-shadow">
                 <button @click="addItem" class="bg-primary text-white p-2 rounded-lg hover:bg-opacity-90 transition-colors">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -143,17 +164,30 @@
                 </div>
             </div>
         </section>
-
+        
         <section v-if="currentPage === 'map'" class="space-y-4">
-            <h2 class="text-lg font-semibold text-primary mb-3">📍 地圖與地點</h2>
+            <h2 class="text-lg font-semibold text-primary mb-3">📍 行程地圖位置</h2>
             <div class="bg-card p-4 rounded-xl shadow-md h-80 flex items-center justify-center text-center text-secondary">
                 <p>地圖 API 渲染區</p>
                 <p class="absolute mt-10 text-sm">（實際部署需使用 Google Maps API Key）</p>
                 
             </div>
-            
             <p class="text-sm text-secondary">提示：在行程表點擊導航按鈕可查看地點。</p>
         </section>
+        
+        <div v-if="showAddSchedule" @click.self="showAddSchedule = false" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div class="bg-card p-6 rounded-xl shadow-2xl w-full max-w-sm space-y-4">
+                <h3 class="text-xl font-bold text-primary">新增北歐行程</h3>
+                <input type="date" v-model="newScheduleItem.date" class="w-full p-2 border border-secondary rounded-lg">
+                <input type="time" v-model="newScheduleItem.time" class="w-full p-2 border border-secondary rounded-lg">
+                <input type="text" v-model="newScheduleItem.title" placeholder="活動標題" class="w-full p-2 border border-secondary rounded-lg">
+                <input type="text" v-model="newScheduleItem.location" placeholder="地點/城市" class="w-full p-2 border border-secondary rounded-lg">
+                <div class="flex justify-end space-x-3">
+                    <button @click="showAddSchedule = false" class="px-4 py-2 text-primary rounded-lg hover:bg-background">取消</button>
+                    <button @click="addScheduleItem" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90">新增</button>
+                </div>
+            </div>
+        </div>
 
     </main>
 
@@ -180,40 +214,99 @@
 <script>
     const { createApp, ref, computed } = Vue
 
+    // TSV 檔案內容，直接嵌入 JavaScript 變數
+    const tsvData = `日期\t時間\t活動\t地點
+2026/06/01\t08:00\t桃園國際機場報到\t台灣桃園國際機場
+2026/06/01\t14:00\t飛往丹麥哥本哈根\t航班編號 SK984
+2026/06/02\t08:00\t抵達哥本哈根，前往酒店\t哥本哈根凱美奧酒店
+2026/06/02\t11:00\t小美人魚雕像參觀\t長堤公園
+2026/06/02\t14:00\t新港(Nyhavn)運河遊船\t新港碼頭
+2026/06/03\t09:30\t卡隆堡城堡 (Hamlet城堡)\t赫爾辛格
+2026/06/04\t10:00\t搭乘火車前往瑞典馬爾默\t哥本哈根中央車站
+2026/06/04\t15:00\t馬爾默特納瑞大樓參觀\t西港
+2026/06/05\t09:00\t馬爾默技術與海洋博物館\t馬爾默博物館
+`;
+
+    // 處理 TSV 檔案並轉換為 Vue 數據結構
+    function parseTSV(tsv) {
+        const lines = tsv.trim().split('\n');
+        const headers = lines[0].split('\t');
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split('\t');
+            if (values.length === headers.length) {
+                const item = {
+                    date: values[0].trim(),
+                    time: values[1].trim(),
+                    title: values[2].trim(),
+                    location: values[3].trim(),
+                    completed: false,
+                    // 隨機添加天氣假資料，以符合功能 2 的要求
+                    weather: generateMockWeather(),
+                };
+                data.push(item);
+            }
+        }
+        return data;
+    }
+
+    // 隨機生成北歐城市天氣假資料
+    function generateMockWeather() {
+        const conditions = [
+            { cond: '晴朗', icon: 'fas fa-sun', color: '#FFD700', temp: 18 },
+            { cond: '多雲', icon: 'fas fa-cloud-sun', color: '#A9A9A9', temp: 15 },
+            { cond: '小雨', icon: 'fas fa-cloud-rain', color: '#6495ED', temp: 12 },
+            { cond: '陰天', icon: 'fas fa-cloud', color: '#B0C4DE', temp: 14 },
+        ];
+        const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
+        return {
+            temp: randomCondition.temp + Math.floor(Math.random() * 5),
+            condition: randomCondition.cond,
+            icon: randomCondition.icon,
+            color: randomCondition.color
+        };
+    }
+
+    // 初始化 Vue App
     createApp({
         data() {
             return {
                 currentPage: 'schedule', // 預設頁面
                 pageTitles: {
-                    schedule: '生活中的美好規劃',
+                    schedule: '2026 北歐行計畫',
                     account: '清楚簡潔的財務管理',
                     list: '不再遺漏任何細節',
-                    map: '探索你的周邊世界'
+                    map: '探索您的北歐旅程'
                 },
-                // --- 行程表資料 ---
-                schedule: [
-                    { time: '09:00', title: '設計展覽', location: '松山文創園區', completed: false, weather: { temp: 24, condition: '多雲', location: '台北' } },
-                    { time: '12:30', title: '極簡咖啡廳午餐', location: '極光咖啡', completed: false, weather: { temp: 25, condition: '晴朗', location: '台北' } },
-                    { time: '16:00', title: '與朋友視訊會議', location: '家中書房', completed: true, weather: null },
-                ],
+                
+                // --- 行程表資料 (已從 TSV 載入) ---
+                schedule: parseTSV(tsvData),
+                showAddSchedule: false,
+                newScheduleItem: {
+                    date: '',
+                    time: '',
+                    title: '',
+                    location: '',
+                },
                 
                 // --- 記帳資料 ---
-                expenseCategories: ['餐飲', '交通', '生活用品', '娛樂', '雜項'],
+                expenseCategories: ['住宿', '交通', '餐飲', '門票/活動', '購物', '雜項'], // 功能 1
                 newExpense: {
                     category: '',
                     amount: null
                 },
                 expenses: [
-                    { category: '生活用品', amount: 599, date: '2025/12/08' },
-                    { category: '餐飲', amount: 120, date: '2025/12/08' },
+                    { category: '住宿', amount: 15000, date: '2026/05/20' },
+                    { category: '機票', amount: 35000, date: '2026/04/15' },
                 ],
 
                 // --- 購物清單資料 ---
                 newItemText: '',
                 shoppingList: [
-                    { text: '北歐風香氛蠟燭', completed: false },
-                    { text: '有機棉床單', completed: true },
-                    { text: '燕麥奶', completed: false },
+                    { text: '轉換插頭', completed: false },
+                    { text: '歐元現金', completed: true },
+                    { text: '輕薄保暖衣物', completed: false },
                 ]
             }
         },
@@ -223,40 +316,51 @@
             },
             totalExpense() {
                 return this.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            },
+            // 將行程表按日期分組
+            groupedSchedule() {
+                return this.schedule.reduce((groups, item) => {
+                    const date = item.date;
+                    if (!groups[date]) {
+                        groups[date] = [];
+                    }
+                    groups[date].push(item);
+                    return groups;
+                }, {});
             }
         },
         methods: {
             changePage(page) {
                 this.currentPage = page;
             },
-            // Google Maps 導航功能
+            // Google Maps 導航功能 (功能 3)
             navigateTo(location) {
-                // 實際應用中，Google Maps API key 是必要的
                 const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
                 window.open(url, '_blank');
             },
-            // 記帳功能
+            // 記帳圖示
+            categoryIcon(category) {
+                switch (category) {
+                    case '住宿': return 'fas fa-hotel text-blue-500';
+                    case '交通': return 'fas fa-bus text-indigo-500';
+                    case '餐飲': return 'fas fa-utensils text-orange-500';
+                    case '門票/活動': return 'fas fa-ticket-alt text-purple-500';
+                    case '購物': return 'fas fa-shopping-bag text-green-500';
+                    default: return 'fas fa-tag text-gray-400';
+                }
+            },
+            // 新增支出
             addExpense() {
                 if (this.newExpense.category && this.newExpense.amount > 0) {
                     this.expenses.unshift({
                         category: this.newExpense.category,
                         amount: this.newExpense.amount,
-                        date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/').slice(0, -1) // 格式化日期
+                        date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/')
                     });
-                    // 重置表單
                     this.newExpense.category = '';
                     this.newExpense.amount = null;
                 } else {
                     alert('請選擇類別並輸入有效金額！');
-                }
-            },
-            categoryIcon(category) {
-                switch (category) {
-                    case '餐飲': return 'fas fa-utensils text-orange-400';
-                    case '交通': return 'fas fa-bus text-blue-400';
-                    case '生活用品': return 'fas fa-lightbulb text-yellow-400';
-                    case '娛樂': return 'fas fa-gamepad text-purple-400';
-                    default: return 'fas fa-tag text-gray-400';
                 }
             },
             // 購物清單功能
@@ -264,10 +368,28 @@
                 if (this.newItemText.trim() !== '') {
                     this.shoppingList.unshift({ text: this.newItemText.trim(), completed: false });
                     this.newItemText = '';
-                }
+                },
             },
             removeItem(index) {
                 this.shoppingList.splice(index, 1);
+            },
+            // 新增行程功能 (功能 4)
+            addScheduleItem() {
+                if (this.newScheduleItem.date && this.newScheduleItem.title) {
+                    this.schedule.push({
+                        date: this.newScheduleItem.date,
+                        time: this.newScheduleItem.time || '全天',
+                        title: this.newScheduleItem.title,
+                        location: this.newScheduleItem.location || '無地點',
+                        completed: false,
+                        weather: generateMockWeather() // 新增的也給一個天氣
+                    });
+                    // 重設表單並關閉彈窗
+                    this.newScheduleItem = { date: '', time: '', title: '', location: '' };
+                    this.showAddSchedule = false;
+                } else {
+                    alert('日期和標題為必填項目！');
+                }
             }
         }
     }).mount('#app')
