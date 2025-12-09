@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北歐極簡之旅計畫 - Nordic Planner V8</title>
+    <title>北歐極簡之旅計畫 - Nordic Planner V9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        /* 1. Nordic Minimalism Color Palette (Light Mode 基調) */
+        /* 1. Nordic Minimalism + Snowy/Christmas Color Palette */
         :root {
-            --nordic-light: #f8f9fa; /* Very Light Gray/Off-White for main background */
+            --nordic-light: #f8fbfb; /* Very Light Blue-Gray/Snow White for main background */
             --nordic-white: #ffffff; /* Pure White for card backgrounds */
             --nordic-dark: #343a40; /* Dark text for readability */
-            --nordic-muted: #adb5bd; /* Muted gray for secondary text/borders */
-            --nordic-accent: #3b7979; /* Muted Teal/Pine Green for highlights */
+            --nordic-muted: #ced4da; /* Muted gray for secondary text/borders */
+            --nordic-accent: #3b7979; /* Muted Teal/Pine Green for primary highlight */
+            --nordic-christmas: #b04e57; /* Soft Christmas Red for contrast/alerts */
         }
         
         /* 2. Custom Tailwind-like classes using CSS variables */
@@ -22,7 +23,9 @@
         .text-nordic-dark { color: var(--nordic-dark); }
         .text-nordic-accent { color: var(--nordic-accent); }
         .border-nordic-muted { border-color: var(--nordic-muted); }
-        .shadow-nordic { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03); } /* Lighter, subtler shadow */
+        
+        /* Softer, snowy shadow for cards and buttons */
+        .shadow-snowy { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.04); } 
 
         /* Mobile App Container */
         #app {
@@ -31,7 +34,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: var(--nordic-light); /* Apply main light background */
+            background-color: var(--nordic-light); 
             position: relative;
         }
 
@@ -48,15 +51,29 @@
             height: 4px;
         }
         .date-slider::-webkit-scrollbar-thumb {
-            background: #ced4da; /* Light Gray for scrollbar */
+            background: var(--nordic-muted); 
             border-radius: 2px;
+        }
+
+        /* Modal Backdrop */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
 <body class="bg-gray-100">
 
 <div id="app">
-    <header class="sticky top-0 bg-nordic-white shadow-nordic p-4 flex items-center justify-center z-20 border-b border-gray-200">
+    <header class="sticky top-0 bg-nordic-white shadow-snowy p-4 flex items-center justify-center z-20 border-b border-gray-200">
         <h1 class="text-xl font-extrabold text-nordic-accent">
             {{ headerTitle }}
         </h1>
@@ -67,13 +84,14 @@
             
             <div v-if="currentTab === 'itinerary'" key="itinerary" class="pb-4">
                 
-                <div class="sticky top-0 bg-nordic-white shadow-nordic p-2 mb-4 z-10 border-b border-gray-200">
+                <div class="sticky top-0 bg-nordic-white shadow-snowy p-2 mb-4 z-10 border-b border-gray-200">
                     <div class="date-slider flex overflow-x-scroll space-x-2 pb-2">
                         <button v-for="(day, index) in itinerary" :key="index"
                                 @click="selectDay(day)"
                                 class="flex-shrink-0 px-3 py-1 text-sm font-medium rounded-full transition-colors border"
                                 :class="{
-                                    'bg-nordic-accent border-nordic-accent text-white shadow-md font-bold': selectedDay === day, 
+                                    // 修正點：選中日期的樣式 (非反白，高對比邊框)
+                                    'bg-white border-2 border-nordic-accent text-nordic-accent shadow-md font-bold': selectedDay === day, 
                                     'bg-white border-gray-300 text-nordic-dark hover:bg-gray-100': selectedDay !== day
                                 }">
                             {{ day.date.substring(5) }} <span class="text-xs ml-1 opacity-70">({{ day.day_of_week.substring(0, 1) }})</span>
@@ -84,7 +102,7 @@
                 <div class="p-4" v-if="selectedDay">
                     <h2 class="text-2xl font-bold text-nordic-dark mb-4">{{ selectedDay.date.substring(5) }} - {{ selectedDay.city_country }}</h2>
 
-                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-nordic-white rounded-xl shadow-nordic border-l-4 border-gray-300 flex items-center">
+                    <div v-if="selectedDay.weather" class="mb-4 p-4 bg-nordic-white rounded-xl shadow-snowy border-l-4 border-gray-300 flex items-center">
                         <svg class="w-7 h-7 text-gray-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         <div class="text-sm">
                             <p class="font-bold text-nordic-dark">❄️ 預計天氣</p>
@@ -92,7 +110,7 @@
                         </div>
                     </div>
 
-                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 rounded-xl shadow-nordic border-l-4 border-nordic-accent bg-nordic-white">
+                    <div v-if="selectedDay.aurora_forecast" class="mb-4 p-4 rounded-xl shadow-snowy border-l-4 border-nordic-accent bg-nordic-white">
                         <div class="flex items-center">
                             <svg class="w-7 h-7 text-nordic-accent mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 100 4m-4 10a2 2 0 100-4m14 0a2 2 0 100-4m-4 4a2 2 0 100 4m-10 4h12a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg>
                             <div class="text-sm">
@@ -106,7 +124,7 @@
                     
 
                     <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">當日安排</h3>
-                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-nordic-white rounded-xl shadow-nordic p-4 border border-gray-200">
+                    <div v-for="(item, itemIndex) in selectedDay.events" :key="itemIndex" class="mb-3 bg-nordic-white rounded-xl shadow-snowy p-4 border border-gray-200">
                         <div class="flex justify-between items-start">
                             <div class="flex-grow">
                                 <p class="text-sm font-bold text-nordic-accent">{{ item.time }}</p>
@@ -123,7 +141,7 @@
                         </a>
                     </div>
                     
-                    <div class="mt-6 p-4 bg-nordic-white rounded-xl shadow-nordic text-sm text-gray-500 border border-gray-200">
+                    <div class="mt-6 p-4 bg-nordic-white rounded-xl shadow-snowy text-sm text-gray-500 border border-gray-200">
                         <p class="font-bold text-nordic-dark">🏠 住宿：{{ selectedDay.accommodation }}</p>
                     </div>
                 </div>
@@ -132,7 +150,7 @@
             <div v-else-if="currentTab === 'checklist'" key="checklist" class="p-4">
                 <h2 class="text-2xl font-bold text-nordic-dark mb-4">行前裝備清單 📋</h2>
                 <p class="text-sm text-gray-500 mb-4">點擊項目可標記為已完成 / 點擊分類標題可展開收合。</p>
-                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-nordic-white rounded-xl shadow-nordic overflow-hidden border border-gray-200">
+                <div v-for="(items, category) in checklist" :key="category" class="mb-3 bg-nordic-white rounded-xl shadow-snowy overflow-hidden border border-gray-200">
                     <div @click="toggleChecklist(category)" class="p-4 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100">
                         <h3 class="text-xl font-bold text-nordic-accent">{{ category }}</h3>
                         <span class="text-sm text-gray-500">{{ getCheckedCount(category) }} / {{ items.length }}</span>
@@ -155,15 +173,15 @@
 
             <div v-else-if="currentTab === 'accounting'" key="accounting" class="p-4">
                 <h2 class="text-2xl font-bold text-nordic-dark mb-4">記帳中心 💰</h2>
-                <div class="bg-nordic-white rounded-xl shadow-nordic p-4 mb-6 border border-gray-200">
-                    <p class="text-lg font-bold text-nordic-dark">總支出：<span class="text-red-600">NT$ {{ totalSpent.toLocaleString() }}</span></p>
+                <div class="bg-nordic-white rounded-xl shadow-snowy p-4 mb-6 border border-gray-200">
+                    <p class="text-lg font-bold text-nordic-dark">總支出：<span :style="{ color: 'var(--nordic-christmas)' }">NT$ {{ totalSpent.toLocaleString() }}</span></p>
                 </div>
                 
                 <h3 class="text-xl font-bold text-nordic-dark mb-3 border-b border-gray-300 pb-2">支出紀錄</h3>
-                <div v-if="accounting.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-nordic text-center border border-gray-200">
+                <div v-if="accounting.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center border border-gray-200">
                     <p>目前沒有支出紀錄。請點擊右下角按鈕 **+ 新增支出**。</p>
                 </div>
-                <div v-for="(transaction, index) in accounting" :key="index" class="bg-nordic-white rounded-xl shadow-nordic p-4 mb-3 flex justify-between items-center border border-gray-200">
+                <div v-for="(transaction, index) in accounting" :key="index" class="bg-nordic-white rounded-xl shadow-snowy p-4 mb-3 flex justify-between items-center border border-gray-200">
                     <div>
                         <p class="font-medium text-nordic-dark">{{ transaction.description }}</p>
                         <p class="text-sm text-gray-500">{{ transaction.date }} ({{ transaction.category }})</p>
@@ -176,16 +194,16 @@
 
             <div v-else-if="currentTab === 'shopping'" key="shopping" class="p-4">
                 <h2 class="text-2xl font-bold text-nordic-dark mb-4">購物清單 🎁</h2>
-                <div v-if="shoppingList.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-nordic text-center mb-4 border border-gray-200">
+                <div v-if="shoppingList.length === 0" class="bg-gray-100 text-gray-500 p-4 rounded-xl shadow-snowy text-center mb-4 border border-gray-200">
                     <p>目前沒有購物清單項目。請點擊右下角按鈕 **+ 購物項目**。</p>
                 </div>
-                <div v-for="(item, index) in shoppingList" :key="index" class="bg-nordic-white rounded-xl shadow-nordic p-4 mb-3 flex items-center border border-gray-200">
+                <div v-for="(item, index) in shoppingList" :key="index" class="bg-nordic-white rounded-xl shadow-snowy p-4 mb-3 flex items-center border border-gray-200">
                     <input type="checkbox" :id="'shop' + index" v-model="item.purchased" class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-3 border-gray-300 bg-white">
                     <label :for="'shop' + index" class="flex-grow text-nordic-dark" :class="{ 'line-through text-gray-400': item.purchased }">
                         <span class="font-medium text-lg">{{ item.name }}</span>
                         <span v-if="item.store" class="text-sm text-gray-500 block">({{ item.store }})</span>
                     </label>
-                    <button @click.stop="showFeatureAlert('編輯購物項目')" class="text-gray-400 hover:text-nordic-accent transition p-1">
+                    <button @click.stop="openModalForEdit('shopping', item, index)" class="text-gray-400 hover:text-nordic-accent transition p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L15.232 5.232z"></path></svg>
                     </button>
                 </div>
@@ -194,16 +212,16 @@
             <div v-else-if="currentTab === 'info'" key="info" class="p-4">
                 <h2 class="text-2xl font-bold text-nordic-dark mb-4">實用資訊 💡</h2>
                 <div class="space-y-4">
-                    <div class="bg-nordic-white rounded-xl shadow-nordic p-4 border border-gray-200">
-                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存說明 (Local Storage)</h3>
-                        <p class="text-sm text-nordic-accent mb-2">
-                            ✅ **數據現已儲存在您的瀏覽器本地儲存 (Local Storage) 中！**
+                    <div class="bg-nordic-white rounded-xl shadow-snowy p-4 border border-gray-200">
+                        <h3 class="text-xl font-bold text-nordic-dark mb-2">資料儲存與編輯說明 (V9 更新)</h3>
+                        <p class="text-sm text-nordic-accent mb-2 font-bold">
+                            ✅ 購物清單 (Shopping List) 已具備 **新增、編輯、刪除** 功能！
                         </p>
                         <p class="text-sm text-gray-600">
-                            您修改或新增的資料（如清單勾選狀態、新增的支出等）在您下次開啟此 HTML 檔案時，將會自動讀取，數據不會因為關閉瀏覽器而遺失。
+                            所有數據皆儲存在您的瀏覽器本地儲存 (Local Storage)。您可以試著在「購物清單」頁面新增、編輯或刪除項目，然後重新整理頁面來驗證數據是否被保留。
                         </p>
                         <p class="text-xs text-red-500 mt-2">
-                            ⚠️ **限制：** 此數據僅儲存在您**當前使用的瀏覽器**中，無法在不同裝置間同步。
+                            ⚠️ **注意：** 其他頁面的編輯功能仍為模擬，您可以將此購物清單的 CRUD 邏輯套用到其他頁面。
                         </p>
                     </div>
                 </div>
@@ -214,16 +232,17 @@
     
     <div class="fixed bottom-20 right-4 z-50">
         <div v-if="isAddMenuOpen" @click.away="isAddMenuOpen = false" class="mb-3 space-y-2">
-            <button v-if="currentTab === 'itinerary'" @click.prevent="showFeatureAlert('新增行程')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-md hover:bg-gray-100 transition border border-gray-300">
+            
+            <button v-if="currentTab === 'shopping'" @click.prevent="openModalForAdd('shopping')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-snowy hover:bg-gray-100 transition border border-gray-300">
+                + 購物項目
+            </button>
+            <button v-if="currentTab === 'accounting'" @click.prevent="showFeatureAlert('新增支出')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-snowy hover:bg-gray-100 transition border border-gray-300">
+                + 新增支出
+            </button>
+            <button v-if="currentTab === 'itinerary'" @click.prevent="showFeatureAlert('新增行程')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-snowy hover:bg-gray-100 transition border border-gray-300">
                 + 新增行程
             </button>
-            <button v-if="currentTab === 'accounting'" @click.prevent="handleFakeAdd('accounting', { description: '新增支出測試', date: new Date().toLocaleDateString('zh-TW').slice(5), category: '測試', amount: 500 })" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-md hover:bg-gray-100 transition border border-gray-300">
-                + 新增支出 (測試)
-            </button>
-            <button v-if="currentTab === 'shopping'" @click.prevent="handleFakeAdd('shopping', { name: '新項目測試', store: '無', purchased: false })" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-md hover:bg-gray-100 transition border border-gray-300">
-                + 購物項目 (測試)
-            </button>
-            <button v-if="currentTab === 'checklist'" @click.prevent="showFeatureAlert('新增清單')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-md hover:bg-gray-100 transition border border-gray-300">
+            <button v-if="currentTab === 'checklist'" @click.prevent="showFeatureAlert('新增清單')" class="block w-40 p-3 bg-nordic-white text-nordic-dark text-sm font-medium rounded-lg shadow-snowy hover:bg-gray-100 transition border border-gray-300">
                 + 新增清單項目
             </button>
         </div>
@@ -235,6 +254,58 @@
             <svg v-else class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
+
+    <transition name="fade">
+        <div v-if="isModalOpen && modalDataType === 'shopping'" class="modal-backdrop">
+            <div class="bg-nordic-white p-6 rounded-xl shadow-2xl w-11/12 max-w-md border border-gray-300 transform transition-all scale-100">
+                <h3 class="text-xl font-bold text-nordic-dark mb-4 border-b pb-2">
+                    {{ editingItemIndex === -1 ? '新增購物項目' : '編輯購物項目' }}
+                </h3>
+                
+                <form @submit.prevent="saveModalItem">
+                    <div class="mb-4">
+                        <label for="shopName" class="block text-sm font-medium text-gray-700 mb-1">項目名稱</label>
+                        <input type="text" id="shopName" v-model="editingItem.name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+                               placeholder="例如：保暖手套、紀念品">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="shopStore" class="block text-sm font-medium text-gray-700 mb-1">購買地點/備註 (選填)</label>
+                        <input type="text" id="shopStore" v-model="editingItem.store"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-nordic-accent focus:border-nordic-accent"
+                               placeholder="例如：H&M、機場免稅店">
+                    </div>
+                    
+                    <div class="flex items-center mb-6">
+                        <input type="checkbox" id="shopPurchased" v-model="editingItem.purchased" 
+                               class="form-checkbox h-5 w-5 text-nordic-accent rounded-sm mr-2 border-gray-300 bg-white">
+                        <label for="shopPurchased" class="text-base text-gray-700">是否已購買？</label>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                        <button v-if="editingItemIndex !== -1" @click.prevent="deleteItem('shopping', editingItemIndex)"
+                                type="button" 
+                                class="px-4 py-2 text-sm font-medium rounded-lg text-white" 
+                                :style="{ backgroundColor: 'var(--nordic-christmas)' }">
+                            刪除
+                        </button>
+                        
+                        <div class="flex space-x-3 ml-auto">
+                            <button @click.prevent="closeModal" type="button" class="px-4 py-2 text-sm font-medium text-gray-600 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
+                                取消
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 text-sm font-medium rounded-lg text-white bg-nordic-accent hover:bg-teal-600 transition">
+                                儲存
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </transition>
+
 
     <nav class="sticky bottom-0 bg-nordic-white border-t border-gray-200 shadow-xl p-2 z-20">
         <ul class="flex justify-around">
@@ -262,8 +333,8 @@
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     };
 
+    // 保持預設數據不變
     const defaultItineraryData = [
-        // 保持原本的 16 天行程數據...
         {
             date: "2025/12/19", day_of_week: "五", city_country: "臺灣 (Taiwan)", country_code: "", weather: null, aurora_forecast: null,
             events: [{ time: "23:05", schedule: "✈華航CI073 TPE 台北 起飛", location: "桃園國際機場" }],
@@ -478,8 +549,15 @@
     };
     
     // 清空記帳與購物清單
-    const defaultAccounting = [];
-    const defaultShoppingList = [];
+    const defaultAccounting = [
+        // 預設一筆測試數據
+        { description: '來回機票款', date: '11/01', category: '交通', amount: 35000 },
+    ];
+    const defaultShoppingList = [
+        // 預設一筆測試數據
+        { name: '羊毛厚襪', store: '迪卡儂', purchased: true },
+        { name: '芬蘭紀念杯', store: '赫爾辛基機場', purchased: false },
+    ];
 
     // Local Storage 鍵名設定
     const STORAGE_KEYS = {
@@ -515,8 +593,6 @@
             };
             
             // --- 載入數據：先嘗試從 Local Storage 讀取，失敗則使用預設值 ---
-            
-            // 讓核心數據都成為響應式 ref 變量
             const itinerary = ref(loadFromLocalStorage(STORAGE_KEYS.ITINERARY, defaultItineraryData));
             const checklist = ref(loadFromLocalStorage(STORAGE_KEYS.CHECKLIST, defaultChecklistData));
             const accounting = ref(loadFromLocalStorage(STORAGE_KEYS.ACCOUNTING, defaultAccounting));
@@ -524,9 +600,15 @@
 
             // 其他狀態
             const currentTab = ref('itinerary');
-            const selectedDay = ref(itinerary.value[0]); // 確保選取第一天的行程
+            const selectedDay = ref(itinerary.value[0]); 
             const isAddMenuOpen = ref(false);
             const collapsedChecklist = ref({}); 
+
+            // Modal 相關狀態 (用於 CRUD)
+            const isModalOpen = ref(false);
+            const modalDataType = ref('');
+            const editingItem = ref(null); // 當前編輯的項目（Modal 中綁定的數據）
+            const editingItemIndex = ref(-1); // 當前編輯的項目在陣列中的索引，-1 表示新增
 
             const tabs = [
                 { id: 'itinerary', name: '行程表', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' },
@@ -537,22 +619,10 @@
             ];
 
             // --- Watchers (自動儲存機制) ---
-            // 深度監聽 (deep: true) 確保即使物件內部屬性改變 (例如清單項目被勾選)，也會觸發儲存
-            watch(itinerary, (newVal) => {
-                saveToLocalStorage(STORAGE_KEYS.ITINERARY, newVal);
-            }, { deep: true });
-
-            watch(checklist, (newVal) => {
-                saveToLocalStorage(STORAGE_KEYS.CHECKLIST, newVal);
-            }, { deep: true });
-
-            watch(accounting, (newVal) => {
-                saveToLocalStorage(STORAGE_KEYS.ACCOUNTING, newVal);
-            }, { deep: true });
-
-            watch(shoppingList, (newVal) => {
-                saveToLocalStorage(STORAGE_KEYS.SHOPPING, newVal);
-            }, { deep: true });
+            watch(itinerary, (newVal) => { saveToLocalStorage(STORAGE_KEYS.ITINERARY, newVal); }, { deep: true });
+            watch(checklist, (newVal) => { saveToLocalStorage(STORAGE_KEYS.CHECKLIST, newVal); }, { deep: true });
+            watch(accounting, (newVal) => { saveToLocalStorage(STORAGE_KEYS.ACCOUNTING, newVal); }, { deep: true });
+            watch(shoppingList, (newVal) => { saveToLocalStorage(STORAGE_KEYS.SHOPPING, newVal); }, { deep: true });
             
             // --- Computed properties ---
             const totalSpent = computed(() => {
@@ -586,29 +656,75 @@
                 isAddMenuOpen.value = false;
             };
 
-            // 處理「新增」按鈕的模擬點擊，並真正新增一個測試數據，以驗證 Local Storage 功能
-            const handleFakeAdd = (type, data) => {
-                if (type === 'accounting') {
-                    // 為了測試持久化，這裡模擬將數據加入 accounting 陣列
-                    accounting.value.push(data);
-                    alert("✅ 已新增一筆測試支出！請重新整理頁面，檢查數據是否被儲存。");
-                } else if (type === 'shopping') {
-                    // 為了測試持久化，這裡模擬將數據加入 shoppingList 陣列
-                    shoppingList.value.push(data);
-                    alert("✅ 已新增一筆測試購物項目！請重新整理頁面，檢查數據是否被儲存。");
-                } else {
-                    showFeatureAlert('新增功能');
-                }
-                isAddMenuOpen.value = false;
-            };
-
             const showFeatureAlert = (feature) => {
                 alert(`[${feature}功能]：此處將彈出表單讓您填寫新增/編輯內容。
 
-請注意：雖然主要數據已可儲存於瀏覽器，但新增表單的介面仍需進一步開發。您可以在記帳/購物頁面點擊「新增支出 (測試)」/「新增購物 (測試)」來驗證儲存功能。`);
+請注意：目前只有「購物清單」頁面完整實作了新增、編輯、刪除的功能。您可以參考該頁面的邏輯來實作其他功能。`);
                 isAddMenuOpen.value = false;
             };
 
+            // --- CRUD Modal Functions (for Shopping List) ---
+            const closeModal = () => {
+                isModalOpen.value = false;
+                editingItem.value = null;
+                editingItemIndex.value = -1;
+                modalDataType.value = '';
+            };
+
+            const openModalForAdd = (type) => {
+                modalDataType.value = type;
+                editingItemIndex.value = -1;
+                if (type === 'shopping') {
+                    // 初始化一個新的空項目
+                    editingItem.value = { name: '', store: '', purchased: false };
+                }
+                isModalOpen.value = true;
+                isAddMenuOpen.value = false;
+            };
+
+            const openModalForEdit = (type, item, index) => {
+                modalDataType.value = type;
+                editingItemIndex.value = index;
+                if (type === 'shopping') {
+                    // 複製物件以避免直接修改 Vue 數據，直到按下儲存
+                    editingItem.value = { ...item }; 
+                }
+                isModalOpen.value = true;
+            };
+
+            const saveModalItem = () => {
+                if (modalDataType.value === 'shopping') {
+                    // 1. 檢查必填欄位
+                    if (!editingItem.value.name.trim()) {
+                        alert('項目名稱不能為空！');
+                        return;
+                    }
+
+                    if (editingItemIndex.value === -1) {
+                        // 2. 新增模式 (Create)
+                        shoppingList.value.push(editingItem.value);
+                        alert(`「${editingItem.value.name}」已新增！`);
+                    } else {
+                        // 3. 編輯模式 (Update)
+                        // 確保使用陣列索引更新，以觸發 Vue 的響應式更新
+                        shoppingList.value[editingItemIndex.value] = editingItem.value;
+                        alert(`「${editingItem.value.name}」已更新！`);
+                    }
+                }
+                closeModal();
+            };
+
+            const deleteItem = (type, index) => {
+                if (confirm(`確定要刪除「${shoppingList.value[index].name}」嗎？`)) {
+                    if (type === 'shopping') {
+                        shoppingList.value.splice(index, 1);
+                        alert('項目已刪除。');
+                    }
+                    closeModal();
+                }
+            };
+            
+            // --- Return values for template ---
             return {
                 currentTab,
                 selectedDay,
@@ -621,13 +737,22 @@
                 collapsedChecklist,
                 totalSpent,
                 headerTitle,
+                isModalOpen,
+                modalDataType,
+                editingItem,
+                editingItemIndex,
                 getMapLink,
                 selectDay,
                 changeTab,
                 showFeatureAlert,
-                handleFakeAdd, // 新增的模擬新增功能
                 toggleChecklist,
-                getCheckedCount
+                getCheckedCount,
+                // CRUD Functions
+                openModalForAdd,
+                openModalForEdit,
+                closeModal,
+                saveModalItem,
+                deleteItem,
             };
         }
     }).mount('#app');
