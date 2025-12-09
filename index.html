@@ -101,7 +101,7 @@
         <h1 class="text-2xl font-bold mb-1">❄️ 北歐極簡之旅</h1>
         <p class="text-sm opacity-90">旅行日期: **12/19/2025 - 01/03/2026**</p>
         <div class="absolute top-4 right-4 text-sm opacity-90">
-            1 EUR ≈ 8.5 HKD
+            1 EUR ≈ 36.3 NT$
         </div>
     </div>
     
@@ -190,19 +190,19 @@
             </div>
             
             <div class="card p-4 mb-4 text-center bg-gray-50/80 border-l-4 border-red-500">
-                <p class="text-sm text-gray-600">總支出 (HKD)</p>
-                <p class="text-4xl font-extrabold text-red-600">HK$ {{ totalExpense.toFixed(2) }}</p>
-                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ (totalExpense / 8.5).toFixed(2) }} (以 1 EUR ≈ 8.5 HKD 估算)</p>
+                <p class="text-sm text-gray-600">總支出 (NT$)</p>
+                <p class="text-4xl font-extrabold text-red-600">NT$ {{ totalExpense.toFixed(0) }}</p>
+                <p class="text-sm text-gray-500 mt-1">累積支出 (EUR) 約 €{{ totalExpenseEUR }} (以 1 EUR ≈ 36.3 NT$ 估算)</p>
             </div>
 
             <div class="space-y-3">
                 <div v-for="expense in expenses.slice().reverse()" :key="expense.id" class="card p-3 flex justify-between items-center border-l-4 border-red-500">
                     <div>
                         <p class="font-semibold text-gray-800">{{ expense.item }}</p>
-                        <p class="text-xs text-gray-500">{{ expense.date }} - {{ expense.method }}</p>
+                        <p class="text-xs text-gray-500">{{ expense.date }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-lg font-bold text-red-600">- HK$ {{ expense.amount.toFixed(2) }}</p>
+                        <p class="text-lg font-bold text-red-600">- NT$ {{ expense.amount.toFixed(0) }}</p>
                         <button @click="deleteItem('accounting', expense.id)" class="text-xs text-gray-400 hover:text-red-500 delete-icon">
                             刪除
                         </button>
@@ -262,18 +262,10 @@
                     <input type="text" v-model="tempItem.item" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent" placeholder="例如: 晚餐費用">
                 </div>
                 <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700">金額 (HKD)</label>
+                    <label class="block text-sm font-medium text-gray-700">金額 (NT$)</label>
                     <input type="number" v-model.number="tempItem.amount" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">支付方式</label>
-                    <select v-model="tempItem.method" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-2.5 focus:border-nordic-accent focus:ring-nordic-accent">
-                        <option>現金</option>
-                        <option>信用卡</option>
-                        <option>行動支付</option>
-                    </select>
                 </div>
-            </div>
 
             <div v-else-if="modalType === 'shopping'">
                 <div class="mb-4">
@@ -292,6 +284,10 @@
 
 <script>
 const { createApp, ref, computed, nextTick, watch } = Vue
+
+// --- 全局常數設定 ---
+const EXCHANGE_RATE = 36.3; // 1 EUR ≈ 36.3 TWD
+const TWD_SYMBOL = 'NT$';
 
 let appInstance = null;
 let googleMapsLoaded = ref(false); 
@@ -396,14 +392,16 @@ function initMap() {
     google.maps.event.trigger(mapElement, 'resize');
 }
 
-// 修正日期為 12/19 - 1/3
+// 修正日期為 12/19 - 1/3 (已是正確範圍)
 function getTravelDates() {
     const start = new Date('2025-12-19T00:00:00');
     const end = new Date('2026-01-03T00:00:00');
     const dates = [];
     let currentDate = new Date(start);
     while (currentDate <= end) {
+        // 確保日期是正確格式
         dates.push(currentDate.toISOString().split('T')[0]);
+        // 增加一天
         currentDate.setDate(currentDate.getDate() + 1);
     }
     return dates;
@@ -479,8 +477,21 @@ function mountVueApp() {
             const currentItinerary = computed(() => itinerary.value[activeDate.value] || []);
             const getCurrentWeather = () => ({ temp: '-5°C', desc: '多雲，偶有雪花', icon: '🌨️' });
             
-            const expenses = ref([{ id: 101, date: '2025-12-19', item: '機場快線車票', amount: 350.00, method: '信用卡' }, { id: 102, date: '2025-12-19', item: '晚餐 (便利商店)', amount: 85.50, method: '現金' }]);
-            const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
+            // 修正: 假設初始金額為 TWD，並刪除 method
+            const expenses = ref([
+                { id: 101, date: '2025-12-19', item: '機場快線車票', amount: 1270, currency: 'TWD' }, 
+                { id: 102, date: '2025-12-19', item: '晚餐 (便利商店)', amount: 310, currency: 'TWD' }
+            ]);
+            
+            // 計算總 TWD 支出
+            const totalExpense = computed(() => expenses.value.reduce((sum, item) => {
+                 // 這裡假設所有新舊費用都已是 TWD
+                 return sum + item.amount
+            }, 0));
+            
+            // 計算總 EUR 支出 (用於參考顯示)
+            const totalExpenseEUR = computed(() => (totalExpense.value / EXCHANGE_RATE).toFixed(2));
+
             const shoppingList = ref([{ id: 201, name: '極光專用三腳架', done: false }, { id: 202, name: '芬蘭毛帽', done: false }, { id: 203, name: '旅遊保險', done: true }]);
             const isModalOpen = ref(false);
             const modalType = ref('');
@@ -497,14 +508,25 @@ function mountVueApp() {
             function showModal(type, item = null) {
                 if (type === 'itinerary') return;
                 modalType.value = type;
-                tempItem.value = type === 'accounting' ? { item: '', amount: null, method: '信用卡', date: activeDate.value } : { name: '', done: false };
+                
+                // 修正: 刪除 tempItem 中的 method 屬性
+                tempItem.value = type === 'accounting' 
+                    ? { item: '', amount: null, date: activeDate.value } 
+                    : { name: '', done: false };
+                    
                 isModalOpen.value = true;
             }
             
             function saveItem() {
                 if (modalType.value === 'accounting') {
                     if (!tempItem.value.item || !tempItem.value.amount) return alert('請填寫項目和金額');
-                    expenses.value.push({ ...tempItem.value, id: Date.now(), date: new Date().toISOString().split('T')[0] });
+                    // 修正: 新增費用預設為 TWD
+                    expenses.value.push({ 
+                        ...tempItem.value, 
+                        id: Date.now(), 
+                        date: new Date().toISOString().split('T')[0],
+                        currency: 'TWD' // 預設新增的費用為 TWD
+                    });
                 } else if (modalType.value === 'shopping') {
                     if (!tempItem.value.name) return alert('請填寫購物項目');
                     shoppingList.value.push({ ...tempItem.value, id: Date.now() });
@@ -529,15 +551,16 @@ function mountVueApp() {
             
             function formatDate(dateString) {
                 const date = new Date(dateString);
-                return `${date.getMonth() + 1}/${date.getDate()}`;
+                // 修正：修正月份取得方式，確保跨年顯示正確 (例如 12/31 -> 1/1)
+                return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`; 
             }
 
             const currentMapLink = computed(() => {
                 const locations = currentItinerary.value.filter(item => item.lat && item.lng);
-                if (locations.length === 0) return `https://www.google.com/maps/search/Northern+Europe`;
-                const destinationMarkers = locations.map(loc => `${loc.lat},${loc.lng}`).join('/');
-                // 創建一個包含所有地點的 Google Maps 連結
-                return `https://www.google.com/maps/dir/Current+Location/${destinationMarkers}`;
+                if (locations.length === 0) return `https://www.google.com/maps/@60.12816,18.6435,5z`; // 北歐中心點
+                const destinationMarkers = locations.map(loc => `${loc.location}`).join(' to ');
+                // 創建一個包含所有地點的 Google Maps 連結，使用 q 參數查找多個地點
+                return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locations[locations.length - 1].location)}&waypoints=${encodeURIComponent(locations.slice(0, -1).map(l => l.location).join('|'))}`;
             });
 
             watch(activeTab, (newTab) => {
@@ -564,6 +587,7 @@ function mountVueApp() {
                 currentMapLink,
                 expenses,
                 totalExpense,
+                totalExpenseEUR, // 新增的 computed 屬性
                 shoppingList,
                 isModalOpen,
                 modalType,
